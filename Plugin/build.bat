@@ -1,2 +1,3 @@
-call build_mq.bat
-call build_maya.bat
+call "%VS140COMNTOOLS%..\..\VC\vcvarsall.bat"
+
+msbuild NormalPainter.vcxproj /t:Build /p:Configuration=Master /p:Platform=x64 /m /nologo

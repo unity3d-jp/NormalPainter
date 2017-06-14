@@ -2,57 +2,6 @@
 
 using namespace mu;
 
-/*
-#include "MeshSync/msServer.h"
-#include "MeshSync/msClient.h"
-
-void Test_Sync(bool create_server)
-{
-    std::unique_ptr<ms::Server> server;
-
-    if (create_server) {
-        server.reset(new ms::Server(ms::ServerSettings{}));
-        server->start();
-    }
-
-    {
-        auto mesh = new ms::Mesh();
-        mesh->path = "/Root/Child";
-        mesh->points = {
-            { -1.0f, 0.0f, -1.0f },
-            { -1.0f, 0.0f,  1.0f },
-            { 1.0f, 0.0f,  1.0f },
-            { 1.0f, 0.0f, -1.0f },
-        };
-        mesh->indices = { 0, 1, 2, 0, 2, 3 };
-
-        ms::Client client(ms::ClientSettings{});
-        ms::SetMessage mes;
-        mes.scene.meshes.emplace_back(mesh);
-        client.send(mes);
-    }
-
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
-
-    if (create_server) {
-        server->processMessages([](ms::MessageType type, const ms::Message& mes) {
-            printf("break here\n");
-        });
-    }
-}
-
-void Test_Get()
-{
-    ms::Client client(ms::ClientSettings{});
-
-    ms::GetMessage gdata;
-    if (auto data = client.send(gdata)) {
-        for (auto& a : data->meshes) {
-            printf("");
-        }
-    }
-}
-*/
 
 void Test_Indexed()
 {

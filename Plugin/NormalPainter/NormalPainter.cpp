@@ -1,5 +1,4 @@
 #include "pch.h"
-#include "MeshSync/MeshSync.h"
 
 #ifdef _WIN32
     #define npAPI extern "C" __declspec(dllexport)

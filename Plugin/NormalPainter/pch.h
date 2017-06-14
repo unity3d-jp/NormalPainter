@@ -12,5 +12,6 @@
 #include <memory>
 #include <iostream>
 #include <sstream>
+#include <atomic>
 
 #include "MeshUtils/MeshUtils.h"
