@@ -11,6 +11,67 @@ using UnityEditor;
 
 namespace UTJ.NormalPainter
 {
+    public enum EditMode
+    {
+        Select,
+        Brush,
+        Assign,
+        Move,
+        Rotate,
+        Scale,
+        Equalize,
+        Projection,
+        Reset,
+    }
+
+    public enum BrushMode
+    {
+        Paint,
+        Pinch,
+        Equalize,
+        Reset,
+    }
+
+    public enum SelectMode
+    {
+        Single,
+        Rect,
+        Lasso,
+        Brush,
+    }
+
+    public enum MirrorMode
+    {
+        None,
+        RightToLeft,
+        LeftToRight,
+        ForwardToBack,
+        BackToForward,
+        UpToDown,
+        DownToUp,
+    }
+
+    public enum ImageFormat
+    {
+        PNG,
+        EXR,
+    }
+
+    public enum ModelOverlay
+    {
+        None,
+        LocalSpaceNormals,
+        TangentSpaceNormals,
+        VertexColor,
+    }
+
+    public enum SceneGUIState
+    {
+        Repaint = 1 << 0,
+        SelectionChanged = 1 << 1,
+    }
+
+
 
     public partial class NormalPainter : MonoBehaviour
     {
@@ -552,6 +613,42 @@ namespace UTJ.NormalPainter
                 ppoints, pnormals, prtiangles, prtiangles.Length / 3, ref ptrans, m_normals);
             UpdateNormals();
             PushUndo();
+        }
+
+        public void ResetToBindpose(bool pushUndo)
+        {
+            var smr = GetComponent<SkinnedMeshRenderer>();
+            if (smr == null || smr.bones == null || smr.sharedMesh == null) { return; }
+
+            var bones = smr.bones;
+            var bindposes = smr.sharedMesh.bindposes;
+            var bindposeMap = new Dictionary<Transform, Matrix4x4>();
+
+            for (int i = 0; i < bones.Length; i++)
+            {
+                if (!bindposeMap.ContainsKey(bones[i]))
+                {
+                    bindposeMap.Add(bones[i], bindposes[i]);
+                }
+            }
+
+            if (pushUndo)
+                Undo.RecordObjects(bones, "NormalPainter: ResetToBindpose");
+
+            foreach (var kvp in bindposeMap)
+            {
+                var bone = kvp.Key;
+                var imatrix = kvp.Value;
+                var localMatrix =
+                    bindposeMap.ContainsKey(bone.parent) ? (imatrix * bindposeMap[bone.parent].inverse).inverse : imatrix.inverse;
+
+                bone.localPosition = localMatrix.MultiplyPoint(Vector3.zero);
+                bone.localRotation = Quaternion.LookRotation(localMatrix.GetColumn(2), localMatrix.GetColumn(1));
+                bone.localScale = new Vector3(localMatrix.GetColumn(0).magnitude, localMatrix.GetColumn(1).magnitude, localMatrix.GetColumn(2).magnitude);
+            }
+
+            if (pushUndo)
+                Undo.FlushUndoRecordObjects();
         }
 
 

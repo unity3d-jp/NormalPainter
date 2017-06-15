@@ -10,67 +10,6 @@ using UnityEditor;
 
 namespace UTJ.NormalPainter
 {
-    public enum EditMode
-    {
-        Select,
-        Brush,
-        Assign,
-        Move,
-        Rotate,
-        Scale,
-        Equalize,
-        Projection,
-        Reset,
-    }
-
-    public enum BrushMode
-    {
-        Paint,
-        Pinch,
-        Equalize,
-        Reset,
-    }
-
-    public enum SelectMode
-    {
-        Single,
-        Rect,
-        Lasso,
-        Brush,
-    }
-
-    public enum MirrorMode
-    {
-        None,
-        RightToLeft,
-        LeftToRight,
-        ForwardToBack,
-        BackToForward,
-        UpToDown,
-        DownToUp,
-    }
-
-    public enum ImageFormat
-    {
-        PNG,
-        EXR,
-    }
-
-    public enum ModelOverlay
-    {
-        None,
-        LocalSpaceNormals,
-        TangentSpaceNormals,
-        VertexColor,
-    }
-
-    public enum SceneGUIState
-    {
-        Repaint = 1 << 0,
-        SelectionChanged = 1 << 1,
-    }
-
-
 
     [ExecuteInEditMode]
     public partial class NormalPainter : MonoBehaviour

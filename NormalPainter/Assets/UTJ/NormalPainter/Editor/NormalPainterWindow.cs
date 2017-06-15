@@ -70,7 +70,7 @@ namespace UTJ.NormalPainter
                 }
                 else
                 {
-                    var tooltipHeight = 0;
+                    var tooltipHeight = 24;
                     var windowHeight = position.height;
                     var settings = m_target.settings;
 
@@ -134,8 +134,6 @@ namespace UTJ.NormalPainter
             }
             Repaint();
         }
-
-
 
 
 
@@ -420,6 +418,13 @@ namespace UTJ.NormalPainter
                 EditorGUILayout.Space();
                 if (GUILayout.Button("Recalculate Tangents"))
                     m_target.RecalculateTangents();
+
+                if (m_target.GetComponent<SkinnedMeshRenderer>() != null)
+                {
+                    EditorGUILayout.Space();
+                    if (GUILayout.Button("Reset To Bindpose"))
+                        m_target.ResetToBindpose(true);
+                }
             }
             EditorGUILayout.EndVertical();
             EditorGUILayout.EndHorizontal();
