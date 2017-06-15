@@ -184,7 +184,7 @@ namespace UTJ.NormalPainter
         {
             Matrix4x4 trans = GetComponent<Transform>().localToWorldMatrix;
             var selection = useSelection && m_numSelected > 0 ? m_selection : null;
-            if (npBrushLerp(m_points, selection, m_points.Length, ref trans, pos, radius, strength, falloff, m_baseNormals, m_normals) > 0)
+            if (npBrushLerp(m_points, selection, m_points.Length, ref trans, pos, radius, strength, falloff, m_normalsBase, m_normals) > 0)
             {
                 ApplyMirroring();
                 UpdateNormals();
@@ -197,12 +197,12 @@ namespace UTJ.NormalPainter
         {
             if (!useSelection)
             {
-                Array.Copy(m_baseNormals, m_normals, m_normals.Length);
+                Array.Copy(m_normalsBase, m_normals, m_normals.Length);
             }
             else
             {
                 for (int i = 0; i < m_normals.Length; ++i)
-                    m_normals[i] = Vector3.Lerp(m_normals[i], m_baseNormals[i], m_selection[i]).normalized;
+                    m_normals[i] = Vector3.Lerp(m_normals[i], m_normalsBase[i], m_selection[i]).normalized;
             }
             UpdateNormals();
         }
@@ -229,6 +229,50 @@ namespace UTJ.NormalPainter
             }
         }
 
+
+        bool UpdateBoneMatrices()
+        {
+            if (!m_skinned) { return false; }
+
+            bool ret = false;
+            var smr = GetComponent<SkinnedMeshRenderer>();
+
+            var rootMatrix = GetComponent<Transform>().localToWorldMatrix;
+            if (m_rootMatrix != rootMatrix)
+            {
+                m_rootMatrix = rootMatrix;
+                ret = true;
+            }
+            for (int i = 0; i < m_boneMatrices.Length; ++i)
+            {
+                if (m_boneMatrices[i] != smr.bones[i].localToWorldMatrix)
+                {
+                    m_boneMatrices[i] = smr.bones[i].localToWorldMatrix;
+                    ret = true;
+                }
+            }
+            return ret;
+        }
+
+        void UpdateSkinning()
+        {
+            if (UpdateBoneMatrices())
+            {
+                npApplySkinning(
+                    m_meshTarget.boneWeights, ref m_rootMatrix, m_boneMatrices, m_meshTarget.bindposes, m_points.Length, m_boneMatrices.Length,
+                    m_meshTarget.vertices, m_meshTarget.normals, m_meshTarget.tangents, m_points, m_normals, m_tangents);
+                npApplySkinning(
+                    m_meshTarget.boneWeights, ref m_rootMatrix, m_boneMatrices, m_meshTarget.bindposes, m_points.Length, m_boneMatrices.Length,
+                    null, m_normalsBasePredeformed, m_tangentsBasePredeformed, null, m_normalsBase, m_tangentsBase);
+
+                m_cbPoints.SetData(m_points);
+                m_cbNormals.SetData(m_normals);
+                m_cbBaseNormals.SetData(m_normalsBase);
+                m_cbTangents.SetData(m_tangents);
+                m_cbBaseTangents.SetData(m_tangentsBase);
+            }
+        }
+
         public void UpdateNormals(bool upload = true)
         {
             if (m_cbNormals != null)
@@ -236,7 +280,19 @@ namespace UTJ.NormalPainter
 
             if (m_meshTarget != null)
             {
-                m_meshTarget.normals = m_normals;
+                if (m_skinned)
+                {
+                    UpdateBoneMatrices();
+                    npApplyReverseSkinning(
+                        m_meshTarget.boneWeights, ref m_rootMatrix, m_boneMatrices, m_meshTarget.bindposes, m_points.Length, m_boneMatrices.Length,
+                        null, m_normals, null, null, m_normalsTmp, null);
+                    m_meshTarget.normals = m_normalsTmp;
+                }
+                else
+                {
+                    m_meshTarget.normals = m_normals;
+                }
+
                 if (upload)
                     m_meshTarget.UploadMeshData(false);
             }
@@ -307,7 +363,7 @@ namespace UTJ.NormalPainter
         public Vector3 PickBaseNormal(Vector3 pos, int ti)
         {
             Matrix4x4 trans = GetComponent<Transform>().localToWorldMatrix;
-            return npTriangleInterpolation(m_points, m_triangles, m_baseNormals, ref trans, pos, ti);
+            return npTriangleInterpolation(m_points, m_triangles, m_normalsBase, ref trans, pos, ti);
         }
 
 
@@ -355,7 +411,7 @@ namespace UTJ.NormalPainter
             var rmin = new Vector2(Math.Min(r1.x, r2.x), Math.Min(r1.y, r2.y));
             var rmax = new Vector2(Math.Max(r1.x, r2.x), Math.Max(r1.y, r2.y));
 
-            return npSelectSingle(m_points, m_baseNormals, m_triangles, m_points.Length, m_triangles.Length / 3, m_selection, strength,
+            return npSelectSingle(m_points, m_normalsBase, m_triangles, m_points.Length, m_triangles.Length / 3, m_selection, strength,
                 ref mvp, ref trans, rmin, rmax, campos, frontFaceOnly) > 0;
         }
 
@@ -430,7 +486,7 @@ namespace UTJ.NormalPainter
             Vector3 planeNormal = GetMirrorPlane(m_settings.mirrorMode);
             if (needsSetup)
             {
-                if (npBuildMirroringRelation(m_points, m_baseNormals, m_points.Length, planeNormal, 0.001f, m_mirrorRelation) == 0)
+                if (npBuildMirroringRelation(m_points, m_normalsBase, m_points.Length, planeNormal, 0.001f, m_mirrorRelation) == 0)
                 {
                     Debug.LogWarning("NormalEditor: this mesh seems not symmetric");
                     m_mirrorRelation = null;
@@ -609,7 +665,7 @@ namespace UTJ.NormalPainter
                 return;
             }
 
-            npProjectNormals(m_points, m_baseNormals, selection, m_points.Length, ref mat,
+            npProjectNormals(m_points, m_normalsBase, selection, m_points.Length, ref mat,
                 ppoints, pnormals, prtiangles, prtiangles.Length / 3, ref ptrans, m_normals);
             UpdateNormals();
             PushUndo();
@@ -729,6 +785,16 @@ namespace UTJ.NormalPainter
             Vector3[] vertices, Vector3[] normals, float[] selection, int num_vertices, ref Matrix4x4 trans,
             Vector3[] pvertices, Vector3[] pnormals, int[] pindices, int num_triangles, ref Matrix4x4 ptrans,
             Vector3[] dst);
+
+        [DllImport("NormalPainter")] static extern void npApplySkinning(
+            BoneWeight[] weights, ref Matrix4x4 root, Matrix4x4[] bones, Matrix4x4[] bindposes, int num_vertices, int num_bones,
+            Vector3[] ipoints, Vector3[] inormals, Vector4[] itangents,
+            Vector3[] opoints, Vector3[] onormals, Vector4[] otangents);
+
+        [DllImport("NormalPainter")] static extern void npApplyReverseSkinning(
+            BoneWeight[] weights, ref Matrix4x4 root, Matrix4x4[] bones, Matrix4x4[] bindposes, int num_vertices, int num_bones,
+            Vector3[] ipoints, Vector3[] inormals, Vector4[] itangents,
+            Vector3[] opoints, Vector3[] onormals, Vector4[] otangents);
 #endif
     }
 }

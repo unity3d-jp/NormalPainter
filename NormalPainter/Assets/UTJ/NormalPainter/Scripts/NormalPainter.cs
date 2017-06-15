@@ -44,14 +44,16 @@ namespace UTJ.NormalPainter
         ComputeBuffer m_cbBaseTangents;
         CommandBuffer m_cmdDraw;
 
+        bool        m_skinned;
         Vector3[]   m_points;
-        Vector3[]   m_normals;
-        Vector4[]   m_tangents;
-        Vector3[]   m_baseNormals;
-        Vector4[]   m_baseTangents;
+        Vector3[]   m_normals, m_normalsBase, m_normalsBasePredeformed, m_normalsTmp;
+        Vector4[]   m_tangents, m_tangentsBase, m_tangentsBasePredeformed;
         int[]       m_triangles;
         int[]       m_mirrorRelation;
         float[]     m_selection;
+
+        Matrix4x4   m_rootMatrix;
+        Matrix4x4[] m_boneMatrices;
 
         int         m_numSelected = 0;
         bool        m_rayHit;
@@ -171,7 +173,7 @@ namespace UTJ.NormalPainter
                 m_meshTarget = tmesh;
                 m_points = null;
                 m_normals = null;
-                m_baseNormals = null;
+                m_normalsBase = null;
                 m_tangents = null;
                 m_triangles = null;
                 m_mirrorRelation = null;
@@ -183,32 +185,43 @@ namespace UTJ.NormalPainter
             if (m_points == null && m_meshTarget != null)
             {
                 initialized = true;
+                m_skinned = GetComponent<SkinnedMeshRenderer>() != null;
+
                 m_points = m_meshTarget.vertices;
 
                 m_normals = m_meshTarget.normals;
                 if (m_normals.Length == 0)
                 {
                     m_meshTarget.RecalculateNormals();
-                    m_baseNormals = m_normals = m_meshTarget.normals;
+                    m_normalsBase = m_normals = m_meshTarget.normals;
                 }
                 else
                 {
                     m_meshTarget.RecalculateNormals();
-                    m_baseNormals = m_meshTarget.normals;
+                    m_normalsBase = m_meshTarget.normals;
                     m_meshTarget.normals = m_normals;
                 }
 
                 m_tangents = m_meshTarget.tangents;
                 if (m_tangents.Length == 0)
                 {
-                    m_meshTarget.RecalculateNormals();
-                    m_baseTangents = m_tangents = m_meshTarget.tangents;
+                    m_meshTarget.RecalculateTangents();
+                    m_tangentsBase = m_tangents = m_meshTarget.tangents;
                 }
                 else
                 {
-                    m_meshTarget.RecalculateNormals();
-                    m_baseTangents = m_meshTarget.tangents;
+                    m_meshTarget.RecalculateTangents();
+                    m_tangentsBase = m_meshTarget.tangents;
                     m_meshTarget.tangents = m_tangents;
+                }
+
+                if (m_skinned)
+                {
+                    m_boneMatrices = new Matrix4x4[m_meshTarget.bindposes.Length];
+                    m_normalsTmp = new Vector3[m_normals.Length];
+                    m_normalsBasePredeformed = (Vector3[])m_normalsBase.Clone();
+                    m_tangentsBasePredeformed = (Vector4[])m_tangentsBase.Clone();
+                    UpdateSkinning();
                 }
 
                 m_triangles = m_meshTarget.triangles;
@@ -224,15 +237,15 @@ namespace UTJ.NormalPainter
             {
                 m_cbNormals = new ComputeBuffer(m_normals.Length, 12);
                 m_cbNormals.SetData(m_normals);
-                m_cbBaseNormals = new ComputeBuffer(m_baseNormals.Length, 12);
-                m_cbBaseNormals.SetData(m_baseNormals);
+                m_cbBaseNormals = new ComputeBuffer(m_normalsBase.Length, 12);
+                m_cbBaseNormals.SetData(m_normalsBase);
             }
             if (m_cbTangents == null && m_tangents != null && m_tangents.Length > 0)
             {
                 m_cbTangents = new ComputeBuffer(m_tangents.Length, 16);
                 m_cbTangents.SetData(m_tangents);
-                m_cbBaseTangents = new ComputeBuffer(m_baseTangents.Length, 16);
-                m_cbBaseTangents.SetData(m_baseTangents);
+                m_cbBaseTangents = new ComputeBuffer(m_tangentsBase.Length, 16);
+                m_cbBaseTangents.SetData(m_tangentsBase);
             }
             if (m_cbSelection == null && m_selection != null && m_selection.Length > 0)
             {
@@ -276,6 +289,11 @@ namespace UTJ.NormalPainter
         {
             ReleaseComputeBuffers();
             Undo.undoRedoPerformed -= OnUndoRedo;
+        }
+
+        void LateUpdate()
+        {
+            UpdateSkinning();
         }
 
         public int OnSceneGUI()

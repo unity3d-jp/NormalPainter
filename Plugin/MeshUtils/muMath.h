@@ -319,15 +319,66 @@ inline float3& operator/=(float3& l, const float3& r)
 }
 
 
+inline float4 operator+(const float4& l, const float4& r)
+{
+    return{ l.x + r.x, l.y + r.y, l.z + r.z, l.w + r.w };
+}
+inline float4 operator-(const float4& v)
+{
+    return{ -v.x, -v.y, -v.z, -v.w };
+}
+inline float4 operator-(const float4& l, const float4& r)
+{
+    return{ l.x - r.x, l.y - r.y, l.z - r.z, l.w - r.w };
+}
 inline float4 operator*(const float4& l, float r)
 {
-    return{ l.x*r, l.y*r, l.z*r, l.w*r };
+    return{ l.x * r, l.y * r, l.z * r, l.w * r };
+}
+inline float4 operator*(const float4& l, const float4& r)
+{
+    return{ l.x * r.x, l.y * r.y, l.z * r.z, l.w * r.w };
+}
+inline float4 operator/(const float4& l, float r)
+{
+    return{ l.x / r, l.y / r, l.z / r, l.w / r };
+}
+inline float4 operator/(const float4& l, const float4& r)
+{
+    return{ l.x / r.x, l.y / r.y, l.z / r.z, l.w / r.w };
+}
+
+inline float4& operator+=(float4& l, const float4& r)
+{
+    l = l + r;
+    return l;
+}
+inline float4& operator-=(float4& l, const float4& r)
+{
+    l = l - r;
+    return l;
 }
 inline float4& operator*=(float4& l, float r)
 {
     l = l * r;
     return l;
 }
+inline float4& operator*=(float4& l, const float4& r)
+{
+    l = l * r;
+    return l;
+}
+inline float4& operator/=(float4& l, float r)
+{
+    l = l / r;
+    return l;
+}
+inline float4& operator/=(float4& l, const float4& r)
+{
+    l = l / r;
+    return l;
+}
+
 
 inline quatf operator*(const quatf& l, float r)
 {
@@ -452,6 +503,15 @@ inline static float3 mul_v(const float4x4& m, const float3& v)
         m[0][0] * v[0] + m[1][0] * v[1] + m[2][0] * v[2],
         m[0][1] * v[0] + m[1][1] * v[1] + m[2][1] * v[2],
         m[0][2] * v[0] + m[1][2] * v[1] + m[2][2] * v[2],
+    };
+}
+inline static float4 mul_v(const float4x4& m, const float4& v)
+{
+    return {
+        m[0][0] * v[0] + m[1][0] * v[1] + m[2][0] * v[2],
+        m[0][1] * v[0] + m[1][1] * v[1] + m[2][1] * v[2],
+        m[0][2] * v[0] + m[1][2] * v[1] + m[2][2] * v[2],
+        v[3],
     };
 }
 inline static float3 mul_p(const float4x4& m, const float3& v)
