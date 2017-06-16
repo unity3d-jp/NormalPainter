@@ -3,59 +3,59 @@
 // functions that have gather/scatter operations need to be written in this compile unit.
 // (--opt=force-aligned-memory is disabled)
 
-export void MulPoints3v(uniform const float4x4& m_, uniform float3 points[], uniform int num_points)
+export void MulVectors3(uniform const float4x4& m_, uniform const float3 src[], uniform float3 dst[], uniform int num_data)
 {
     uniform float4x4 m = m_;
 
-    uniform int num_points_simd = num_points & ~(C - 1);
-    for (uniform int bi = 0; bi < num_points_simd; bi += C) {
+    uniform int num_data_simd = num_data & ~(C - 1);
+    for (uniform int bi = 0; bi < num_data_simd; bi += C) {
         float3 v;
-        aos_to_soa3((uniform float*)&points[bi], &v.x, &v.y, &v.z);
+        aos_to_soa3((uniform float*)&src[bi], &v.x, &v.y, &v.z);
 
         float3 r = {
             m.m[0].x * v.x + m.m[1].x * v.y + m.m[2].x * v.z,
             m.m[0].y * v.x + m.m[1].y * v.y + m.m[2].y * v.z,
             m.m[0].z * v.x + m.m[1].z * v.y + m.m[2].z * v.z,
         };
-        soa_to_aos3(r.x, r.y, r.z, (uniform float*)&points[bi]);
+        soa_to_aos3(r.x, r.y, r.z, (uniform float*)&dst[bi]);
     }
 
-    for(uniform int i = num_points_simd; i < num_points; ++i) {
-        uniform float3 v = points[i];
+    for(uniform int i = num_data_simd; i < num_data; ++i) {
+        uniform float3 v = src[i];
         uniform float3 r = {
             m.m[0].x * v.x + m.m[1].x * v.y + m.m[2].x * v.z,
             m.m[0].y * v.x + m.m[1].y * v.y + m.m[2].y * v.z,
             m.m[0].z * v.x + m.m[1].z * v.y + m.m[2].z * v.z,
         };
-        points[i] = r;
+        dst[i] = r;
     }
 }
 
-export void MulPoints3p(uniform const float4x4& m_, uniform float3 points[], uniform int num_points)
+export void MulPoints3(uniform const float4x4& m_, uniform const float3 src[], uniform float3 dst[], uniform int num_data)
 {
     uniform float4x4 m = m_;
 
-    uniform int num_points_simd = num_points & ~(C - 1);
-    for (uniform int bi = 0; bi < num_points_simd; bi += C) {
+    uniform int num_data_simd = num_data & ~(C - 1);
+    for (uniform int bi = 0; bi < num_data_simd; bi += C) {
         float3 v;
-        aos_to_soa3((uniform float*)&points[bi], &v.x, &v.y, &v.z);
+        aos_to_soa3((uniform float*)&src[bi], &v.x, &v.y, &v.z);
 
         float3 r = {
             m.m[0].x * v.x + m.m[1].x * v.y + m.m[2].x * v.z + m.m[3].x,
             m.m[0].y * v.x + m.m[1].y * v.y + m.m[2].y * v.z + m.m[3].y,
             m.m[0].z * v.x + m.m[1].z * v.y + m.m[2].z * v.z + m.m[3].z,
         };
-        soa_to_aos3(r.x, r.y, r.z, (uniform float*)&points[bi]);
+        soa_to_aos3(r.x, r.y, r.z, (uniform float*)&dst[bi]);
     }
 
-    for(uniform int i = num_points_simd; i < num_points; ++i) {
-        uniform float3 v = points[i];
+    for(uniform int i = num_data_simd; i < num_data; ++i) {
+        uniform float3 v = src[i];
         uniform float3 r = {
             m.m[0].x * v.x + m.m[1].x * v.y + m.m[2].x * v.z + m.m[3].x,
             m.m[0].y * v.x + m.m[1].y * v.y + m.m[2].y * v.z + m.m[3].y,
             m.m[0].z * v.x + m.m[1].z * v.y + m.m[2].z * v.z + m.m[3].z,
         };
-        points[i] = r;
+        dst[i] = r;
     }
 }
 

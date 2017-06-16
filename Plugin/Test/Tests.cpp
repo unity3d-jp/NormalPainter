@@ -3,7 +3,7 @@
 using namespace mu;
 
 
-void Test_Indexed()
+void Test_IndexedArrays()
 {
     std::vector<uint16_t> indices16 = { 0,1,0,2,1,3,2 };
     std::vector<uint32_t> indices32 = { 0,1,2,1,2,3 };
@@ -75,6 +75,69 @@ void MatrixSwapHandedness()
     bool r1 = near_equal(mat2, mat3);
     bool r2 = near_equal(imat2, imat3);
     printf("");
+}
+
+void TestMulPoints()
+{
+    const int num_data = 65536;
+    const int num_try = 128;
+
+    RawVector<float3> src, dst1, dst2;
+    src.resize(num_data);
+    dst1.resize(num_data);
+    dst2.resize(num_data);
+
+    float4x4 matrix = transform({ 1.0f, 2.0f, 4.0f }, rotateY(45.0f), {2.0f, 2.0f, 2.0f});
+
+    for (int i = 0; i < num_data; ++i) {
+        src[i] = { (float)i, (float)i*0.5f, (float)i*0.25f };
+    }
+
+
+    auto s1_begin = Now();
+    for (int i = 0; i < num_try; ++i) {
+        MulPoints_Generic(matrix, src.data(), dst1.data(), num_data);
+    }
+    auto s1_end = Now();
+
+    auto s2_begin = Now();
+    for (int i = 0; i < num_try; ++i) {
+        MulPoints_ISPC(matrix, src.data(), dst2.data(), num_data);
+    }
+    auto s2_end = Now();
+
+    int eq1 = NearEqual(dst1.data(), dst2.data(), num_data);
+
+
+    auto s3_begin = Now();
+    for (int i = 0; i < num_try; ++i) {
+        MulVectors_Generic(matrix, src.data(), dst1.data(), num_data);
+    }
+    auto s3_end = Now();
+
+    auto s4_begin = Now();
+    for (int i = 0; i < num_try; ++i) {
+        MulVectors_ISPC(matrix, src.data(), dst2.data(), num_data);
+    }
+    auto s4_end = Now();
+
+    int eq2 = NearEqual(dst1.data(), dst2.data(), num_data);
+
+
+    printf(
+        "    num_data: %d\n"
+        "    num_try: %d\n"
+        "    MulPoints  : Generic %.2fms, ISPC %.2fms\n"
+        "    MulVectors : Generic %.2fms, ISPC %.2fms\n"
+        "    %d %d\n",
+        num_data,
+        num_try,
+        float(s1_end - s1_begin) / 1000000.0f,
+        float(s2_end - s2_begin) / 1000000.0f,
+        float(s3_end - s3_begin) / 1000000.0f,
+        float(s4_end - s4_begin) / 1000000.0f,
+        eq1, eq2);
+    printf("\n");
 }
 
 void TestRayTrianglesIntersection()
@@ -303,13 +366,14 @@ void TestPolygonInside()
 
 int main(int argc, char *argv[])
 {
-    //Test_Indexed();
+    //Test_IndexedArrays();
     //Test_Sync(false);
     //Test_Get();
     //Test_GenNormals();
     //MatrixSwapHandedness();
-    TestRayTrianglesIntersection();
-    TestPolygonInside();
+    TestMulPoints();
+    //TestRayTrianglesIntersection();
+    //TestPolygonInside();
 
     char dummy;
     scanf("%c", &dummy);

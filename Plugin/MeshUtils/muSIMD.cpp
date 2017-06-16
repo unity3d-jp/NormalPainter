@@ -104,6 +104,19 @@ bool NearEqual_Generic(const float *src1, const float *src2, size_t num, float e
     return true;
 }
 
+void MulPoints_Generic(const float4x4& m, const float3 src[], float3 dst[], size_t num_data)
+{
+    for (int i = 0; i < num_data; ++i) {
+        dst[i] = mul_p(m, src[i]);
+    }
+}
+void MulVectors_Generic(const float4x4& m, const float3 src[], float3 dst[], size_t num_data)
+{
+    for (int i = 0; i < num_data; ++i) {
+        dst[i] = mul_v(m, src[i]);
+    }
+}
+
 int RayTrianglesIntersection_Generic(float3 pos, float3 dir, const float3 *vertices, int num_triangles, int& tindex, float& distance)
 {
     int num_hits = 0;
@@ -268,6 +281,15 @@ bool NearEqual_ISPC(const float *src1, const float *src2, size_t num, float eps)
     return ispc::NearEqual(src1, src2, (int)num, eps);
 }
 
+void MulPoints_ISPC(const float4x4& m, const float3 src[], float3 dst[], size_t num_data)
+{
+    ispc::MulPoints3((ispc::float4x4&)m, (ispc::float3*)src, (ispc::float3*)dst, (int)num_data);
+}
+void MulVectors_ISPC(const float4x4& m, const float3 src[], float3 dst[], size_t num_data)
+{
+    ispc::MulVectors3((ispc::float4x4&)m, (ispc::float3*)src, (ispc::float3*)dst, (int)num_data);
+}
+
 int RayTrianglesIntersection_ISPC(
     float3 pos, float3 dir, const float3 *vertices, const int *indices, int num_triangles, int& tindex, float& distance)
 {
@@ -405,6 +427,15 @@ bool NearEqual(const float2 *src1, const float2 *src2, size_t num, float eps)
 bool NearEqual(const float3 *src1, const float3 *src2, size_t num, float eps)
 {
     return NearEqual((const float*)src1, (const float*)src2, num * 3, eps);
+}
+
+void MulPoints(const float4x4& m, const float3 src[], float3 dst[], size_t num_data)
+{
+    Forward(MulPoints, m, src, dst, num_data);
+}
+void MulVectors(const float4x4& m, const float3 src[], float3 dst[], size_t num_data)
+{
+    Forward(MulVectors, m, src, dst, num_data);
 }
 
 int RayTrianglesIntersection(float3 pos, float3 dir, const float3 *vertices, const int *indices, int num_triangles, int& tindex, float& result)

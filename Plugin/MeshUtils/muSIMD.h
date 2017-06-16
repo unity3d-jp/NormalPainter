@@ -22,6 +22,9 @@ bool NearEqual(const float *src1, const float *src2, size_t num, float eps = muE
 bool NearEqual(const float2 *src1, const float2 *src2, size_t num, float eps = muEpsilon);
 bool NearEqual(const float3 *src1, const float3 *src2, size_t num, float eps = muEpsilon);
 
+void MulPoints(const float4x4& m, const float3 src[], float3 dst[], size_t num_data);
+void MulVectors(const float4x4& m, const float3 src[], float3 dst[], size_t num_data);
+
 int RayTrianglesIntersection(float3 pos, float3 dir, const float3 *vertices, const int *indices, int num_triangles, int& tindex, float& distance);
 int RayTrianglesIntersection(float3 pos, float3 dir, const float3 *vertices, int num_triangles, int& tindex, float& distance);
 int RayTrianglesIntersection(float3 pos, float3 dir,
@@ -68,6 +71,11 @@ void MinMax_ISPC(const float3 *src, size_t num, float3& dst_min, float3& dst_max
 
 bool NearEqual_Generic(const float *src1, const float *src2, size_t num, float eps);
 bool NearEqual_ISPC(const float *src1, const float *src2, size_t num, float eps);
+
+void MulPoints_Generic(const float4x4& m, const float3 src[], float3 dst[], size_t num_data);
+void MulPoints_ISPC(const float4x4& m, const float3 src[], float3 dst[], size_t num_data);
+void MulVectors_Generic(const float4x4& m, const float3 src[], float3 dst[], size_t num_data);
+void MulVectors_ISPC(const float4x4& m, const float3 src[], float3 dst[], size_t num_data);
 
 int RayTrianglesIntersection_Generic(float3 pos, float3 dir, const float3 *vertices, const int *indices, int num_triangles, int& tindex, float& distance);
 int RayTrianglesIntersection_Generic(float3 pos, float3 dir, const float3 *vertices, int num_triangles, int& tindex, float& distance);
