@@ -1,10 +1,5 @@
 #include "pch.h"
-
-#ifdef _WIN32
-    #define npAPI extern "C" __declspec(dllexport)
-#else
-    #define npAPI extern "C" 
-#endif
+#include "NormalPainter.h"
 
 using namespace mu;
 
@@ -627,8 +622,9 @@ npAPI void npProjectNormals(
 }
 
 
+template<size_t NumInfluence>
 static void SkinningImpl(
-    const RawVector<float4x4>& poses, const Weights4 weights[], int num_vertices,
+    const RawVector<float4x4>& poses, const Weights<NumInfluence> weights[], int num_vertices,
     const float3 ipoints[], const float3 inormals[], const float4 itangents[],
     float3 opoints[], float3 onormals[], float4 otangents[])
 {
@@ -637,7 +633,7 @@ static void SkinningImpl(
             const auto& w = weights[vi];
             float3 p = ipoints[vi];
             float3 rp = float3::zero();
-            for (int bi = 0; bi < 4; ++bi) {
+            for (int bi = 0; bi < NumInfluence; ++bi) {
                 rp += mul_p(poses[w.indices[bi]], p) * w.weights[bi];
             }
             opoints[vi] = rp;
@@ -648,7 +644,7 @@ static void SkinningImpl(
             const auto& w = weights[vi];
             float3 n = inormals[vi];
             float3 rn = float3::zero();
-            for (int bi = 0; bi < 4; ++bi) {
+            for (int bi = 0; bi < NumInfluence; ++bi) {
                 rn += mul_v(poses[w.indices[bi]], n) * w.weights[bi];
             }
             onormals[vi] = normalize(rn);
@@ -659,7 +655,7 @@ static void SkinningImpl(
             const auto& w = weights[vi];
             float4 t = itangents[vi];
             float4 rt = float4::zero();
-            for (int bi = 0; bi < 4; ++bi) {
+            for (int bi = 0; bi < NumInfluence; ++bi) {
                 rt += mul_v(poses[w.indices[bi]], t) * w.weights[bi];
             }
             otangents[vi] = rt;

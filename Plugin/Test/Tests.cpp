@@ -90,7 +90,7 @@ void TestMulPoints()
     float4x4 matrix = transform({ 1.0f, 2.0f, 4.0f }, rotateY(45.0f), {2.0f, 2.0f, 2.0f});
 
     for (int i = 0; i < num_data; ++i) {
-        src[i] = { (float)i, (float)i*0.5f, (float)i*0.25f };
+        src[i] = { (float)i*0.1f, (float)i*0.05f, (float)i*0.025f };
     }
 
 

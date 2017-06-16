@@ -7,6 +7,9 @@
     <Filter Include="NormalPainter">
       <UniqueIdentifier>{0ce9faa4-7f38-42e5-a2be-9e6615f8bf8a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="NormalPainter\WinTab">
+      <UniqueIdentifier>{f3d61971-6ba6-4412-9eee-45fad64383af}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="NormalPainter\NormalPainter.cpp">
@@ -15,10 +18,31 @@
     <ClCompile Include="NormalPainter\pch.cpp">
       <Filter>NormalPainter</Filter>
     </ClCompile>
+    <ClCompile Include="NormalPainter\PenTablet_Win.cpp">
+      <Filter>NormalPainter</Filter>
+    </ClCompile>
+    <ClCompile Include="NormalPainter\WinTab\Import.cpp">
+      <Filter>NormalPainter\WinTab</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="NormalPainter\pch.h">
       <Filter>NormalPainter</Filter>
+    </ClInclude>
+    <ClInclude Include="NormalPainter\NormalPainter.h">
+      <Filter>NormalPainter</Filter>
+    </ClInclude>
+    <ClInclude Include="NormalPainter\WinTab\WINTAB.H">
+      <Filter>NormalPainter\WinTab</Filter>
+    </ClInclude>
+    <ClInclude Include="NormalPainter\WinTab\Import.h">
+      <Filter>NormalPainter\WinTab</Filter>
+    </ClInclude>
+    <ClInclude Include="NormalPainter\WinTab\MSGPACK.H">
+      <Filter>NormalPainter\WinTab</Filter>
+    </ClInclude>
+    <ClInclude Include="NormalPainter\WinTab\PKTDEF.H">
+      <Filter>NormalPainter\WinTab</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
