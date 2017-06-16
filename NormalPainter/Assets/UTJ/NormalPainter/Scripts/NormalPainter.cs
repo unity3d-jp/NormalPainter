@@ -215,15 +215,6 @@ namespace UTJ.NormalPainter
                     m_meshTarget.tangents = m_tangents;
                 }
 
-                if (m_skinned)
-                {
-                    m_boneMatrices = new Matrix4x4[m_meshTarget.bindposes.Length];
-                    m_normalsTmp = new Vector3[m_normals.Length];
-                    m_normalsBasePredeformed = (Vector3[])m_normalsBase.Clone();
-                    m_tangentsBasePredeformed = (Vector4[])m_tangentsBase.Clone();
-                    UpdateSkinning();
-                }
-
                 m_triangles = m_meshTarget.triangles;
                 m_selection = new float[m_points.Length];
             }
@@ -257,6 +248,21 @@ namespace UTJ.NormalPainter
             {
                 m_cbArg = new ComputeBuffer(1, 5 * sizeof(uint), ComputeBufferType.IndirectArguments);
                 m_cbArg.SetData(new uint[5] { m_meshCube.GetIndexCount(0), (uint)m_points.Length, 0, 0, 0 });
+            }
+
+            if (m_skinned)
+            {
+                if (m_boneMatrices == null || m_boneMatrices.Length != m_meshTarget.bindposes.Length)
+                {
+                    m_boneMatrices = new Matrix4x4[m_meshTarget.bindposes.Length];
+                }
+                if (m_normalsTmp == null || m_normalsTmp.Length != m_normals.Length)
+                {
+                    m_normalsTmp = new Vector3[m_normals.Length];
+                    m_normalsBasePredeformed = (Vector3[])m_normalsBase.Clone();
+                    m_tangentsBasePredeformed = (Vector4[])m_tangentsBase.Clone();
+                }
+                UpdateSkinning();
             }
 
             if (initialized)

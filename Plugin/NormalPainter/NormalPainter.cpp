@@ -692,3 +692,12 @@ npAPI void npApplyReverseSkinning(
     }
     SkinningImpl(poses, weights, num_vertices, ipoints, inormals, itangents, opoints, onormals, otangents);
 }
+
+
+
+float g_pen_pressure = 1.0f;
+
+npAPI float npGetPenPressure()
+{
+    return g_pen_pressure;
+}
