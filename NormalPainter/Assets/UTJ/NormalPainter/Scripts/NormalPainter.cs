@@ -284,6 +284,10 @@ namespace UTJ.NormalPainter
             if (m_cmdDraw != null) { m_cmdDraw.Release(); m_cmdDraw = null; }
         }
 
+        void Awake()
+        {
+            npInitializePenInput();
+        }
 
         void OnEnable()
         {

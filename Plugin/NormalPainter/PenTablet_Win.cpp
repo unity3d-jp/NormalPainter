@@ -78,21 +78,6 @@ static HWND GetEditorWindow()
     return nullptr;
 }
 
-static HCTX InitTablet(HWND hWnd)
-{
-    LOGCONTEXT logctx;
-    _WTInfoA(WTI_DEFCONTEXT, 0, &logctx);
-    logctx.lcOptions |= CXO_SYSTEM | CXO_MESSAGES;
-    logctx.lcPktData = PACKETDATA;
-    logctx.lcPktMode = PACKETMODE;
-    logctx.lcBtnUpMask = logctx.lcBtnDnMask;
-    HCTX hctx = _WTOpenA(hWnd, &logctx, TRUE);
-    if (hctx) {
-        _WTInfoA(WTI_DEVICES, DVC_NPRESSURE, &g_press_axis);
-    }
-    return hctx;
-}
-
 static LRESULT CALLBACK npWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     auto& ctx = g_pen_contexts[hWnd];
@@ -124,43 +109,68 @@ static LRESULT CALLBACK npWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM
     }
 }
 
-
-BOOL CALLBACK cbEnumWindows(HWND hwnd, LPARAM lParam)
+static HCTX InitTablet()
 {
-    DWORD procId;
-    GetWindowThreadProcessId(hwnd, &procId);
-    if (procId != GetCurrentProcessId()) { return TRUE; }
+    LOGCONTEXT logctx;
+    _WTInfoA(WTI_DEFCONTEXT, 0, &logctx);
+    logctx.lcOptions |= CXO_SYSTEM | CXO_MESSAGES;
+    logctx.lcPktData = PACKETDATA;
+    logctx.lcPktMode = PACKETMODE;
+    logctx.lcBtnUpMask = logctx.lcBtnDnMask;
 
-    RECT rect;
-    GetWindowRect(hwnd, &rect);
 
-    auto hctx = InitTablet(hwnd);
-    if (hctx != nullptr) {
-        auto& ctx = g_pen_contexts[hwnd];
-        ctx.hctx = hctx;
-        (LONG_PTR&)ctx.wndproc = SetWindowLongPtrA(hwnd, GWLP_WNDPROC, (LONG_PTR)npWndProc);
+    HINSTANCE hInstance = GetModuleHandle(nullptr);
+
+    WNDCLASSEX wc;
+    wc.cbSize = sizeof(wc);
+    wc.style = CS_HREDRAW | CS_VREDRAW;
+    wc.lpfnWndProc = &npWndProc;
+    wc.cbClsExtra = 0;
+    wc.cbWndExtra = 0;
+    wc.hInstance = hInstance;
+    wc.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+    wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+    wc.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
+    wc.lpszMenuName = NULL;
+    wc.lpszClassName = "Normal Painter";
+    wc.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
+    if (::RegisterClassEx(&wc) == NULL) {
+        return nullptr;
     }
 
-    return TRUE;
+    HWND hwnd = ::CreateWindowA(
+        "Normal Painter", "Normal Painter", WS_OVERLAPPEDWINDOW,
+        CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, NULL, NULL, hInstance, NULL);
+    HCTX hctx = _WTOpenA(hwnd, &logctx, TRUE);
+    if (hctx) {
+        ::SetWindowPos(hwnd, 0, 0, 0, logctx.lcSysExtX, logctx.lcSysExtY, SWP_SHOWWINDOW);
+
+        g_pen_contexts[hwnd].hctx = hctx;
+        _WTInfoA(WTI_DEVICES, DVC_NPRESSURE, &g_press_axis);
+
+        new std::thread([hwnd] {
+            MSG msg;
+            for (;;) {
+                while (::PeekMessage(&msg, hwnd, 0, 0, PM_REMOVE)) {
+                    ::TranslateMessage(&msg);
+                    ::DispatchMessage(&msg);
+                }
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            }
+        });
+    }
+    return hctx;
 }
 
-npAPI void npInitializePenTablet()
+void npInitializePenInput_Win()
 {
     static bool s_initialized = false;
     if (s_initialized) { return; }
     s_initialized = true;
 
     if (LoadWintab()) {
-        //cbEnumWindows(GetEditorWindow(), 0);
-        EnumWindows(cbEnumWindows, 0);
+        InitTablet();
     }
 }
-
-#else // npEnablePenTablet
-
-npAPI void npInitializePenTablet()
-{
-}
-
 #endif // npEnablePenTablet
 #endif // _WIN32

@@ -222,6 +222,7 @@ namespace UTJ.NormalPainter
         public void OnUndoRedo()
         {
             //Debug.Log("OnUndoRedo(): " + m_history.count);
+            UpdateSkinning();
             if (m_history.normals != null && m_normals != null && m_history.normals.Length == m_normals.Length)
             {
                 Array.Copy(m_history.normals, m_normals, m_normals.Length);
@@ -795,6 +796,9 @@ namespace UTJ.NormalPainter
             BoneWeight[] weights, ref Matrix4x4 root, Matrix4x4[] bones, Matrix4x4[] bindposes, int num_vertices, int num_bones,
             Vector3[] ipoints, Vector3[] inormals, Vector4[] itangents,
             Vector3[] opoints, Vector3[] onormals, Vector4[] otangents);
+
+        [DllImport("NormalPainter")] static extern void npInitializePenInput();
+        [DllImport("NormalPainter")] static extern float npGetPenPressure();
 #endif
     }
 }
