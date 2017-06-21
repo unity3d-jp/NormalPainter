@@ -182,6 +182,30 @@ namespace UTJ.NormalPainter
             "Current Normals",
         };
 
+        void DrawBrushPanel()
+        {
+            var settings = m_target.settings;
+
+            var brushImages = new Texture[settings.brushData.Length];
+            for (int i = 0; i < settings.brushData.Length; ++i)
+            {
+                brushImages[i] = settings.brushData[i].image;
+            }
+            settings.brushActiveSlot = GUILayout.SelectionGrid(settings.brushActiveSlot, brushImages, 5);
+
+            EditorGUILayout.Space();
+
+            var bd = settings.activeBrush;
+            bd.radius = EditorGUILayout.Slider("Brush Radius", bd.radius, 0.01f, 1.0f);
+            bd.strength = EditorGUILayout.Slider("Brush Strength", bd.strength, -1.0f, 1.0f);
+            EditorGUI.BeginChangeCheck();
+            bd.curve = EditorGUILayout.CurveField("Brush Shape", bd.curve, GUILayout.Width(EditorGUIUtility.labelWidth + 32), GUILayout.Height(32));
+            if (EditorGUI.EndChangeCheck())
+            {
+                bd.UpdateSamples();
+            }
+        }
+
         void DrawEditPanel()
         {
             var settings = m_target.settings;
@@ -229,24 +253,7 @@ namespace UTJ.NormalPainter
                 EditorGUILayout.Space();
                 if (settings.selectMode == SelectMode.Brush)
                 {
-                    var brushImages = new Texture[settings.brushData.Length];
-                    for (int i = 0; i < settings.brushData.Length; ++i)
-                    {
-                        brushImages[i] = settings.brushData[i].image;
-                    }
-                    settings.brushActiveSlot = GUILayout.SelectionGrid(settings.brushActiveSlot, brushImages, 5);
-
-                    EditorGUILayout.Space();
-
-                    var bd = settings.activeBrush;
-                    bd.radius = EditorGUILayout.Slider("Brush Radius", bd.radius, 0.01f, 1.0f);
-                    bd.strength = EditorGUILayout.Slider("Brush Strength", bd.strength, -1.0f, 1.0f);
-                    EditorGUI.BeginChangeCheck();
-                    bd.curve = EditorGUILayout.CurveField("Brush Shape", bd.curve, GUILayout.Width(EditorGUIUtility.labelWidth + 32), GUILayout.Height(32));
-                    if (EditorGUI.EndChangeCheck())
-                    {
-                        bd.UpdateSamples();
-                    }
+                    DrawBrushPanel();
                 }
                 else
                 {
@@ -293,10 +300,7 @@ namespace UTJ.NormalPainter
                 settings.brushMode = (BrushMode)GUILayout.SelectionGrid((int)settings.brushMode, strBrushTypes, 4);
                 EditorGUILayout.Space();
 
-                var bd = settings.activeBrush;
-                settings.brushUseSelection = EditorGUILayout.Toggle("Mask With Selection", settings.brushUseSelection);
-                bd.radius = EditorGUILayout.Slider("Brush Radius", bd.radius, 0.01f, 1.0f);
-                bd.strength = EditorGUILayout.Slider("Brush Strength", bd.strength, -1.0f, 1.0f);
+                DrawBrushPanel();
                 EditorGUILayout.Space();
 
                 if (settings.brushMode == BrushMode.Paint)

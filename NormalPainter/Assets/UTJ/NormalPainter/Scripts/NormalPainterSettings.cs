@@ -53,7 +53,7 @@ namespace UTJ.NormalPainter
 
             if (image == null)
             {
-                image = new RenderTexture(64, 32, 0, RenderTextureFormat.ARGB32);
+                image = new RenderTexture(48, 24, 0, RenderTextureFormat.ARGB32);
                 image.Create();
             }
 

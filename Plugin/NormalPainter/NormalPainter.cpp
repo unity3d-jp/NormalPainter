@@ -632,39 +632,46 @@ static void SkinningImpl(
     const float3 ipoints[], const float3 inormals[], const float4 itangents[],
     float3 opoints[], float3 onormals[], float4 otangents[])
 {
-    if (ipoints && opoints) {
-        for (int vi = 0; vi < num_vertices; ++vi) {
-            const auto& w = weights[vi];
-            float3 p = ipoints[vi];
-            float3 rp = float3::zero();
-            for (int bi = 0; bi < NumInfluence; ++bi) {
-                rp += mul_p(poses[w.indices[bi]], p) * w.weights[bi];
+    parallel_invoke(
+    [&]() {
+        if (ipoints && opoints) {
+            for (int vi = 0; vi < num_vertices; ++vi) {
+                const auto& w = weights[vi];
+                float3 p = ipoints[vi];
+                float3 rp = float3::zero();
+                for (int bi = 0; bi < NumInfluence; ++bi) {
+                    rp += mul_p(poses[w.indices[bi]], p) * w.weights[bi];
+                }
+                opoints[vi] = rp;
             }
-            opoints[vi] = rp;
         }
-    }
-    if (inormals && onormals) {
-        for (int vi = 0; vi < num_vertices; ++vi) {
-            const auto& w = weights[vi];
-            float3 n = inormals[vi];
-            float3 rn = float3::zero();
-            for (int bi = 0; bi < NumInfluence; ++bi) {
-                rn += mul_v(poses[w.indices[bi]], n) * w.weights[bi];
+    },
+    [&]() {
+        if (inormals && onormals) {
+            for (int vi = 0; vi < num_vertices; ++vi) {
+                const auto& w = weights[vi];
+                float3 n = inormals[vi];
+                float3 rn = float3::zero();
+                for (int bi = 0; bi < NumInfluence; ++bi) {
+                    rn += mul_v(poses[w.indices[bi]], n) * w.weights[bi];
+                }
+                onormals[vi] = normalize(rn);
             }
-            onormals[vi] = normalize(rn);
         }
-    }
-    if (itangents && otangents) {
-        for (int vi = 0; vi < num_vertices; ++vi) {
-            const auto& w = weights[vi];
-            float4 t = itangents[vi];
-            float4 rt = float4::zero();
-            for (int bi = 0; bi < NumInfluence; ++bi) {
-                rt += mul_v(poses[w.indices[bi]], t) * w.weights[bi];
+    },
+    [&]() {
+        if (itangents && otangents) {
+            for (int vi = 0; vi < num_vertices; ++vi) {
+                const auto& w = weights[vi];
+                float4 t = itangents[vi];
+                float4 rt = float4::zero();
+                for (int bi = 0; bi < NumInfluence; ++bi) {
+                    rt += mul_v(poses[w.indices[bi]], t) * w.weights[bi];
+                }
+                otangents[vi] = rt;
             }
-            otangents[vi] = rt;
         }
-    }
+    });
 }
 
 npAPI void npApplySkinning(
