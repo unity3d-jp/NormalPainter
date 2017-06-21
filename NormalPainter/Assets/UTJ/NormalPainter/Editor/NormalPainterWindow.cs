@@ -117,6 +117,11 @@ namespace UTJ.NormalPainter
 
         private void OnSelectionChange()
         {
+            if (m_target != null)
+            {
+                m_target.settings.editing = false;
+            }
+
             m_target = null;
             m_active = null;
             if (Selection.activeGameObject != null)
@@ -227,6 +232,24 @@ namespace UTJ.NormalPainter
                     settings.brushRadius = EditorGUILayout.Slider("Brush Radius", settings.brushRadius, 0.01f, 1.0f);
                     settings.brushStrength = EditorGUILayout.Slider("Brush Strength", settings.brushStrength, -1.0f, 1.0f);
                     settings.brushFalloff = EditorGUILayout.Slider("Brush Falloff", settings.brushFalloff, 0.0f, 2.0f);
+                    EditorGUILayout.Space();
+
+                    for (int i = 0; i < settings.brushes.Length; ++i)
+                    {
+                        EditorGUI.BeginChangeCheck();
+                        settings.brushes[i].curve = EditorGUILayout.CurveField(settings.brushes[i].curve);
+                        if (EditorGUI.EndChangeCheck())
+                        {
+                            settings.brushes[i].UpdateSamples();
+                            settings.brushes[i].UpdateVisualization();
+                        }
+
+                        var lrect = GUILayoutUtility.GetLastRect();
+                        if (settings.brushes[i].visualization != null)
+                        {
+                            GUILayout.Button(settings.brushes[i].visualization, GUILayout.Width(64), GUILayout.Height(32));
+                        }
+                    }
                 }
                 else
                 {

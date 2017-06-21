@@ -265,6 +265,8 @@ namespace UTJ.NormalPainter
                 UpdateSkinning();
             }
 
+            m_settings.InitializeBrushData();
+
             if (initialized)
             {
                 UpdateNormals();

@@ -27,6 +27,9 @@ namespace UTJ.NormalPainter
         public float brushFalloff = 0.5f;
         public float brushPinchOffset = 0.25f;
         public float brushPinchSharpness = 1.0f;
+        public BrushData[] brushes = new BrushData[5] {
+            new BrushData(), new BrushData(), new BrushData(), new BrushData(), new BrushData()
+        };
         public bool pickNormal = false;
         public Color primary = NormalPainter.ToColor(Vector3.up);
 
@@ -111,6 +114,15 @@ namespace UTJ.NormalPainter
             normalColor = Color.yellow;
             tangentColor = Color.cyan;
             binormalColor = Color.green;
+        }
+
+        public void InitializeBrushData()
+        {
+            foreach (var b in brushes)
+            {
+                b.UpdateSamples();
+                b.UpdateVisualization();
+            }
         }
     }
 }
