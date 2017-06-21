@@ -108,7 +108,17 @@ namespace UTJ.NormalPainter
         void SetupResources()
         {
             if (m_settings == null)
-                m_settings = ScriptableObject.CreateInstance<NormalPainterSettings>();
+            {
+                var ds = AssetDatabase.LoadAssetAtPath<NormalPainterSettings>(AssetDatabase.GUIDToAssetPath("f9fa1a75054c38b439daaed96bc5b424"));
+                if (ds != null)
+                {
+                    m_settings = Instantiate(ds);
+                }
+                if (m_settings == null)
+                {
+                    m_settings = ScriptableObject.CreateInstance<NormalPainterSettings>();
+                }
+            }
 
             if (m_meshCube == null)
             {

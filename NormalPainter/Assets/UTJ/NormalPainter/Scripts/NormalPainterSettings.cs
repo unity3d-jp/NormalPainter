@@ -5,6 +5,67 @@ using UnityEditor;
 
 namespace UTJ.NormalPainter
 {
+    [Serializable]
+    public class BrushData
+    {
+        public static Mesh s_quad;
+        public static Material s_mat;
+
+        public float radius = 0.2f;
+        public float strength = 0.2f;
+        public AnimationCurve curve = new AnimationCurve();
+
+        [NonSerialized] public float[] samples = new float[256];
+        [NonSerialized] public RenderTexture image;
+
+        public void UpdateSamples()
+        {
+            // update samples
+            float unit = 1.0f / (samples.Length - 1);
+            for (int i = 0; i < samples.Length; ++i)
+            {
+                samples[i] = Mathf.Clamp01(curve.Evaluate(unit * i));
+            }
+
+            // update image
+            if (s_mat == null)
+            {
+                s_mat = new Material(AssetDatabase.LoadAssetAtPath<Shader>(AssetDatabase.GUIDToAssetPath("a19852f0736178441b093ba995baff4a")));
+            }
+            if (s_quad == null)
+            {
+                float l = 1.0f;
+                s_quad = new Mesh();
+                s_quad.vertices = new Vector3[] {
+                    new Vector3(-l,-l, 0.0f),
+                    new Vector3( l,-l, 0.0f),
+                    new Vector3( l, l, 0.0f),
+                    new Vector3(-l, l, 0.0f),
+                };
+                s_quad.SetIndices(new int[] {
+                    0, 1, 2, 0, 2, 3,
+                }, MeshTopology.Triangles, 0);
+            }
+
+            var cb = new ComputeBuffer(samples.Length, 4);
+            cb.SetData(samples);
+            s_mat.SetBuffer("_BrushSamples", cb);
+
+            if (image == null)
+            {
+                image = new RenderTexture(64, 32, 0, RenderTextureFormat.ARGB32);
+                image.Create();
+            }
+
+            var rtBackup = RenderTexture.active;
+            RenderTexture.active = image;
+            s_mat.SetPass(0);
+            Graphics.DrawMeshNow(s_quad, Matrix4x4.identity, 0);
+            cb.Release();
+            RenderTexture.active = rtBackup;
+        }
+    }
+
     public class NormalPainterSettings : ScriptableObject
     {
         [Serializable]
@@ -14,7 +75,7 @@ namespace UTJ.NormalPainter
         }
 
         // edit options
-        public bool editing = false;
+        [NonSerialized] public bool editing = false;
         public EditMode editMode = EditMode.Select;
         public BrushMode brushMode = BrushMode.Paint;
         public SelectMode selectMode = SelectMode.Single;
@@ -26,13 +87,15 @@ namespace UTJ.NormalPainter
         public float brushPinchOffset = 0.25f;
         public float brushPinchSharpness = 1.0f;
         public BrushData[] brushData = new BrushData[5] {
-            new BrushData(), new BrushData(), new BrushData(), new BrushData(), new BrushData()
+            new BrushData(),
+            new BrushData(),
+            new BrushData(),
+            new BrushData(),
+            new BrushData(),
         };
-        public int brushActiveSlot = 0;
+        [NonSerialized] public int brushActiveSlot = 0;
 
-        public BrushData activeBrush { get { return brushData[brushActiveSlot]; } }
-
-        public bool pickNormal = false;
+        [NonSerialized] public bool pickNormal = false;
         public Color primary = NormalPainter.ToColor(Vector3.up);
 
         // display options
@@ -56,47 +119,50 @@ namespace UTJ.NormalPainter
 
         // inspector states
 
-        public Vector3 pivotPos;
-        public Quaternion pivotRot;
+        [NonSerialized] public Vector3 pivotPos;
+        [NonSerialized] public Quaternion pivotRot;
 
-        public bool foldEdit = true;
-        public bool foldMisc = true;
-        public bool foldInExport = false;
-        public bool foldDisplay = true;
-        public int displayIndex;
-        public int inexportIndex;
+        [NonSerialized] public bool foldEdit = true;
+        [NonSerialized] public bool foldMisc = true;
+        [NonSerialized] public bool foldInExport = false;
+        [NonSerialized] public bool foldDisplay = true;
+        [NonSerialized] public int displayIndex;
+        [NonSerialized] public int inexportIndex;
 
-        public bool     assignLocal = false;
-        public Vector3  assignValue = Vector3.up;
-        public Vector3  moveAmount;
-        public Vector3  rotateAmount;
-        public Vector3  scaleAmount;
-        public float equalizeRadius = 0.5f;
-        public float equalizeAmount = 1.0f;
+        [NonSerialized] public bool     assignLocal = false;
+        [NonSerialized] public Vector3  assignValue = Vector3.up;
+        [NonSerialized] public Vector3  moveAmount;
+        [NonSerialized] public Vector3  rotateAmount;
+        [NonSerialized] public Vector3  scaleAmount;
+        [NonSerialized] public float smoothRadius = 0.5f;
+        [NonSerialized] public float smoothAmount = 1.0f;
 
-        public GameObject projectionNormalSource;
-        public int projectionRayDirection;
+        [NonSerialized] public GameObject projectionNormalSource;
+        [NonSerialized] public int projectionRayDirection;
 
-        public ImageFormat bakeFormat = ImageFormat.PNG;
-        public int bakeWidth = 1024;
-        public int bakeHeight = 1024;
-        public bool bakeVertexColor01 = true;
+        [NonSerialized] public ImageFormat bakeFormat = ImageFormat.PNG;
+        [NonSerialized] public int bakeWidth = 1024;
+        [NonSerialized] public int bakeHeight = 1024;
+        [NonSerialized] public bool bakeVertexColor01 = true;
 
-        public Texture bakeSource;
+        [NonSerialized] public Texture bakeSource;
 
-        public bool objFlipHandedness = true;
-        public bool objFlipFaces = false;
-        public bool objApplyTransform = false;
-        public bool objMakeSubmeshes = true;
-        public bool objIncludeChildren = false;
+        [NonSerialized] public bool objFlipHandedness = true;
+        [NonSerialized] public bool objFlipFaces = false;
+        [NonSerialized] public bool objApplyTransform = false;
+        [NonSerialized] public bool objMakeSubmeshes = true;
+        [NonSerialized] public bool objIncludeChildren = false;
 
-        public SelectionSet[] selectionSets = new SelectionSet[5] {
+        [NonSerialized] public SelectionSet[] selectionSets = new SelectionSet[5] {
             new SelectionSet(),
             new SelectionSet(),
             new SelectionSet(),
             new SelectionSet(),
             new SelectionSet(),
         };
+
+
+        public BrushData activeBrush { get { return brushData[brushActiveSlot]; } }
 
 
         public NormalPainterSettings()
@@ -120,9 +186,16 @@ namespace UTJ.NormalPainter
 
         public void InitializeBrushData()
         {
-            foreach (var b in brushData)
+            for (int i = 0; i < brushData.Length; ++i)
             {
-                b.UpdateSamples();
+                var bd = brushData[i];
+                if(bd.curve == null || bd.curve.length == 0)
+                {
+                    bd.curve = new AnimationCurve();
+                    bd.curve.AddKey(0.0f, 0.0f);
+                    bd.curve.AddKey(1.0f, 1.0f);
+                }
+                brushData[i].UpdateSamples();
             }
         }
     }

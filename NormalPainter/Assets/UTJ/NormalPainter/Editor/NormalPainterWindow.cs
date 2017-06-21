@@ -374,11 +374,11 @@ namespace UTJ.NormalPainter
             }
             else if (settings.editMode == EditMode.Smooth)
             {
-                settings.equalizeRadius = EditorGUILayout.FloatField("Smooth Radius", settings.equalizeRadius);
-                settings.equalizeAmount = EditorGUILayout.FloatField("Smooth Amount", settings.equalizeAmount);
+                settings.smoothRadius = EditorGUILayout.FloatField("Smooth Radius", settings.smoothRadius);
+                settings.smoothAmount = EditorGUILayout.FloatField("Smooth Amount", settings.smoothAmount);
                 if (GUILayout.Button("Apply Smooth"))
                 {
-                    m_target.ApplySmooth(settings.equalizeRadius, settings.equalizeAmount);
+                    m_target.ApplySmooth(settings.smoothRadius, settings.smoothAmount);
                     m_target.PushUndo();
                 }
             }
@@ -457,6 +457,11 @@ namespace UTJ.NormalPainter
                         m_target.ResetToBindpose(true);
                 }
             }
+
+            EditorGUILayout.Space();
+            if (GUILayout.Button("Save Settings"))
+                m_target.ExportSettings("Assets/UTJ/NormalPainter/Data/DefaultSettings.asset");
+
             EditorGUILayout.EndVertical();
             EditorGUILayout.EndHorizontal();
         }
