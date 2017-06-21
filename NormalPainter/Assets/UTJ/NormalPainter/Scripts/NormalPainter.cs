@@ -449,21 +449,21 @@ namespace UTJ.NormalPainter
                     switch (m_settings.brushMode)
                     {
                         case BrushMode.Paint:
-                            if (ApplyAdditiveBrush(m_settings.brushUseSelection, m_rayPos, bd.radius, m_settings.brushFalloff, bd.strength,
+                            if (ApplyAdditiveBrush(m_settings.brushUseSelection, m_rayPos, bd.radius, bd.strength, bd.samples,
                                 ToVector(m_settings.primary).normalized))
                                 ++m_brushNumPainted;
                             break;
                         case BrushMode.Pinch:
-                            if (ApplyPinchBrush(m_settings.brushUseSelection, m_rayPos, bd.radius, m_settings.brushFalloff, bd.strength,
+                            if (ApplyPinchBrush(m_settings.brushUseSelection, m_rayPos, bd.radius, bd.strength, bd.samples,
                                 PickBaseNormal(m_rayPos, m_rayHitTriangle), m_settings.brushPinchOffset, m_settings.brushPinchSharpness))
                                 ++m_brushNumPainted;
                             break;
                         case BrushMode.Smooth:
-                            if (ApplySmoothBrush(m_settings.brushUseSelection, m_rayPos, bd.radius, m_settings.brushFalloff, bd.strength))
+                            if (ApplySmoothBrush(m_settings.brushUseSelection, m_rayPos, bd.radius, bd.strength, bd.samples))
                                 ++m_brushNumPainted;
                             break;
                         case BrushMode.Reset:
-                            if (ApplyResetBrush(m_settings.brushUseSelection, m_rayPos, bd.radius, m_settings.brushFalloff, bd.strength))
+                            if (ApplyResetBrush(m_settings.brushUseSelection, m_rayPos, bd.radius, bd.strength, bd.samples))
                                 ++m_brushNumPainted;
                             break;
                     }
@@ -577,7 +577,7 @@ namespace UTJ.NormalPainter
                     if (et == EventType.MouseDown || et == EventType.MouseDrag)
                     {
                         var bd = m_settings.activeBrush;
-                        if (m_rayHit && SelectSoft(m_rayPos, bd.radius, m_settings.brushFalloff, bd.strength * selectSign))
+                        if (m_rayHit && SelectBrush(m_rayPos, bd.radius, bd.strength * selectSign, bd.samples))
                             handled = true;
                     }
                 }

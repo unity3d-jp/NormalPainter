@@ -210,7 +210,7 @@ namespace UTJ.NormalPainter
                             tips = "Shift+LB: Add selection, Ctrl+LB: Subtract selection";
                             break;
                         case EditMode.Brush:
-                            tips = "Shift+Wheel: Change radius, Ctrl+Wheel: Change strength, Alt+Wheel: Change falloff";
+                            tips = "Shift+Wheel: Change radius, Ctrl+Wheel: Change strength";
                             break;
                     }
                 }
@@ -242,13 +242,11 @@ namespace UTJ.NormalPainter
                     bd.radius = EditorGUILayout.Slider("Brush Radius", bd.radius, 0.01f, 1.0f);
                     bd.strength = EditorGUILayout.Slider("Brush Strength", bd.strength, -1.0f, 1.0f);
                     EditorGUI.BeginChangeCheck();
-                    bd.curve = EditorGUILayout.CurveField("Brush Shape", bd.curve, GUILayout.Width(190));
+                    bd.curve = EditorGUILayout.CurveField("Brush Shape", bd.curve, GUILayout.Width(EditorGUIUtility.labelWidth + 32), GUILayout.Height(32));
                     if (EditorGUI.EndChangeCheck())
                     {
                         bd.UpdateSamples();
                     }
-
-                    settings.brushFalloff = EditorGUILayout.Slider("Brush Falloff", settings.brushFalloff, 0.0f, 2.0f);
                 }
                 else
                 {
@@ -299,7 +297,6 @@ namespace UTJ.NormalPainter
                 settings.brushUseSelection = EditorGUILayout.Toggle("Mask With Selection", settings.brushUseSelection);
                 bd.radius = EditorGUILayout.Slider("Brush Radius", bd.radius, 0.01f, 1.0f);
                 bd.strength = EditorGUILayout.Slider("Brush Strength", bd.strength, -1.0f, 1.0f);
-                settings.brushFalloff = EditorGUILayout.Slider("Brush Falloff", settings.brushFalloff, 0.0f, 2.0f);
                 EditorGUILayout.Space();
 
                 if (settings.brushMode == BrushMode.Paint)
@@ -753,11 +750,6 @@ namespace UTJ.NormalPainter
                     else if (e.control)
                     {
                         bd.strength = Mathf.Clamp(bd.strength + -e.delta.y * 0.02f, -1.0f, 1.0f);
-                        handled = true;
-                    }
-                    else if (e.alt)
-                    {
-                        settings.brushFalloff = Mathf.Clamp(settings.brushFalloff + -e.delta.y * 0.02f, 0.0f, 2.0f);
                         handled = true;
                     }
                 }

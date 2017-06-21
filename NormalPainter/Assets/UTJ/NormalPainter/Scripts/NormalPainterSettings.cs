@@ -23,7 +23,6 @@ namespace UTJ.NormalPainter
         public bool rotatePivot = false;
         public bool brushUseSelection = false;
 
-        public float brushFalloff = 0.5f;
         public float brushPinchOffset = 0.25f;
         public float brushPinchSharpness = 1.0f;
         public BrushData[] brushData = new BrushData[5] {

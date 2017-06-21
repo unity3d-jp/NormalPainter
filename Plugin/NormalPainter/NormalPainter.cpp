@@ -71,6 +71,10 @@ static bool GetFurthestDistance(const float3 vertices[], const float selection[]
     return false;
 }
 
+static inline float GetBrushSample(float distance, float bradius, float bsamples[], int num_bsamples)
+{
+    return bsamples[int(clamp01(1.0f - distance / bradius) * (num_bsamples - 1))];
+}
 
 
 npAPI int npRaycast(
@@ -268,10 +272,10 @@ npAPI int npSelectLasso(
 
 npAPI int npSelectBrush(
     const float3 vertices[], int num_vertices, const float4x4 *trans,
-    const float3 pos, float radius, float strength, float pow, float selection[])
+    const float3 pos, float radius, float strength, float bsamples[], int num_bsamples, float selection[])
 {
     return SelectInside(pos, radius, vertices, num_vertices, *trans, [&](int vi, float d, float3 p) {
-        float s = std::pow(1.0f - d / radius, pow) * strength;
+        float s = GetBrushSample(d, radius, bsamples, num_bsamples) * strength;
         selection[vi] = clamp01(selection[vi] + s);
     });
 }
@@ -463,10 +467,10 @@ npAPI void npSmooth(
 
 npAPI int npBrushAdd(
     const float3 vertices[], const float selection[], int num_vertices, const float4x4 *trans,
-    const float3 pos, float radius, float strength, float falloff, float3 amount, float3 normals[])
+    const float3 pos, float radius, float strength, float bsamples[], int num_bsamples, float3 amount, float3 normals[])
 {
     return SelectInside(pos, radius, vertices, num_vertices, *trans, [&](int vi, float d, float3 p) {
-        float s = clamp11(std::pow(1.0f - d / radius, falloff) * strength);
+        float s = GetBrushSample(d, radius, bsamples, num_bsamples) * strength;
         if (selection) s *= selection[vi];
 
         normals[vi] = normalize(normals[vi] + amount * s);
@@ -476,11 +480,11 @@ npAPI int npBrushAdd(
 
 npAPI int npBrushPinch(
     const float3 vertices[], const float selection[], int num_vertices, const float4x4 *trans,
-    const float3 pos, float radius, float strength, float falloff, float3 n, float offset, float pow, float3 normals[])
+    const float3 pos, float radius, float strength, float bsamples[], int num_bsamples, float3 n, float offset, float pow, float3 normals[])
 {
     n = normalize(mul_v(*trans, n));
     return SelectInside(pos, radius, vertices, num_vertices, *trans, [&](int vi, float d, float3 p) {
-        float s = clamp11(std::pow(1.0f - d / radius, falloff) * strength);
+        float s = GetBrushSample(d, radius, bsamples, num_bsamples) * strength;
         if (selection) s *= selection[vi];
 
         float ds = std::pow(d / radius, pow) * (radius * offset);
@@ -492,10 +496,10 @@ npAPI int npBrushPinch(
 
 npAPI int npBrushLerp(
     const float3 vertices[], const float selection[], int num_vertices, const float4x4 *trans,
-    const float3 pos, float radius, float strength, float falloff, const float3 base[], float3 normals[])
+    const float3 pos, float radius, float strength, float bsamples[], int num_bsamples, const float3 base[], float3 normals[])
 {
     return SelectInside(pos, radius, vertices, num_vertices, *trans, [&](int vi, float d, float3 p) {
-        float s = clamp01(std::pow(1.0f - d / radius, falloff) * std::abs(strength));
+        float s = GetBrushSample(d, radius, bsamples, num_bsamples) * strength;
         if (selection) s *= selection[vi];
 
         float sign = strength < 0.0f ? -1.0f : 1.0f;
@@ -505,7 +509,7 @@ npAPI int npBrushLerp(
 
 npAPI int npBrushSmooth(
     const float3 vertices[], const float selection[], int num_vertices, const float4x4 *trans,
-    const float3 pos, float radius, float strength, float falloff, float3 normals[])
+    const float3 pos, float radius, float strength, float bsamples[], int num_bsamples, float3 normals[])
 {
     RawVector<std::pair<int, float>> inside;
     SelectInside(pos, radius, vertices, num_vertices, *trans, [&](int vi, float d, float3 p) {
@@ -518,7 +522,7 @@ npAPI int npBrushSmooth(
     }
     average = normalize(average);
     for (auto& p : inside) {
-        float s = clamp11(std::pow(1.0f - p.second / radius, falloff) * strength);
+        float s = GetBrushSample(p.second, radius, bsamples, num_bsamples) * strength;
         if (selection) s *= selection[p.first];
 
         normals[p.first] = normalize(normals[p.first] + average * s);
