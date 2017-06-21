@@ -624,7 +624,7 @@ namespace UTJ.NormalPainter
             PushUndo();
         }
 
-        public void ApplyProjection(GameObject go)
+        public void ApplyProjection(GameObject go, bool baseNormalsAsRayDirection)
         {
             if (go == null) { return; }
 
@@ -650,10 +650,10 @@ namespace UTJ.NormalPainter
             }
 
             var ptrans = go.GetComponent<Transform>().localToWorldMatrix;
-            ApplyProjection(mesh, ptrans);
+            ApplyProjection(mesh, ptrans, baseNormalsAsRayDirection);
         }
 
-        public void ApplyProjection(Mesh projector, Matrix4x4 ptrans)
+        public void ApplyProjection(Mesh projector, Matrix4x4 ptrans, bool baseNormalsAsRayDirection)
         {
             var mat = GetComponent<Transform>().localToWorldMatrix;
             var ppoints = projector.vertices;
@@ -666,7 +666,8 @@ namespace UTJ.NormalPainter
                 return;
             }
 
-            npProjectNormals(m_points, m_normalsBase, selection, m_points.Length, ref mat,
+            var rayDirections = baseNormalsAsRayDirection ? m_normalsBase : m_normals;
+            npProjectNormals(m_points, rayDirections, selection, m_points.Length, ref mat,
                 ppoints, pnormals, prtiangles, prtiangles.Length / 3, ref ptrans, m_normals);
             UpdateNormals();
             PushUndo();

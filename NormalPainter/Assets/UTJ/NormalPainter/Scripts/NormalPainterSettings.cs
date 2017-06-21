@@ -68,7 +68,9 @@ namespace UTJ.NormalPainter
         public Vector3  scaleAmount;
         public float equalizeRadius = 0.5f;
         public float equalizeAmount = 1.0f;
-        public GameObject projector;
+
+        public GameObject projectionNormalSource;
+        public int projectionRayDirection;
 
         public ImageFormat bakeFormat = ImageFormat.PNG;
         public int bakeWidth = 1024;

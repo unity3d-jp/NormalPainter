@@ -172,6 +172,11 @@ namespace UTJ.NormalPainter
             "Reset",
         };
 
+        static readonly string[] strRayDirection = new string[] {
+            "Base Normals",
+            "Current Normals",
+        };
+
         void DrawEditPanel()
         {
             var settings = m_target.settings;
@@ -358,10 +363,15 @@ namespace UTJ.NormalPainter
             }
             else if (settings.editMode == EditMode.Projection)
             {
-                settings.projector = EditorGUILayout.ObjectField("Projector", settings.projector, typeof(GameObject), true) as GameObject;
+                settings.projectionNormalSource = EditorGUILayout.ObjectField("Normal Source", settings.projectionNormalSource, typeof(GameObject), true) as GameObject;
+                EditorGUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField("Ray Direction", GUILayout.Width(EditorGUIUtility.labelWidth));
+                settings.projectionRayDirection = GUILayout.SelectionGrid(settings.projectionRayDirection, strRayDirection, 2);
+                EditorGUILayout.EndHorizontal();
+                EditorGUILayout.Space();
                 if (GUILayout.Button("Apply Projection"))
                 {
-                    m_target.ApplyProjection(settings.projector);
+                    m_target.ApplyProjection(settings.projectionNormalSource, settings.projectionRayDirection == 0);
                     m_target.PushUndo();
                 }
             }

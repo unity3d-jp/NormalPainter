@@ -571,7 +571,7 @@ npAPI void npApplyMirroring(const int relation[], int num_vertices, float3 plane
 
 
 npAPI void npProjectNormals(
-    const float3 vertices[], float3 normals[], float selection[], int num_vertices, const float4x4 *trans,
+    const float3 vertices[], const float3 normals[], float selection[], int num_vertices, const float4x4 *trans,
     const float3 pvertices[], const float3 pnormals[], const int pindices[], int num_triangles, const float4x4 *ptrans,
     float3 dst[])
 {
