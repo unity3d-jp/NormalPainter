@@ -150,7 +150,7 @@ namespace UTJ.NormalPainter
         static readonly string[] strBrushTypes = new string[] {
             "Paint",
             "Pinch",
-            "Equalize",
+            "Smooth",
             "Reset",
         };
         static readonly string[] strSelectMode = new string[] {
@@ -167,7 +167,7 @@ namespace UTJ.NormalPainter
             "Move",
             "Rotate",
             "Scale",
-            "Equalize",
+            "Smooth",
             "Projection",
             "Reset",
         };
@@ -194,7 +194,7 @@ namespace UTJ.NormalPainter
                         case EditMode.Move:
                         case EditMode.Rotate:
                         case EditMode.Scale:
-                        case EditMode.Equalize:
+                        case EditMode.Smooth:
                         case EditMode.Projection:
                         case EditMode.Reset:
                             tips = "Shift+LB: Add selection, Ctrl+LB: Subtract selection";
@@ -346,13 +346,13 @@ namespace UTJ.NormalPainter
                     m_target.PushUndo();
                 }
             }
-            else if (settings.editMode == EditMode.Equalize)
+            else if (settings.editMode == EditMode.Smooth)
             {
-                settings.equalizeRadius = EditorGUILayout.FloatField("Equalize Radius", settings.equalizeRadius);
-                settings.equalizeAmount = EditorGUILayout.FloatField("Equalize Amount", settings.equalizeAmount);
-                if (GUILayout.Button("Apply Equalize"))
+                settings.equalizeRadius = EditorGUILayout.FloatField("Smooth Radius", settings.equalizeRadius);
+                settings.equalizeAmount = EditorGUILayout.FloatField("Smooth Amount", settings.equalizeAmount);
+                if (GUILayout.Button("Apply Smooth"))
                 {
-                    m_target.ApplyEqualize(settings.equalizeRadius, settings.equalizeAmount);
+                    m_target.ApplySmooth(settings.equalizeRadius, settings.equalizeAmount);
                     m_target.PushUndo();
                 }
             }
@@ -644,7 +644,7 @@ namespace UTJ.NormalPainter
                     case KeyCode.F4: settings.editMode = EditMode.Move; break;
                     case KeyCode.F5: settings.editMode = EditMode.Rotate; break;
                     case KeyCode.F6: settings.editMode = EditMode.Scale; break;
-                    case KeyCode.F7: settings.editMode = EditMode.Equalize; break;
+                    case KeyCode.F7: settings.editMode = EditMode.Smooth; break;
                     case KeyCode.F8: settings.editMode = EditMode.Projection; break;
                     case KeyCode.F9: settings.editMode = EditMode.Reset; break;
                 }
@@ -671,7 +671,7 @@ namespace UTJ.NormalPainter
                     {
                         case KeyCode.Alpha1: settings.brushMode = BrushMode.Paint; break;
                         case KeyCode.Alpha2: settings.brushMode = BrushMode.Pinch; break;
-                        case KeyCode.Alpha3: settings.brushMode = BrushMode.Equalize; break;
+                        case KeyCode.Alpha3: settings.brushMode = BrushMode.Smooth; break;
                         case KeyCode.Alpha4: settings.brushMode = BrushMode.Reset; break;
                     }
                     if (settings.brushMode != prevBrushMode)

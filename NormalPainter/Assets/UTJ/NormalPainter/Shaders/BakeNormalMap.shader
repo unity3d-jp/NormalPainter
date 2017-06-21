@@ -1,4 +1,4 @@
-﻿Shader "Hidden/BakeNormalMap"
+﻿Shader "Hidden/NormalPainter/BakeNormalMap"
 {
 CGINCLUDE
 #include "UnityCG.cginc"

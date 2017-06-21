@@ -1,4 +1,4 @@
-﻿Shader "Hidden/HumbleNormalEditor/Visualizer" {
+﻿Shader "Hidden/NormalPainter/Visualizer" {
 
 CGINCLUDE
 #include "UnityCG.cginc"

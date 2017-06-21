@@ -432,7 +432,7 @@ npAPI void npScale(
     }
 }
 
-npAPI void npEqualize(
+npAPI void npSmooth(
     const float3 vertices[], const float selection[], int num_vertices, const float4x4 *trans,
     float radius, float strength, float3 normals[])
 {
@@ -503,7 +503,7 @@ npAPI int npBrushLerp(
     });
 }
 
-npAPI int npBrushEqualize(
+npAPI int npBrushSmooth(
     const float3 vertices[], const float selection[], int num_vertices, const float4x4 *trans,
     const float3 pos, float radius, float strength, float falloff, float3 normals[])
 {
@@ -701,3 +701,15 @@ npAPI float npGetPenPressure()
 {
     return g_pen_pressure;
 }
+
+void npInitializePenInput_Win();
+
+npAPI void npInitializePenInput()
+{
+#ifdef npEnablePenTablet
+#ifdef _WIN32
+    npInitializePenInput_Win();
+#endif
+#endif
+}
+

@@ -453,8 +453,8 @@ namespace UTJ.NormalPainter
                                 PickBaseNormal(m_rayPos, m_rayHitTriangle), m_settings.brushPinchOffset, m_settings.brushPinchSharpness))
                                 ++m_brushNumPainted;
                             break;
-                        case BrushMode.Equalize:
-                            if (ApplyEqualizeBrush(m_settings.brushUseSelection, m_rayPos, m_settings.brushRadius, m_settings.brushFalloff, m_settings.brushStrength))
+                        case BrushMode.Smooth:
+                            if (ApplySmoothBrush(m_settings.brushUseSelection, m_rayPos, m_settings.brushRadius, m_settings.brushFalloff, m_settings.brushStrength))
                                 ++m_brushNumPainted;
                             break;
                         case BrushMode.Reset:

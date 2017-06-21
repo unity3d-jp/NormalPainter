@@ -19,7 +19,7 @@ namespace UTJ.NormalPainter
         Move,
         Rotate,
         Scale,
-        Equalize,
+        Smooth,
         Projection,
         Reset,
     }
@@ -28,7 +28,7 @@ namespace UTJ.NormalPainter
     {
         Paint,
         Pinch,
-        Equalize,
+        Smooth,
         Reset,
     }
 
@@ -167,11 +167,11 @@ namespace UTJ.NormalPainter
             return false;
         }
 
-        public bool ApplyEqualizeBrush(bool useSelection, Vector3 pos, float radius, float falloff, float strength)
+        public bool ApplySmoothBrush(bool useSelection, Vector3 pos, float radius, float falloff, float strength)
         {
             Matrix4x4 trans = GetComponent<Transform>().localToWorldMatrix;
             var selection = useSelection && m_numSelected > 0 ? m_selection : null;
-            if (npBrushEqualize(m_points, selection, m_points.Length, ref trans, pos, radius, strength, falloff, m_normals) > 0)
+            if (npBrushSmooth(m_points, selection, m_points.Length, ref trans, pos, radius, strength, falloff, m_normals) > 0)
             {
                 ApplyMirroring();
                 UpdateNormals();
@@ -615,11 +615,11 @@ namespace UTJ.NormalPainter
             return true;
         }
 
-        public void ApplyEqualize(float radius, float strength)
+        public void ApplySmooth(float radius, float strength)
         {
             var selection = m_numSelected > 0 ? m_selection : null;
             var mat = GetComponent<Transform>().localToWorldMatrix;
-            npEqualize(m_points, selection, m_points.Length, ref mat, radius, strength, m_normals);
+            npSmooth(m_points, selection, m_points.Length, ref mat, radius, strength, m_normals);
             UpdateNormals();
             PushUndo();
         }
@@ -746,7 +746,7 @@ namespace UTJ.NormalPainter
             Vector3[] vertices, float[] seletion, int num_vertices, ref Matrix4x4 trans,
             Vector3 pos, float radius, float strength, float falloff, Vector3 baseNormal, float offset, float pow, Vector3[] normals);
 
-        [DllImport("NormalPainter")] static extern int npBrushEqualize(
+        [DllImport("NormalPainter")] static extern int npBrushSmooth(
             Vector3[] vertices, float[] seletion, int num_vertices, ref Matrix4x4 trans,
             Vector3 pos, float radius, float strength, float falloff, Vector3[] normals);
 
@@ -772,7 +772,7 @@ namespace UTJ.NormalPainter
             Vector3[] vertices, float[] selection, int num_vertices, ref Matrix4x4 trans,
             Vector3 amount, Vector3 pivotPos, Quaternion pivotRot, Vector3[] normals);
 
-        [DllImport("NormalPainter")] static extern int npEqualize(
+        [DllImport("NormalPainter")] static extern int npSmooth(
             Vector3[] vertices, float[] selection, int num_vertices, ref Matrix4x4 trans,
             float radius, float strength, Vector3[] normals);
 
