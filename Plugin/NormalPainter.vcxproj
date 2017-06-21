@@ -16,7 +16,6 @@
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="NormalPainter\PenTablet_Win.cpp" />
-    <ClCompile Include="NormalPainter\WinTab\Import.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="MeshUtils.vcxproj">
@@ -32,10 +31,6 @@
   <ItemGroup>
     <ClInclude Include="NormalPainter\NormalPainter.h" />
     <ClInclude Include="NormalPainter\pch.h" />
-    <ClInclude Include="NormalPainter\WinTab\Import.h" />
-    <ClInclude Include="NormalPainter\WinTab\MSGPACK.H" />
-    <ClInclude Include="NormalPainter\WinTab\PKTDEF.H" />
-    <ClInclude Include="NormalPainter\WinTab\WINTAB.H" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{98EB8D3A-2692-4854-A236-00E5D97BBB0E}</ProjectGuid>

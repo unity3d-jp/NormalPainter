@@ -34,13 +34,13 @@ float4 frag(v2f i) : SV_Target
     float u = 1.0 - abs(i.uv.x * 2.0 - 1.0);
     float v = _BrushSamples[(int)(u * (n-1))];
 
-    float dy = 1.0 / n;
+    float dy = 1.0 / (n-1) * 2.0;
     float c = 0.0;
-    c += i.uv.y + dy * 2.0 < v ? 0.2 : 0.0; // 
-    c += i.uv.y + dy * 1.0 < v ? 0.2 : 0.0; //
-    c += i.uv.y < v ? 0.2 : 0.0;
-    c += i.uv.y - dy * 1.0 < v ? 0.2 : 0.0; // 
-    c += i.uv.y - dy * 2.0 < v ? 0.2 : 0.0; // antialiasing
+    c += i.uv.y + dy * 2.0 < v ? 0.15 : 0.0; // 
+    c += i.uv.y + dy * 1.0 < v ? 0.2  : 0.0; //
+    c += i.uv.y < v ? 0.3 : 0.0;
+    c += i.uv.y - dy * 1.0 < v ? 0.2  : 0.0; // 
+    c += i.uv.y - dy * 2.0 < v ? 0.15 : 0.0; // antialiasing
     return float4(1,1,1,c);
 }
 ENDCG
