@@ -42,6 +42,7 @@ namespace UTJ.NormalPainter
         ComputeBuffer m_cbSelection;
         ComputeBuffer m_cbBaseNormals;
         ComputeBuffer m_cbBaseTangents;
+        ComputeBuffer m_cbBrushSamples;
         CommandBuffer m_cmdDraw;
 
         bool        m_skinned;
@@ -283,6 +284,7 @@ namespace UTJ.NormalPainter
             if (m_cbSelection != null) { m_cbSelection.Release(); m_cbSelection = null; }
             if (m_cbBaseNormals != null) { m_cbBaseNormals.Release(); m_cbBaseNormals = null; }
             if (m_cbBaseTangents != null) { m_cbBaseTangents.Release(); m_cbBaseTangents = null; }
+            if (m_cbBrushSamples!= null) { m_cbBrushSamples.Release(); m_cbBrushSamples = null; }
             if (m_cmdDraw != null) { m_cmdDraw.Release(); m_cmdDraw = null; }
         }
 
@@ -443,24 +445,25 @@ namespace UTJ.NormalPainter
             {
                 if (m_rayHit && (et == EventType.MouseDown || et == EventType.MouseDrag))
                 {
+                    var bd = m_settings.activeBrush;
                     switch (m_settings.brushMode)
                     {
                         case BrushMode.Paint:
-                            if (ApplyAdditiveBrush(m_settings.brushUseSelection, m_rayPos, m_settings.brushRadius, m_settings.brushFalloff, m_settings.brushStrength,
+                            if (ApplyAdditiveBrush(m_settings.brushUseSelection, m_rayPos, bd.radius, m_settings.brushFalloff, bd.strength,
                                 ToVector(m_settings.primary).normalized))
                                 ++m_brushNumPainted;
                             break;
                         case BrushMode.Pinch:
-                            if (ApplyPinchBrush(m_settings.brushUseSelection, m_rayPos, m_settings.brushRadius, m_settings.brushFalloff, m_settings.brushStrength,
+                            if (ApplyPinchBrush(m_settings.brushUseSelection, m_rayPos, bd.radius, m_settings.brushFalloff, bd.strength,
                                 PickBaseNormal(m_rayPos, m_rayHitTriangle), m_settings.brushPinchOffset, m_settings.brushPinchSharpness))
                                 ++m_brushNumPainted;
                             break;
                         case BrushMode.Smooth:
-                            if (ApplySmoothBrush(m_settings.brushUseSelection, m_rayPos, m_settings.brushRadius, m_settings.brushFalloff, m_settings.brushStrength))
+                            if (ApplySmoothBrush(m_settings.brushUseSelection, m_rayPos, bd.radius, m_settings.brushFalloff, bd.strength))
                                 ++m_brushNumPainted;
                             break;
                         case BrushMode.Reset:
-                            if (ApplyResetBrush(m_settings.brushUseSelection, m_rayPos, m_settings.brushRadius, m_settings.brushFalloff, m_settings.brushStrength))
+                            if (ApplyResetBrush(m_settings.brushUseSelection, m_rayPos, bd.radius, m_settings.brushFalloff, bd.strength))
                                 ++m_brushNumPainted;
                             break;
                     }
@@ -573,7 +576,8 @@ namespace UTJ.NormalPainter
 
                     if (et == EventType.MouseDown || et == EventType.MouseDrag)
                     {
-                        if (m_rayHit && SelectSoft(m_rayPos, m_settings.brushRadius, m_settings.brushFalloff, m_settings.brushStrength * selectSign))
+                        var bd = m_settings.activeBrush;
+                        if (m_rayHit && SelectSoft(m_rayPos, bd.radius, m_settings.brushFalloff, bd.strength * selectSign))
                             handled = true;
                     }
                 }
@@ -626,17 +630,25 @@ namespace UTJ.NormalPainter
             m_matVisualize.SetColor("_TangentColor", m_settings.tangentColor);
             m_matVisualize.SetColor("_BinormalColor", m_settings.binormalColor);
             m_matVisualize.SetInt("_OnlySelected", m_settings.showSelectedOnly ? 1 : 0);
+
             if (m_rayHit && 
                 (m_settings.editMode == EditMode.Brush ||
                  (m_settings.editMode == EditMode.Select && m_settings.selectMode == SelectMode.Brush)))
             {
-                m_matVisualize.SetVector("_RayPos", m_rayPos);
-                m_matVisualize.SetVector("_RayRadPow", new Vector3(m_settings.brushRadius, m_settings.brushFalloff, 0.0f));
+                var bd = m_settings.activeBrush;
+                if (m_cbBrushSamples == null)
+                {
+                    m_cbBrushSamples = new ComputeBuffer(bd.samples.Length, 4);
+                }
+                m_cbBrushSamples.SetData(bd.samples);
+                m_matVisualize.SetVector("_BrushPos", new Vector4(m_rayPos.x, m_rayPos.y, m_rayPos.z, bd.radius));
+                m_matVisualize.SetBuffer("_BrushSamples", m_cbBrushSamples);
             }
             else
             {
-                m_matVisualize.SetVector("_RayRadPow", new Vector3(0.0f, 1.0f, 0.0f));
+                m_matVisualize.SetVector("_BrushPos", Vector4.zero);
             }
+
             if (m_cbPoints != null) m_matVisualize.SetBuffer("_Points", m_cbPoints);
             if (m_cbNormals != null) m_matVisualize.SetBuffer("_Normals", m_cbNormals);
             if (m_cbTangents != null) m_matVisualize.SetBuffer("_Tangents", m_cbTangents);

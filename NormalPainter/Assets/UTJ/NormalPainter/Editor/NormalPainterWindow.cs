@@ -229,27 +229,26 @@ namespace UTJ.NormalPainter
                 EditorGUILayout.Space();
                 if (settings.selectMode == SelectMode.Brush)
                 {
-                    settings.brushRadius = EditorGUILayout.Slider("Brush Radius", settings.brushRadius, 0.01f, 1.0f);
-                    settings.brushStrength = EditorGUILayout.Slider("Brush Strength", settings.brushStrength, -1.0f, 1.0f);
-                    settings.brushFalloff = EditorGUILayout.Slider("Brush Falloff", settings.brushFalloff, 0.0f, 2.0f);
+                    var brushImages = new Texture[settings.brushData.Length];
+                    for (int i = 0; i < settings.brushData.Length; ++i)
+                    {
+                        brushImages[i] = settings.brushData[i].image;
+                    }
+                    settings.brushActiveSlot = GUILayout.SelectionGrid(settings.brushActiveSlot, brushImages, 5);
+
                     EditorGUILayout.Space();
 
-                    for (int i = 0; i < settings.brushes.Length; ++i)
+                    var bd = settings.activeBrush;
+                    bd.radius = EditorGUILayout.Slider("Brush Radius", bd.radius, 0.01f, 1.0f);
+                    bd.strength = EditorGUILayout.Slider("Brush Strength", bd.strength, -1.0f, 1.0f);
+                    EditorGUI.BeginChangeCheck();
+                    bd.curve = EditorGUILayout.CurveField("Brush Shape", bd.curve, GUILayout.Width(190));
+                    if (EditorGUI.EndChangeCheck())
                     {
-                        EditorGUI.BeginChangeCheck();
-                        settings.brushes[i].curve = EditorGUILayout.CurveField(settings.brushes[i].curve);
-                        if (EditorGUI.EndChangeCheck())
-                        {
-                            settings.brushes[i].UpdateSamples();
-                            settings.brushes[i].UpdateVisualization();
-                        }
-
-                        var lrect = GUILayoutUtility.GetLastRect();
-                        if (settings.brushes[i].visualization != null)
-                        {
-                            GUILayout.Button(settings.brushes[i].visualization, GUILayout.Width(64), GUILayout.Height(32));
-                        }
+                        bd.UpdateSamples();
                     }
+
+                    settings.brushFalloff = EditorGUILayout.Slider("Brush Falloff", settings.brushFalloff, 0.0f, 2.0f);
                 }
                 else
                 {
@@ -295,9 +294,11 @@ namespace UTJ.NormalPainter
             {
                 settings.brushMode = (BrushMode)GUILayout.SelectionGrid((int)settings.brushMode, strBrushTypes, 4);
                 EditorGUILayout.Space();
+
+                var bd = settings.activeBrush;
                 settings.brushUseSelection = EditorGUILayout.Toggle("Mask With Selection", settings.brushUseSelection);
-                settings.brushRadius = EditorGUILayout.Slider("Brush Radius", settings.brushRadius, 0.01f, 1.0f);
-                settings.brushStrength = EditorGUILayout.Slider("Brush Strength", settings.brushStrength, -1.0f, 1.0f);
+                bd.radius = EditorGUILayout.Slider("Brush Radius", bd.radius, 0.01f, 1.0f);
+                bd.strength = EditorGUILayout.Slider("Brush Strength", bd.strength, -1.0f, 1.0f);
                 settings.brushFalloff = EditorGUILayout.Slider("Brush Falloff", settings.brushFalloff, 0.0f, 2.0f);
                 EditorGUILayout.Space();
 
@@ -743,14 +744,15 @@ namespace UTJ.NormalPainter
                 if (settings.editMode == EditMode.Brush ||
                     (settings.editMode == EditMode.Select && settings.selectMode == SelectMode.Brush))
                 {
+                    var bd = settings.activeBrush;
                     if (e.shift)
                     {
-                        settings.brushRadius = Mathf.Clamp(settings.brushRadius + -e.delta.y * 0.01f, 0.01f, 2.0f);
+                        bd.radius = Mathf.Clamp(bd.radius + -e.delta.y * 0.01f, 0.01f, 2.0f);
                         handled = true;
                     }
                     else if (e.control)
                     {
-                        settings.brushStrength = Mathf.Clamp(settings.brushStrength + -e.delta.y * 0.02f, -1.0f, 1.0f);
+                        bd.strength = Mathf.Clamp(bd.strength + -e.delta.y * 0.02f, -1.0f, 1.0f);
                         handled = true;
                     }
                     else if (e.alt)

@@ -14,8 +14,7 @@ float4 _VertexColor3;
 float4 _NormalColor;
 float4 _TangentColor;
 float4 _BinormalColor;
-float3 _RayPos;
-float3 _RayRadPow;
+float4 _BrushPos;
 int _OnlySelected = 0;
 
 float4x4 _Transform;
@@ -25,6 +24,7 @@ StructuredBuffer<float3> _Points;
 StructuredBuffer<float3> _Normals;
 StructuredBuffer<float4> _Tangents;
 StructuredBuffer<float> _Selection;
+StructuredBuffer<float> _BrushSamples;
 
 struct appdata
 {
@@ -55,10 +55,16 @@ v2f vert_vertices(appdata v)
 
     v2f o;
     o.vertex = vertex;
-
-    float d = clamp(pow(clamp(1.0f - length(pos - _RayPos) / _RayRadPow.x, 0, 1), _RayRadPow.y), 0, 1);
     o.color = lerp(_VertexColor, _VertexColor2, s);
-    o.color.rgb += _VertexColor3.rgb * d;
+
+
+    float d = length(pos - _BrushPos.xyz);
+    if (d < _BrushPos.w) {
+        uint n, s;
+        _BrushSamples.GetDimensions(n, s);
+        int bsi = clamp(1.0f - d / _BrushPos.w, 0, 1) * (n - 1);
+        o.color.rgb += _VertexColor3.rgb * _BrushSamples[bsi];
+    }
     return o;
 }
 

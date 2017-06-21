@@ -82,7 +82,7 @@ namespace UTJ.NormalPainter
         public AnimationCurve curve = new AnimationCurve();
 
         public float[] samples = new float[256];
-        public RenderTexture visualization;
+        public RenderTexture image;
 
         public void UpdateSamples()
         {
@@ -91,10 +91,8 @@ namespace UTJ.NormalPainter
             {
                 samples[i] = Mathf.Clamp01(curve.Evaluate(unit * i));
             }
-        }
 
-        public void UpdateVisualization()
-        {
+            // update image
             if (s_mat == null)
             {
                 s_mat = new Material(AssetDatabase.LoadAssetAtPath<Shader>(AssetDatabase.GUIDToAssetPath("a19852f0736178441b093ba995baff4a")));
@@ -114,21 +112,22 @@ namespace UTJ.NormalPainter
                 }, MeshTopology.Triangles, 0);
             }
 
-
             var cb = new ComputeBuffer(samples.Length, 4);
             cb.SetData(samples);
             s_mat.SetBuffer("_BrushSamples", cb);
 
-            if(visualization == null)
+            if (image == null)
             {
-                visualization = new RenderTexture(128, 64, 0, RenderTextureFormat.ARGB32);
-                visualization.Create();
+                image = new RenderTexture(64, 32, 0, RenderTextureFormat.ARGB32);
+                image.Create();
             }
 
-            RenderTexture.active = visualization;
+            var rtBackup = RenderTexture.active;
+            RenderTexture.active = image;
             s_mat.SetPass(0);
             Graphics.DrawMeshNow(s_quad, Matrix4x4.identity, 0);
             cb.Release();
+            RenderTexture.active = rtBackup;
         }
     }
 

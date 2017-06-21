@@ -22,14 +22,17 @@ namespace UTJ.NormalPainter
         public bool selectFrontSideOnly = true;
         public bool rotatePivot = false;
         public bool brushUseSelection = false;
-        public float brushRadius = 0.2f;
-        public float brushStrength = 0.2f;
+
         public float brushFalloff = 0.5f;
         public float brushPinchOffset = 0.25f;
         public float brushPinchSharpness = 1.0f;
-        public BrushData[] brushes = new BrushData[5] {
+        public BrushData[] brushData = new BrushData[5] {
             new BrushData(), new BrushData(), new BrushData(), new BrushData(), new BrushData()
         };
+        public int brushActiveSlot = 0;
+
+        public BrushData activeBrush { get { return brushData[brushActiveSlot]; } }
+
         public bool pickNormal = false;
         public Color primary = NormalPainter.ToColor(Vector3.up);
 
@@ -118,10 +121,9 @@ namespace UTJ.NormalPainter
 
         public void InitializeBrushData()
         {
-            foreach (var b in brushes)
+            foreach (var b in brushData)
             {
                 b.UpdateSamples();
-                b.UpdateVisualization();
             }
         }
     }
