@@ -15,7 +15,10 @@
     <ClCompile Include="NormalPainter\pch.cpp">
       <Filter>NormalPainter</Filter>
     </ClCompile>
-    <ClCompile Include="NormalPainter\PenTablet_Win.cpp">
+    <ClCompile Include="NormalPainter\npPenTablet_Win.cpp">
+      <Filter>NormalPainter</Filter>
+    </ClCompile>
+    <ClCompile Include="NormalPainter\npFBXExporter.cpp">
       <Filter>NormalPainter</Filter>
     </ClCompile>
   </ItemGroup>
