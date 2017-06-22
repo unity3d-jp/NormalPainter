@@ -4,6 +4,7 @@ CGINCLUDE
 #include "UnityCG.cginc"
 
 
+int _NumBrushSamples;
 StructuredBuffer<float> _BrushSamples;
 
 struct appdata
@@ -28,9 +29,9 @@ v2f vert(appdata v)
 
 float4 frag(v2f i) : SV_Target
 {
-    uint n, s;
-    _BrushSamples.GetDimensions(n, s);
-
+    //StructuredBuffer::GetDimensions() seems not available on non-D3D11..
+    int n = _NumBrushSamples;
+    
     float u = 1.0 - abs(i.uv.x * 2.0 - 1.0);
     float v = _BrushSamples[(int)(u * (n-1))];
 

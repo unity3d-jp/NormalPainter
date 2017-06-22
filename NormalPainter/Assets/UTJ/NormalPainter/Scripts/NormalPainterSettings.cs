@@ -49,6 +49,7 @@ namespace UTJ.NormalPainter
 
             var cb = new ComputeBuffer(samples.Length, 4);
             cb.SetData(samples);
+            s_mat.SetInt("_NumBrushSamples", samples.Length);
             s_mat.SetBuffer("_BrushSamples", cb);
 
             if (image == null)

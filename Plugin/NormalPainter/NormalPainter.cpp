@@ -674,7 +674,7 @@ npAPI void npProjectNormals(
 }
 
 
-template<size_t NumInfluence>
+template<int NumInfluence>
 static void SkinningImpl(
     const RawVector<float4x4>& poses, const Weights<NumInfluence> weights[], int num_vertices,
     const float3 ipoints[], const float3 inormals[], const float4 itangents[],
