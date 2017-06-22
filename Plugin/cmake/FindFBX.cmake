@@ -13,7 +13,7 @@ find_path(FBX_INCLUDE_DIR
 
 find_library(FBX_LIBRARY
     NAMES fbxsdk
-    PATH_SUFFIXES lib lib/clang/release
+    PATH_SUFFIXES lib lib/clang/release lib/gcc4/x64/release
 )
 
 mark_as_advanced(FBX_INCLUDE_DIR)
