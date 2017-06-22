@@ -65,6 +65,13 @@ namespace UTJ.NormalPainter
         VertexColor,
     }
 
+    public enum Coordinate
+    {
+        World,
+        Local,
+        Pivot,
+    }
+
     public enum SceneGUIState
     {
         Repaint = 1 << 0,
@@ -77,32 +84,55 @@ namespace UTJ.NormalPainter
     {
 #if UNITY_EDITOR
 
-
-        public void ApplyAssign(Vector3 v, bool local = false)
+        public Vector3 ToWorldVector(Vector3 v, Coordinate c)
         {
-            var trans = local ? Matrix4x4.identity : GetComponent<Transform>().localToWorldMatrix;
+            switch(c)
+            {
+                case Coordinate.Local: return GetComponent<Transform>().localToWorldMatrix.MultiplyVector(v);
+                case Coordinate.Pivot: return m_settings.pivotRot * v;
+            }
+            return v;
+        }
+
+
+        public void ApplyAssign(Vector3 v, Coordinate c)
+        {
+            var trans = GetComponent<Transform>().localToWorldMatrix;
+            v = ToWorldVector(v, c);
 
             npAssign(m_selection, m_points.Length, ref trans, v, m_normals);
             ApplyMirroring();
             UpdateNormals();
         }
 
-        public void ApplyMove(Vector3 move, bool local = false)
+        public void ApplyMove(Vector3 v, Coordinate c)
         {
-            var trans = local ? Matrix4x4.identity : GetComponent< Transform>().localToWorldMatrix;
+            var trans = GetComponent<Transform>().localToWorldMatrix;
+            v = ToWorldVector(v, c);
 
-            npMove(m_selection, m_points.Length, ref trans, move, m_normals);
+            npMove(m_selection, m_points.Length, ref trans, v, m_normals);
             ApplyMirroring();
             UpdateNormals();
         }
 
-        public void ApplyRotate(Quaternion amount, Quaternion pivotRot, bool local = false)
+        public void ApplyRotate(Quaternion amount, Quaternion pivotRot, Coordinate c)
         {
+            Matrix4x4 trans;
             var t = GetComponent<Transform>();
-            var trans = local ? Matrix4x4.identity : t.localToWorldMatrix;
-            if (local)
+            switch (c)
             {
-                pivotRot = Quaternion.identity;
+                case Coordinate.World:
+                    trans = t.localToWorldMatrix;
+                    pivotRot = Quaternion.identity;
+                    break;
+                case Coordinate.Local:
+                    trans = Matrix4x4.identity;
+                    pivotRot = Quaternion.identity;
+                    break;
+                case Coordinate.Pivot:
+                    trans = t.localToWorldMatrix;
+                    break;
+                default: return;
             }
 
             npRotate(m_points, m_selection, m_points.Length, ref trans, amount, pivotRot, m_normals);
@@ -110,14 +140,25 @@ namespace UTJ.NormalPainter
             UpdateNormals();
         }
 
-        public void ApplyRotatePivot(Quaternion amount, Vector3 pivotPos, Quaternion pivotRot, bool local = false)
+        public void ApplyRotatePivot(Quaternion amount, Vector3 pivotPos, Quaternion pivotRot, Coordinate c)
         {
+            Matrix4x4 trans;
             var t = GetComponent<Transform>();
-            var trans = local ? Matrix4x4.identity : t.localToWorldMatrix;
-            if (local)
+            switch (c)
             {
-                pivotPos -= t.position;
-                pivotRot = Quaternion.identity;
+                case Coordinate.World:
+                    trans = t.localToWorldMatrix;
+                    pivotRot = Quaternion.identity;
+                    break;
+                case Coordinate.Local:
+                    trans = Matrix4x4.identity;
+                    pivotPos = t.worldToLocalMatrix.MultiplyPoint(pivotPos);
+                    pivotRot = Quaternion.identity;
+                    break;
+                case Coordinate.Pivot:
+                    trans = t.localToWorldMatrix;
+                    break;
+                default: return;
             }
 
             npRotatePivot(m_points, m_selection, m_points.Length, ref trans, amount, pivotPos, pivotRot, m_normals);
@@ -125,15 +166,27 @@ namespace UTJ.NormalPainter
             UpdateNormals();
         }
 
-        public void ApplyScale(Vector3 amount, Vector3 pivotPos, Quaternion pivotRot, bool local = false)
+        public void ApplyScale(Vector3 amount, Vector3 pivotPos, Quaternion pivotRot, Coordinate c)
         {
+            Matrix4x4 trans;
             var t = GetComponent<Transform>();
-            var trans = local ? Matrix4x4.identity : t.localToWorldMatrix;
-            if(local)
+            switch (c)
             {
-                pivotPos -= t.position;
-                pivotRot = Quaternion.identity;
+                case Coordinate.World:
+                    trans = t.localToWorldMatrix;
+                    pivotRot = Quaternion.identity;
+                    break;
+                case Coordinate.Local:
+                    trans = Matrix4x4.identity;
+                    pivotPos = t.worldToLocalMatrix.MultiplyPoint(pivotPos);
+                    pivotRot = Quaternion.identity;
+                    break;
+                case Coordinate.Pivot:
+                    trans = t.localToWorldMatrix;
+                    break;
+                default: return;
             }
+
             npScale(m_points, m_selection, m_points.Length, ref trans, amount, pivotPos, pivotRot, m_normals);
             ApplyMirroring();
             UpdateNormals();

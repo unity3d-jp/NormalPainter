@@ -120,7 +120,7 @@ namespace UTJ.NormalPainter
         // inspector states
 
         [NonSerialized] public Vector3 pivotPos;
-        [NonSerialized] public Quaternion pivotRot;
+        [NonSerialized] public Quaternion pivotRot = Quaternion.identity;
 
         [NonSerialized] public bool foldEdit = true;
         [NonSerialized] public bool foldMisc = true;
@@ -129,7 +129,7 @@ namespace UTJ.NormalPainter
         [NonSerialized] public int displayIndex;
         [NonSerialized] public int inexportIndex;
 
-        [NonSerialized] public bool     assignLocal = false;
+        [NonSerialized] public Coordinate coordinate = Coordinate.World;
         [NonSerialized] public Vector3  assignValue = Vector3.up;
         [NonSerialized] public Vector3  moveAmount;
         [NonSerialized] public Vector3  rotateAmount;
@@ -195,7 +195,7 @@ namespace UTJ.NormalPainter
                     bd.curve.AddKey(0.0f, 0.0f);
                     bd.curve.AddKey(1.0f, 1.0f);
                 }
-                brushData[i].UpdateSamples();
+                bd.UpdateSamples();
             }
         }
     }

@@ -365,9 +365,34 @@ namespace UTJ.NormalPainter
                     ret |= (int)SceneGUIState.Repaint;
             }
 
-            if (m_numSelected > 0 && editMode == EditMode.Move)
+            if (m_numSelected > 0 && editMode == EditMode.Assign)
             {
-                var pivotRot = m_settings.assignLocal ? t.rotation : m_settings.pivotRot;
+                var pivotRot = Quaternion.identity;
+                switch (m_settings.coordinate)
+                {
+                    case Coordinate.Pivot:
+                        pivotRot = m_settings.pivotRot;
+                        break;
+                    case Coordinate.Local:
+                        pivotRot = t.rotation;
+                        break;
+                }
+
+                Handles.PositionHandle(m_settings.pivotPos, pivotRot);
+            }
+            else if (m_numSelected > 0 && editMode == EditMode.Move)
+            {
+                var pivotRot = Quaternion.identity;
+                switch (m_settings.coordinate)
+                {
+                    case Coordinate.Pivot:
+                        pivotRot = m_settings.pivotRot;
+                        break;
+                    case Coordinate.Local:
+                        pivotRot = t.rotation;
+                        break;
+                }
+
                 if (et == EventType.MouseDown)
                     m_prevMove = m_settings.pivotPos;
 
@@ -378,12 +403,23 @@ namespace UTJ.NormalPainter
                     handled = true;
                     var diff = move - m_prevMove;
                     m_prevMove = move;
-                    ApplyMove(diff * 3.0f);
+
+                    ApplyMove(diff * 3.0f, Coordinate.World);
                 }
             }
             else if (m_numSelected > 0 && editMode == EditMode.Rotate)
             {
-                var pivotRot = m_settings.assignLocal ? t.rotation : m_settings.pivotRot;
+                var pivotRot = Quaternion.identity;
+                switch (m_settings.coordinate)
+                {
+                    case Coordinate.Pivot:
+                        pivotRot = m_settings.pivotRot;
+                        break;
+                    case Coordinate.Local:
+                        pivotRot = t.rotation;
+                        break;
+                }
+
                 if (et == EventType.MouseDown)
                     m_prevRot = pivotRot;
 
@@ -394,15 +430,25 @@ namespace UTJ.NormalPainter
                     handled = true;
                     var diff = Quaternion.Inverse(m_prevRot) * rot;
                     m_prevRot = rot;
+
                     if (m_settings.rotatePivot)
-                        ApplyRotatePivot(diff, m_settings.pivotPos, pivotRot);
+                        ApplyRotatePivot(diff, m_settings.pivotPos, pivotRot, Coordinate.Pivot);
                     else
-                        ApplyRotate(diff, pivotRot);
+                        ApplyRotate(diff, pivotRot, Coordinate.Pivot);
                 }
             }
             else if (m_numSelected > 0 && editMode == EditMode.Scale)
             {
-                var pivotRot = m_settings.assignLocal ? t.rotation : m_settings.pivotRot;
+                var pivotRot = Quaternion.identity;
+                switch (m_settings.coordinate)
+                {
+                    case Coordinate.Pivot:
+                        pivotRot = m_settings.pivotRot;
+                        break;
+                    case Coordinate.Local:
+                        pivotRot = t.rotation;
+                        break;
+                }
                 if (et == EventType.MouseDown)
                     m_prevScale = Vector3.one;
 
@@ -414,7 +460,8 @@ namespace UTJ.NormalPainter
                     handled = true;
                     var diff = scale - m_prevScale;
                     m_prevScale = scale;
-                    ApplyScale(diff, m_settings.pivotPos, pivotRot);
+
+                    ApplyScale(diff, m_settings.pivotPos, pivotRot, Coordinate.Pivot);
                 }
             }
 
