@@ -182,6 +182,24 @@ npAPI int npSelectSingle(
     return 0;
 }
 
+
+npAPI int npSelectTriangle(
+    const float3 vertices[], const int indices[], int num_triangles, float seletion[], float strength,
+    const float4x4 *trans, const float3 pos, const float3 dir)
+{
+    int ti;
+    float distance;
+    if (Raycast(pos, dir, vertices, indices, num_triangles, *trans, ti, distance)) {
+        for (int i = 0; i < 3; ++i) {
+            seletion[indices[ti * 3 + i]] = clamp01(seletion[indices[ti * 3 + i]] + strength);
+        }
+        return 1;
+    }
+    return 0;
+}
+
+
+
 npAPI int npSelectRect(
     const float3 vertices[], const int indices[], int num_vertices, int num_triangles, float seletion[], float strength,
     const float4x4 *mvp_, const float4x4 *trans_, float2 rmin, float2 rmax, float3 campos, int frontface_only)

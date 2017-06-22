@@ -264,6 +264,10 @@ namespace UTJ.NormalPainter
                 else
                 {
                     settings.selectFrontSideOnly = EditorGUILayout.Toggle("Front Side Only", settings.selectFrontSideOnly);
+                    if(settings.selectMode == SelectMode.Single)
+                    {
+                        settings.selectTriangle = EditorGUILayout.Toggle("Triangle", settings.selectTriangle);
+                    }
                 }
                 EditorGUILayout.Space();
 

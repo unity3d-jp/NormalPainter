@@ -81,6 +81,7 @@ namespace UTJ.NormalPainter
         public SelectMode selectMode = SelectMode.Single;
         public MirrorMode mirrorMode = MirrorMode.None;
         public bool selectFrontSideOnly = true;
+        public bool selectTriangle = true;
         public bool rotatePivot = false;
         public bool brushUseSelection = false;
 

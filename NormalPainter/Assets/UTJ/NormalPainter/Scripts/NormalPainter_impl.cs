@@ -469,6 +469,18 @@ namespace UTJ.NormalPainter
                 ref mvp, ref trans, rmin, rmax, campos, frontFaceOnly) > 0;
         }
 
+        public bool SelectTriangle(Event e, float strength)
+        {
+            Ray ray = HandleUtility.GUIPointToWorldRay(e.mousePosition);
+            return SelectTriangle(ray, strength);
+        }
+        public bool SelectTriangle(Ray ray, float strength)
+        {
+            Matrix4x4 trans = GetComponent<Transform>().localToWorldMatrix;
+            return npSelectTriangle(m_points, m_triangles, m_triangles.Length / 3, m_selection, strength, ref trans, ray.origin, ray.direction) > 0;
+        }
+
+
         public bool SelectRect(Vector2 r1, Vector2 r2, float strength, bool frontFaceOnly)
         {
             var cam = SceneView.lastActiveSceneView.camera;
@@ -780,6 +792,10 @@ namespace UTJ.NormalPainter
         [DllImport("NormalPainter")] static extern int npSelectSingle(
             Vector3[] vertices, Vector3[] normals, int[] indices, int num_vertices, int num_triangles, float[] seletion, float strength,
             ref Matrix4x4 mvp, ref Matrix4x4 trans, Vector2 rmin, Vector2 rmax, Vector3 campos, bool frontfaceOnly);
+
+        [DllImport("NormalPainter")] static extern int npSelectTriangle(
+            Vector3[] vertices, int[] indices, int num_triangles, float[] seletion, float strength,
+            ref Matrix4x4 trans, Vector3 pos, Vector3 dir);
 
         [DllImport("NormalPainter")] static extern int npSelectRect(
             Vector3[] vertices, int[] indices, int num_vertices, int num_triangles, float[] seletion, float strength,

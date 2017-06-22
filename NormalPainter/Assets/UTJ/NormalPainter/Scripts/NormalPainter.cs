@@ -546,7 +546,15 @@ namespace UTJ.NormalPainter
                     if (!e.shift && !e.control)
                         System.Array.Clear(m_selection, 0, m_selection.Length);
 
-                    if (SelectSingle(e, selectSign, settings.selectFrontSideOnly) || m_rayHit)
+                    if (SelectSingle(e, selectSign, settings.selectFrontSideOnly))
+                    {
+                        handled = true;
+                    }
+                    else if(settings.selectTriangle && SelectTriangle(e, selectSign))
+                    {
+                        handled = true;
+                    }
+                    else if(m_rayHit)
                     {
                         handled = true;
                     }
