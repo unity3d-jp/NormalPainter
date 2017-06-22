@@ -14,8 +14,8 @@ public class ObjExporter
         public bool flipHandedness = true;
         public bool flipFaces = false;
 
-        public bool normals = false;
-        public bool uv = false;
+        public bool normals = true;
+        public bool uv = true;
     }
 
     public static bool Export(GameObject go, string path, Settings settings)
