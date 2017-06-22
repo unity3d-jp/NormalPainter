@@ -444,15 +444,15 @@ namespace UTJ.NormalPainter
                     (v.y / pixelRect.height * rect.height * 2.0f - 1.0f) * -1.0f);
         }
 
-        public bool SelectSingle(Event e, float strength, bool frontFaceOnly)
+        public bool SelectVertex(Event e, float strength, bool frontFaceOnly)
         {
             var center = e.mousePosition;
             var size = new Vector2(15.0f, 15.0f);
             var r1 = center - size;
             var r2 = center + size;
-            return SelectSingle(r1, r2, strength, frontFaceOnly);
+            return SelectVertex(r1, r2, strength, frontFaceOnly);
         }
-        public bool SelectSingle(Vector2 r1, Vector2 r2, float strength, bool frontFaceOnly)
+        public bool SelectVertex(Vector2 r1, Vector2 r2, float strength, bool frontFaceOnly)
         {
             var cam = SceneView.lastActiveSceneView.camera;
             if (cam == null) { return false; }

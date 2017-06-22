@@ -263,11 +263,14 @@ namespace UTJ.NormalPainter
                 }
                 else
                 {
-                    settings.selectFrontSideOnly = EditorGUILayout.Toggle("Front Side Only", settings.selectFrontSideOnly);
                     if(settings.selectMode == SelectMode.Single)
                     {
-                        settings.selectTriangle = EditorGUILayout.Toggle("Triangle", settings.selectTriangle);
+                        GUILayout.BeginHorizontal();
+                        settings.selectVertex = GUILayout.Toggle(settings.selectVertex, "Vertex", "Button");
+                        settings.selectTriangle = GUILayout.Toggle(settings.selectTriangle, "Triangle", "Button");
+                        GUILayout.EndHorizontal();
                     }
+                    settings.selectFrontSideOnly = EditorGUILayout.Toggle("Front Side Only", settings.selectFrontSideOnly);
                 }
                 EditorGUILayout.Space();
 

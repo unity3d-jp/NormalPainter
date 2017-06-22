@@ -546,7 +546,7 @@ namespace UTJ.NormalPainter
                     if (!e.shift && !e.control)
                         System.Array.Clear(m_selection, 0, m_selection.Length);
 
-                    if (SelectSingle(e, selectSign, settings.selectFrontSideOnly))
+                    if (settings.selectVertex && SelectVertex(e, selectSign, settings.selectFrontSideOnly))
                     {
                         handled = true;
                     }
