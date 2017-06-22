@@ -27,7 +27,7 @@ namespace UTJ.NormalPainter
     public enum BrushMode
     {
         Paint,
-        Pinch,
+        Replace,
         Smooth,
         Reset,
     }
@@ -192,13 +192,11 @@ namespace UTJ.NormalPainter
             UpdateNormals();
         }
 
-        public bool ApplyAdditiveBrush(bool useSelection, Vector3 pos, float radius, float strength, float[] bsamples, Vector3 amount)
+        public bool ApplyPaintBrush(bool useSelection, Vector3 pos, float radius, float strength, float[] bsamples, Vector3 baseDir)
         {
-            amount = GetComponent<Transform>().worldToLocalMatrix.MultiplyVector(amount).normalized;
-
             Matrix4x4 trans = GetComponent<Transform>().localToWorldMatrix;
             var selection = useSelection && m_numSelected > 0 ? m_selection : null;
-            if (npBrushAdd(m_points, selection, m_points.Length, ref trans, pos, radius, strength, bsamples, bsamples.Length, amount, m_normals) > 0)
+            if (npBrushPaint(m_points, selection, m_points.Length, ref trans, pos, radius, strength, bsamples, bsamples.Length, baseDir, m_normals) > 0)
             {
                 ApplyMirroring();
                 UpdateNormals();
@@ -207,11 +205,13 @@ namespace UTJ.NormalPainter
             return false;
         }
 
-        public bool ApplyPinchBrush(bool useSelection, Vector3 pos, float radius, float strength, float[] bsamples, Vector3 baseDir)
+        public bool ApplyReplaceBrush(bool useSelection, Vector3 pos, float radius, float strength, float[] bsamples, Vector3 amount)
         {
+            amount = GetComponent<Transform>().worldToLocalMatrix.MultiplyVector(amount).normalized;
+
             Matrix4x4 trans = GetComponent<Transform>().localToWorldMatrix;
             var selection = useSelection && m_numSelected > 0 ? m_selection : null;
-            if (npBrushPinch(m_points, selection, m_points.Length, ref trans, pos, radius, strength, bsamples, bsamples.Length, baseDir, m_normals) > 0)
+            if (npBrushReplace(m_points, selection, m_points.Length, ref trans, pos, radius, strength, bsamples, bsamples.Length, amount, m_normals) > 0)
             {
                 ApplyMirroring();
                 UpdateNormals();
@@ -798,11 +798,11 @@ namespace UTJ.NormalPainter
             ref Vector3 selection_pos, ref Vector3 selection_normal);
 
 
-        [DllImport("NormalPainter")] static extern int npBrushAdd(
+        [DllImport("NormalPainter")] static extern int npBrushReplace(
             Vector3[] vertices, float[] seletion, int num_vertices, ref Matrix4x4 trans,
             Vector3 pos, float radius, float strength, float[] bsamples, int num_bsamples, Vector3 amount, Vector3[] normals);
 
-        [DllImport("NormalPainter")] static extern int npBrushPinch(
+        [DllImport("NormalPainter")] static extern int npBrushPaint(
             Vector3[] vertices, float[] seletion, int num_vertices, ref Matrix4x4 trans,
             Vector3 pos, float radius, float strength, float[] bsamples, int num_bsamples, Vector3 baseNormal, Vector3[] normals);
 

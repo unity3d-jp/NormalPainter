@@ -154,7 +154,7 @@ namespace UTJ.NormalPainter
 
         static readonly string[] strBrushTypes = new string[] {
             "Paint",
-            "Pinch",
+            "Replace",
             "Smooth",
             "Reset",
         };
@@ -311,14 +311,14 @@ namespace UTJ.NormalPainter
 
                 if (settings.brushMode == BrushMode.Paint)
                 {
+                }
+                else if (settings.brushMode == BrushMode.Replace)
+                {
                     GUILayout.BeginHorizontal();
                     settings.primary = EditorGUILayout.ColorField(settings.primary, GUILayout.Width(35));
                     settings.primary = NormalPainter.ToColor(EditorGUILayout.Vector3Field("", NormalPainter.ToVector(settings.primary)));
                     settings.pickNormal = GUILayout.Toggle(settings.pickNormal, "Pick", "Button", GUILayout.Width(90));
                     GUILayout.EndHorizontal();
-                }
-                else if (settings.brushMode == BrushMode.Pinch)
-                {
                 }
             }
             else if (settings.editMode == EditMode.Assign)
@@ -730,14 +730,14 @@ namespace UTJ.NormalPainter
                     switch (e.keyCode)
                     {
                         case KeyCode.Alpha1: settings.brushMode = BrushMode.Paint; break;
-                        case KeyCode.Alpha2: settings.brushMode = BrushMode.Pinch; break;
+                        case KeyCode.Alpha2: settings.brushMode = BrushMode.Replace; break;
                         case KeyCode.Alpha3: settings.brushMode = BrushMode.Smooth; break;
                         case KeyCode.Alpha4: settings.brushMode = BrushMode.Reset; break;
                     }
                     if (settings.brushMode != prevBrushMode)
                         handled = true;
 
-                    if (settings.brushMode == BrushMode.Paint)
+                    if (settings.brushMode == BrushMode.Replace)
                     {
                         if(e.keyCode == KeyCode.P)
                         {

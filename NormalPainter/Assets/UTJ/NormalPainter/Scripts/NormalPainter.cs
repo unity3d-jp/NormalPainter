@@ -506,12 +506,12 @@ namespace UTJ.NormalPainter
                     switch (m_settings.brushMode)
                     {
                         case BrushMode.Paint:
-                            if (ApplyAdditiveBrush(m_settings.brushUseSelection, m_rayPos, bd.radius, bd.strength, bd.samples,
-                                ToVector(m_settings.primary).normalized))
+                            if (ApplyPaintBrush(m_settings.brushUseSelection, m_rayPos, bd.radius, bd.strength, bd.samples, PickBaseNormal(m_rayPos, m_rayHitTriangle)))
                                 ++m_brushNumPainted;
                             break;
-                        case BrushMode.Pinch:
-                            if (ApplyPinchBrush(m_settings.brushUseSelection, m_rayPos, bd.radius, bd.strength, bd.samples, PickBaseNormal(m_rayPos, m_rayHitTriangle)))
+                        case BrushMode.Replace:
+                            if (ApplyReplaceBrush(m_settings.brushUseSelection, m_rayPos, bd.radius, bd.strength, bd.samples,
+                                ToVector(m_settings.primary).normalized))
                                 ++m_brushNumPainted;
                             break;
                         case BrushMode.Smooth:

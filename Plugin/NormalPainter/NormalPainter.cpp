@@ -469,7 +469,7 @@ npAPI void npSmooth(
 }
 
 
-npAPI int npBrushAdd(
+npAPI int npBrushReplace(
     const float3 vertices[], const float selection[], int num_vertices, const float4x4 *trans,
     const float3 pos, float radius, float strength, float bsamples[], int num_bsamples, float3 amount, float3 normals[])
 {
@@ -482,7 +482,7 @@ npAPI int npBrushAdd(
     return 0;
 }
 
-npAPI int npBrushPinch(
+npAPI int npBrushPaint(
     const float3 vertices[], const float selection[], int num_vertices, const float4x4 *trans,
     const float3 pos, float radius, float strength, float bsamples[], int num_bsamples, float3 n, float3 normals[])
 {
