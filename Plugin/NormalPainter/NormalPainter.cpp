@@ -71,9 +71,13 @@ static bool GetFurthestDistance(const float3 vertices[], const float selection[]
     return false;
 }
 
+static inline int GetBrushSampleIndex(float distance, float bradius, int num_bsamples)
+{
+    return int(clamp01(1.0f - distance / bradius) * (num_bsamples - 1));
+}
 static inline float GetBrushSample(float distance, float bradius, float bsamples[], int num_bsamples)
 {
-    return bsamples[int(clamp01(1.0f - distance / bradius) * (num_bsamples - 1))];
+    return bsamples[GetBrushSampleIndex(distance, bradius, num_bsamples)];
 }
 
 
@@ -480,16 +484,42 @@ npAPI int npBrushAdd(
 
 npAPI int npBrushPinch(
     const float3 vertices[], const float selection[], int num_vertices, const float4x4 *trans,
-    const float3 pos, float radius, float strength, float bsamples[], int num_bsamples, float3 n, float offset, float pow, float3 normals[])
+    const float3 pos, float radius, float strength, float bsamples[], int num_bsamples, float3 n, float3 normals[])
 {
     n = normalize(mul_v(*trans, n));
     return SelectInside(pos, radius, vertices, num_vertices, *trans, [&](int vi, float d, float3 p) {
-        float s = GetBrushSample(d, radius, bsamples, num_bsamples) * strength;
+        int bsi = GetBrushSampleIndex(d, radius, num_bsamples);
+        float s = clamp11(bsamples[bsi] * strength * 2.0f);
         if (selection) s *= selection[vi];
 
-        float ds = std::pow(d / radius, pow) * (radius * offset);
-        float3 dir1 = normalize(p - (pos - n * ds));
-        float3 dir = lerp(normals[vi], dir1, std::abs(s));
+        float slope;
+        if (bsi == 0) {
+            slope = (bsamples[bsi+1] - bsamples[bsi  ]) / (1.0f / (num_bsamples - 1));
+        }
+        else if (bsi == num_bsamples - 1) {
+            slope = (bsamples[bsi  ] - bsamples[bsi-1]) / (1.0f / (num_bsamples - 1));
+        }
+        else {
+            slope = (bsamples[bsi+1] - bsamples[bsi-1]) / (1.0f / (num_bsamples - 1) * 2.0f);
+        }
+
+        float3 t;
+        {
+            float3 p1 = pos - n * plane_distance(pos, n);
+            float3 p2 = p - n * plane_distance(p, n);
+            t = normalize(p2 - p1);
+        }
+        if (slope < 0.0f) {
+            t *= -1.0f;
+            slope *= -1.0f;
+        }
+        if (s < 0.0f) {
+            t *= -1.0f;
+            s *= -1.0f;
+        }
+
+        float3 r = lerp(n, t, clamp01(slope * 0.5f));
+        float3 dir = lerp(normals[vi], r, s);
         normals[vi] = normalize(normals[vi] + dir * s);
     });
 }

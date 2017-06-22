@@ -319,8 +319,6 @@ namespace UTJ.NormalPainter
                 }
                 else if (settings.brushMode == BrushMode.Pinch)
                 {
-                    settings.brushPinchOffset = EditorGUILayout.Slider("Pinch Offset", settings.brushPinchOffset, 0.0f, 2.0f);
-                    settings.brushPinchSharpness = EditorGUILayout.Slider("Pinch Sharpness", settings.brushPinchSharpness, 0.0f, 2.0f);
                 }
             }
             else if (settings.editMode == EditMode.Assign)

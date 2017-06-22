@@ -511,8 +511,7 @@ namespace UTJ.NormalPainter
                                 ++m_brushNumPainted;
                             break;
                         case BrushMode.Pinch:
-                            if (ApplyPinchBrush(m_settings.brushUseSelection, m_rayPos, bd.radius, bd.strength, bd.samples,
-                                PickBaseNormal(m_rayPos, m_rayHitTriangle), m_settings.brushPinchOffset, m_settings.brushPinchSharpness))
+                            if (ApplyPinchBrush(m_settings.brushUseSelection, m_rayPos, bd.radius, bd.strength, bd.samples, PickBaseNormal(m_rayPos, m_rayHitTriangle)))
                                 ++m_brushNumPainted;
                             break;
                         case BrushMode.Smooth:

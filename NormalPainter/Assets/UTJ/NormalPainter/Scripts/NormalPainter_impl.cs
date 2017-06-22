@@ -207,11 +207,11 @@ namespace UTJ.NormalPainter
             return false;
         }
 
-        public bool ApplyPinchBrush(bool useSelection, Vector3 pos, float radius, float strength, float[] bsamples, Vector3 baseDir, float offset, float pow)
+        public bool ApplyPinchBrush(bool useSelection, Vector3 pos, float radius, float strength, float[] bsamples, Vector3 baseDir)
         {
             Matrix4x4 trans = GetComponent<Transform>().localToWorldMatrix;
             var selection = useSelection && m_numSelected > 0 ? m_selection : null;
-            if (npBrushPinch(m_points, selection, m_points.Length, ref trans, pos, radius, strength, bsamples, bsamples.Length, baseDir, offset, pow, m_normals) > 0)
+            if (npBrushPinch(m_points, selection, m_points.Length, ref trans, pos, radius, strength, bsamples, bsamples.Length, baseDir, m_normals) > 0)
             {
                 ApplyMirroring();
                 UpdateNormals();
@@ -804,7 +804,7 @@ namespace UTJ.NormalPainter
 
         [DllImport("NormalPainter")] static extern int npBrushPinch(
             Vector3[] vertices, float[] seletion, int num_vertices, ref Matrix4x4 trans,
-            Vector3 pos, float radius, float strength, float[] bsamples, int num_bsamples, Vector3 baseNormal, float offset, float pow, Vector3[] normals);
+            Vector3 pos, float radius, float strength, float[] bsamples, int num_bsamples, Vector3 baseNormal, Vector3[] normals);
 
         [DllImport("NormalPainter")] static extern int npBrushSmooth(
             Vector3[] vertices, float[] seletion, int num_vertices, ref Matrix4x4 trans,
@@ -858,7 +858,6 @@ namespace UTJ.NormalPainter
             Vector3[] opoints, Vector3[] onormals, Vector4[] otangents);
 
         [DllImport("NormalPainter")] static extern void npInitializePenInput();
-        [DllImport("NormalPainter")] static extern float npGetPenPressure();
 #endif
     }
 }
