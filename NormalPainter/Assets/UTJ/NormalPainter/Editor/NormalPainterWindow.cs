@@ -316,8 +316,8 @@ namespace UTJ.NormalPainter
                 settings.brushMode = (BrushMode)GUILayout.SelectionGrid((int)settings.brushMode, strBrushTypes, 4);
                 EditorGUILayout.Space();
 
+                settings.brushUseSelection = EditorGUILayout.Toggle("Mask With Selection", settings.brushUseSelection); EditorGUILayout.Space();
                 DrawBrushPanel();
-                EditorGUILayout.Space();
 
                 if (settings.brushMode == BrushMode.Paint)
                 {
