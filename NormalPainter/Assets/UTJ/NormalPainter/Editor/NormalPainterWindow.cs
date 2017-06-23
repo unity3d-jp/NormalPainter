@@ -102,6 +102,12 @@ namespace UTJ.NormalPainter
 
                         EditorGUILayout.LabelField(tips);
                         EditorGUILayout.EndVertical();
+
+                        if (HandleShortcutKeys())
+                        {
+                            Event.current.Use();
+                            RepaintAllViews();
+                        }
                     }
                 }
             }
@@ -152,37 +158,34 @@ namespace UTJ.NormalPainter
         static readonly int spaceSize = 5;
         static readonly int c1Width = 100;
 
-        static readonly string[] strBrushTypes = new string[] {
-            "Paint",
-            "Replace",
-            "Smooth",
-            "Reset",
+        static readonly string[] strCommands = new string[] {
+            "Selection [F1]",
+            "Brush [F2]",
+            "Assign [F3]",
+            "Move [F4]",
+            "Rotate [F5]",
+            "Scale [F6]",
+            "Smooth [F7]",
+            "Projection [F8]",
+            "Reset [F9]",
         };
         static readonly string[] strSelectMode = new string[] {
-            "Single",
-            "Rect",
-            "Lasso",
-            "Brush",
+            "Single [1]",
+            "Rect [2]",
+            "Lasso [3]",
+            "Brush [4]",
         };
-
-        static readonly string[] strCommands = new string[] {
-            "Selection",
-            "Brush",
-            "Assign",
-            "Move",
-            "Rotate",
-            "Scale",
-            "Smooth",
-            "Projection",
-            "Reset",
+        static readonly string[] strBrushTypes = new string[] {
+            "Paint [1]",
+            "Replace [2]",
+            "Smooth [3]",
+            "Reset [4]",
         };
-
         static readonly string[] strCoodinate = new string[] {
             "World",
             "Local",
             "Pivot",
         };
-
         static readonly string[] strRayDirection = new string[] {
             "Base Normals",
             "Current Normals",
@@ -296,12 +299,12 @@ namespace UTJ.NormalPainter
 
                 GUILayout.BeginHorizontal();
                 GUILayout.Space(EditorGUI.indentLevel * indentSize);
-                if (GUILayout.Button("Select All"))
+                if (GUILayout.Button("Select All [A]"))
                 {
                     if (m_target.SelectAll())
                         m_target.UpdateSelection();
                 }
-                if (GUILayout.Button("Clear Selection"))
+                if (GUILayout.Button("Clear Selection [C]"))
                 {
                     if (m_target.ClearSelection())
                         m_target.UpdateSelection();
@@ -324,7 +327,7 @@ namespace UTJ.NormalPainter
                     GUILayout.BeginHorizontal();
                     settings.primary = EditorGUILayout.ColorField(settings.primary, GUILayout.Width(35));
                     settings.primary = NormalPainter.ToColor(EditorGUILayout.Vector3Field("", NormalPainter.ToVector(settings.primary)));
-                    settings.pickNormal = GUILayout.Toggle(settings.pickNormal, "Pick", "Button", GUILayout.Width(90));
+                    settings.pickNormal = GUILayout.Toggle(settings.pickNormal, "Pick [P]", "Button", GUILayout.Width(90));
                     GUILayout.EndHorizontal();
                 }
             }
@@ -478,7 +481,7 @@ namespace UTJ.NormalPainter
                 }
 
                 EditorGUILayout.Space();
-                if (GUILayout.Button("Recalculate Tangents"))
+                if (GUILayout.Button("Recalculate Tangents [T]"))
                     m_target.RecalculateTangents();
 
                 if (m_target.GetComponent<SkinnedMeshRenderer>() != null)
