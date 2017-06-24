@@ -3,6 +3,7 @@
   <ItemGroup>
     <ClCompile Include="Tests.cpp" />
     <ClCompile Include="pch.cpp" />
+    <ClCompile Include="TestFBXExport.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
