@@ -11,13 +11,6 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="NormalPainter\NormalPainter.cpp" />
-    <ClCompile Include="NormalPainter\npPenTablet_Win.cpp" />
-    <ClCompile Include="NormalPainter\pch.cpp">
-      <PrecompiledHeader>Create</PrecompiledHeader>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="MeshUtils.vcxproj">
       <Project>{fd3fe1ff-abe5-40db-b867-144e9dd9b23c}</Project>
     </ProjectReference>
@@ -29,11 +22,20 @@
     <Natvis Include="NatvisFile.natvis" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="NormalPainter\NormalPainter.h" />
-    <ClInclude Include="NormalPainter\pch.h" />
+    <ClInclude Include="FbxExporter\fbxeContext.h" />
+    <ClInclude Include="FbxExporter\FbxExporter.h" />
+    <ClInclude Include="FbxExporter\pch.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="FbxExporter\fbxeContext.cpp" />
+    <ClCompile Include="FbxExporter\FbxExporter.cpp" />
+    <ClCompile Include="FbxExporter\pch.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Master|x64'">Create</PrecompiledHeader>
+    </ClCompile>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{98EB8D3A-2692-4854-A236-00E5D97BBB0E}</ProjectGuid>
+    <ProjectGuid>{40308791-CAC5-46B9-981A-2376D1BD493A}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <WindowsTargetPlatformVersion>10.0.14393.0</WindowsTargetPlatformVersion>
   </PropertyGroup>

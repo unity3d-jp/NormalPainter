@@ -1,9 +1,6 @@
 #include "pch.h"
-
-#include "NormalPainter/NormalPainter.h"
-#ifdef npEnableFBX
-    #include "NormalPainter/npFBXExporter.h"
-#endif
+#include "FbxExporter/FbxExporter.h"
+using namespace mu;
 
 
 static void GenerateWaveMesh(
@@ -173,13 +170,12 @@ void GenerateCylinderMeshWithSkinning(
 
 void TestFBXExportMesh()
 {
-#ifdef npEnableFBX
-    auto ctx = CreateFBXExporter();
+    auto ctx = fbxeCreateContext();
 
-    ctx->createScene("MeshExportTest");
-    auto root = ctx->getRootNode();
-    auto parent = ctx->createNode(root, "Parent");
-    ctx->setTRS(parent, { 0.0f, 1.0f, 2.0f }, quatf::identity(), float3::one());
+    fbxeCreateScene(ctx, "MeshExportTest");
+    auto root = fbxeGetRootNode(ctx);
+    auto parent = fbxeCreateNode(ctx, root, "Parent");
+    fbxeSetTRS(ctx, parent, { 0.0f, 1.0f, 2.0f }, quatf::identity(), float3::one());
 
     {
         std::vector<int> counts;
@@ -188,36 +184,34 @@ void TestFBXExportMesh()
         std::vector<float2> uv;
         GenerateWaveMesh(counts, indices, points, uv, 1.0f, 0.25f, 128, 0.0f, false);
 
-        auto mesh = ctx->createNode(root, "Mesh");
-        ctx->addMesh(mesh, IFBXExporterContext::Topology::Quads, indices.size(),
+        auto mesh = fbxeCreateNode(ctx, root, "Mesh");
+        fbxeAddMesh(ctx, mesh, fbxe::Topology::Quads, indices.size(),
             points.size(), indices.data(), points.data(), nullptr, nullptr, uv.data(), nullptr);
     }
 
-    ctx->write("mesh_binary.fbx");
-    ctx->write("mesh_ascii.fbx", IFBXExporterContext::Format::FBXAscii);
-    ctx->write("mesh_encrypted.fbx", IFBXExporterContext::Format::FBXEncrypted);
-    ctx->write("mesh_obj.obj", IFBXExporterContext::Format::Obj);
-    ctx->release();
-#endif
+    fbxeWrite(ctx, "mesh_binary.fbx", fbxe::Format::FBXBinary);
+    fbxeWrite(ctx, "mesh_ascii.fbx", fbxe::Format::FBXAscii);
+    fbxeWrite(ctx, "mesh_encrypted.fbx", fbxe::Format::FBXEncrypted);
+    fbxeWrite(ctx, "mesh_obj.obj", fbxe::Format::Obj);
+    fbxeReleaseContext(ctx);
 }
 
 void TestFBXExportSkinnedMesh()
 {
-#ifdef npEnableFBX
-    auto ctx = CreateFBXExporter();
+    auto ctx = fbxeCreateContext();
 
-    ctx->createScene("SkinnedMeshExportTest");
-    auto root = ctx->getRootNode();
+    fbxeCreateScene(ctx, "SkinnedMeshExportTest");
+    auto root = fbxeGetRootNode(ctx);
 
     const int num_bones = 5;
-    FBXNode *bones[num_bones];
+    fbxe::Node *bones[num_bones];
     float4x4 bindposes[num_bones];
 
     for (int i = 0; i < num_bones; ++i) {
         char name[128];
         sprintf(name, "Bone%d", i);
-        bones[i] = ctx->createNode(i == 0 ? root : bones[i - 1], name);
-        ctx->setTRS(bones[i], { 0.0f, 1.0f, 0.0f }, quatf::identity(), float3::one());
+        bones[i] = fbxeCreateNode(ctx, i == 0 ? root : bones[i - 1], name);
+        fbxeSetTRS(ctx, bones[i], { 0.0f, 1.0f, 0.0f }, quatf::identity(), float3::one());
 
         bindposes[i] = float4x4::identity();
         bindposes[i][3].y = -1.0f * i;
@@ -230,13 +224,12 @@ void TestFBXExportSkinnedMesh()
     std::vector<Weights4> weights;
     GenerateCylinderMeshWithSkinning(counts, indices, points, uv, weights, 0.2f, 5.0f, 32, 128, false);
 
-    auto mesh = ctx->createNode(root, "SkinnedMesh");
-    ctx->addMesh(mesh,
-        IFBXExporterContext::Topology::Quads, indices.size(), points.size(), indices.data(), points.data(), nullptr, nullptr, uv.data(), nullptr);
-    ctx->addSkin(mesh, weights.data(), bones, bindposes, num_bones);
+    auto mesh = fbxeCreateNode(ctx, root, "SkinnedMesh");
+    fbxeAddMesh(ctx, mesh,
+        fbxe::Topology::Quads, indices.size(), points.size(), indices.data(), points.data(), nullptr, nullptr, uv.data(), nullptr);
+    fbxeAddSkin(ctx, mesh, weights.data(), bones, bindposes, num_bones);
 
-    ctx->write("skinnedmesh_binary.fbx");
-    ctx->write("skinnedmesh_ascii.fbx", IFBXExporterContext::Format::FBXAscii);
-    ctx->release();
-#endif
+    fbxeWrite(ctx, "skinnedmesh_binary.fbx", fbxe::Format::FBXBinary);
+    fbxeWrite(ctx, "skinnedmesh_ascii.fbx", fbxe::Format::FBXAscii);
+    fbxeReleaseContext(ctx);
 }

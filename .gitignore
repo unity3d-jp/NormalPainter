@@ -11,16 +11,9 @@
 *.bundle
 *.dylib
 *.so
-*.exr
-*.gif
-*.png
-*.mp4
-*.h264
-*.aac
-*.webm
-*.ogg
-*.flac
-*.wav
+
+*.fbx
+*.obj
 
 .vs/
 _out/
@@ -30,5 +23,5 @@ external/
 Library/
 Temp/
 
-MeshSync/*.csproj
-MeshSync/*.sln
+NormalPainter/*.csproj
+NormalPainter/*.sln

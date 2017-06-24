@@ -19,6 +19,9 @@
     <ClCompile Include="Tests.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\FbxExporterCore.vcxproj">
+      <Project>{40308791-cac5-46b9-981a-2376d1bd493a}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\MeshUtils.vcxproj">
       <Project>{fd3fe1ff-abe5-40db-b867-144e9dd9b23c}</Project>
     </ProjectReference>

@@ -18,18 +18,12 @@
     <ClCompile Include="NormalPainter\npPenTablet_Win.cpp">
       <Filter>NormalPainter</Filter>
     </ClCompile>
-    <ClCompile Include="NormalPainter\npFBXExporter.cpp">
-      <Filter>NormalPainter</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="NormalPainter\pch.h">
       <Filter>NormalPainter</Filter>
     </ClInclude>
     <ClInclude Include="NormalPainter\NormalPainter.h">
-      <Filter>NormalPainter</Filter>
-    </ClInclude>
-    <ClInclude Include="NormalPainter\npFBXExporter.h">
       <Filter>NormalPainter</Filter>
     </ClInclude>
   </ItemGroup>

@@ -1,41 +1,42 @@
 #include "pch.h"
-#include "NormalPainter.h"
-#include "npFBXExporter.h"
+#include "FbxExporter.h"
+#include "fbxeContext.h"
 
-#ifdef npEnableFBX
 #include <fbxsdk.h>
 #ifdef _WIN32
     #pragma comment(lib, "libfbxsdk-md.lib")
 #endif
 
-class FBXExporterContext : public IFBXExporterContext
+namespace fbxe {
+
+class Context : public IContext
 {
 public:
-    FBXExporterContext();
-    ~FBXExporterContext() override;
+    Context();
+    ~Context() override;
     void release() override;
     bool clear() override;
 
     bool createScene(const char *name) override;
     bool write(const char *path, Format format) override;
 
-    FBXNode* getRootNode() override;
-    FBXNode* findNodeByName(const char *name) override;
+    Node* getRootNode() override;
+    Node* findNodeByName(const char *name) override;
 
-    FBXNode* createNode(FBXNode *parent, const char *name) override;
-    void     setTRS(FBXNode *node, float3 t, quatf r, float3 s) override;
-    void     addMesh(FBXNode *node, Topology topology, int num_indices, int num_vertices,
+    Node* createNode(Node *parent, const char *name) override;
+    void     setTRS(Node *node, float3 t, quatf r, float3 s) override;
+    void     addMesh(Node *node, Topology topology, int num_indices, int num_vertices,
         const int indices[], const float3 points[], const float3 normals[], const float4 tangents[], const float2 uv[], const float4 colors[]) override;
-    void     addSkin(FBXNode *node, Weights4 weights[], FBXNode *bones[], float4x4 bindposes[], int num_bones) override;
+    void     addSkin(Node *node, Weights4 weights[], Node *bones[], float4x4 bindposes[], int num_bones) override;
 
 private:
     FbxManager *m_manager = nullptr;
     FbxScene *m_scene = nullptr;
 };
 
-npAPI IFBXExporterContext* CreateFBXExporter()
+fbxeAPI IContext* CreateContext()
 {
-    return new FBXExporterContext();
+    return new Context();
 }
 
 
@@ -59,23 +60,23 @@ static inline FbxAMatrix ToAM(float4x4 v)
 
 
 
-FBXExporterContext::FBXExporterContext()
+Context::Context()
 {
     m_manager = FbxManager::Create();
 }
 
-FBXExporterContext::~FBXExporterContext()
+Context::~Context()
 {
     clear();
     m_manager->Destroy();
 }
 
-void FBXExporterContext::release()
+void Context::release()
 {
     delete this;
 }
 
-bool FBXExporterContext::clear()
+bool Context::clear()
 {
     if (m_scene) {
         m_scene->Destroy(true);
@@ -85,7 +86,7 @@ bool FBXExporterContext::clear()
     return false;
 }
 
-bool FBXExporterContext::createScene(const char *name)
+bool Context::createScene(const char *name)
 {
     if (!m_manager) { return false; }
 
@@ -94,7 +95,7 @@ bool FBXExporterContext::createScene(const char *name)
     return m_scene != nullptr;
 }
 
-bool FBXExporterContext::write(const char *path, Format format)
+bool Context::write(const char *path, Format format)
 {
     if (!m_scene) { return false; }
 
@@ -103,9 +104,9 @@ bool FBXExporterContext::write(const char *path, Format format)
         // search file format index
         const char *format_name = nullptr;
         switch (format) {
-        case IFBXExporterContext::Format::FBXAscii: format_name = "FBX ascii"; break;
-        case IFBXExporterContext::Format::FBXEncrypted: format_name = "FBX encrypted"; break;
-        case IFBXExporterContext::Format::Obj: format_name = "OBJ"; break;
+        case Format::FBXAscii: format_name = "FBX ascii"; break;
+        case Format::FBXEncrypted: format_name = "FBX encrypted"; break;
+        case Format::Obj: format_name = "(*.obj)"; break;
         default: format_name = "FBX binary"; break;
         }
 
@@ -132,14 +133,14 @@ bool FBXExporterContext::write(const char *path, Format format)
     return ret;
 }
 
-FBXNode* FBXExporterContext::getRootNode()
+Node* Context::getRootNode()
 {
     if (!m_scene) { return nullptr; }
 
     return m_scene->GetRootNode();
 }
 
-FBXNode* FBXExporterContext::findNodeByName(const char *name)
+Node* Context::findNodeByName(const char *name)
 {
     if (!m_scene) { return nullptr; }
 
@@ -153,7 +154,7 @@ FBXNode* FBXExporterContext::findNodeByName(const char *name)
     return nullptr;
 }
 
-FBXNode* FBXExporterContext::createNode(FBXNode *parent, const char *name)
+Node* Context::createNode(Node *parent, const char *name)
 {
     if (!m_scene) { return nullptr; }
 
@@ -166,7 +167,7 @@ FBXNode* FBXExporterContext::createNode(FBXNode *parent, const char *name)
     return node;
 }
 
-void FBXExporterContext::setTRS(FBXNode *node_, float3 t, quatf r, float3 s)
+void Context::setTRS(Node *node_, float3 t, quatf r, float3 s)
 {
     if (!node_) { return; }
 
@@ -176,7 +177,7 @@ void FBXExporterContext::setTRS(FBXNode *node_, float3 t, quatf r, float3 s)
    
 }
 
-void FBXExporterContext::addMesh(FBXNode *node_, Topology topology, int num_indices, int num_vertices,
+void Context::addMesh(Node *node_, Topology topology, int num_indices, int num_vertices,
     const int indices[], const float3 points[], const float3 normals[], const float4 tangents[], const float2 uv[], const float4 colors[])
 {
     if (!node_) { return; }
@@ -302,7 +303,7 @@ static FbxMesh* FindMesh(FbxNode *node)
     return nullptr;
 }
 
-void FBXExporterContext::addSkin(FBXNode *node_, Weights4 weights[], FBXNode *bones[], float4x4 bindposes[], int num_bones)
+void Context::addSkin(Node *node_, Weights4 weights[], Node *bones[], float4x4 bindposes[], int num_bones)
 {
     if (!node_) { return; }
 
@@ -330,4 +331,4 @@ void FBXExporterContext::addSkin(FBXNode *node_, Weights4 weights[], FBXNode *bo
     }
 }
 
-#endif // npEnableFBX
+} // namespace fbxe
