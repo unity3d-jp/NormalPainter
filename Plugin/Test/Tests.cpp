@@ -365,7 +365,8 @@ void TestPolygonInside()
 }
 
 
-void TestFBXExport();
+void TestFBXExportMesh();
+void TestFBXExportSkinnedMesh();
 
 int main(int argc, char *argv[])
 {
@@ -375,7 +376,8 @@ int main(int argc, char *argv[])
     //TestMulPoints();
     //TestRayTrianglesIntersection();
     //TestPolygonInside();
-    TestFBXExport();
+    TestFBXExportMesh();
+    TestFBXExportSkinnedMesh();
 
     char dummy;
     scanf("%c", &dummy);

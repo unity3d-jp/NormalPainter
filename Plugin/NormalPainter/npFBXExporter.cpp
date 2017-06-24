@@ -25,7 +25,7 @@ public:
     FBXNode* addTransform(FBXNode *parent, const char *name, float3 t, quatf r, float3 s) override;
     FBXNode* addMesh(FBXNode *parent, const char *name,
         float3 t, quatf r, float3 s,
-        int num_triangles, int num_vertices,
+        Topology topology, int num_indices, int num_vertices,
         const int indices[], const float3 points[], const float3 normals[], const float4 tangents[], const float2 uv[], const float4 colors[],
         Weights4 weights[], FBXNode *bones[], int num_bones) override;
 
@@ -181,14 +181,13 @@ static int GetInfluence(Weights<N> weights[], int num_vertices, int bone_index, 
 
 FBXNode* FBXExporterContext::addMesh(FBXNode *parent, const char *name,
     float3 t, quatf r, float3 s,
-    int num_triangles, int num_vertices,
+    Topology topology, int num_indices, int num_vertices,
     const int indices[], const float3 points[], const float3 normals[], const float4 tangents[], const float2 uv[], const float4 colors[],
     Weights4 weights[], FBXNode *bones[], int num_bones)
 {
     if (!m_scene) { return nullptr; }
 
     auto node = (FbxNode*)addTransform(parent, name, t, r, s);
-
     auto mesh = FbxMesh::Create(m_scene, "");
 
     if (points) {
@@ -248,19 +247,33 @@ FBXNode* FBXExporterContext::addMesh(FBXNode *parent, const char *name,
         }
     }
 
-    // set triangles
-    for (int ti = 0; ti < num_triangles; ++ti) {
-        mesh->BeginPolygon();
-        for (int i = 0; i < 3; ++i) {
-            mesh->AddPolygon(indices[ti * 3 + i]);
+    // set primitives
+    {
+        int vertices_in_primitives = 0;
+        switch (topology) 
+        {
+        case Topology::Points:    vertices_in_primitives = 1; break;
+        case Topology::Lines:     vertices_in_primitives = 2; break;
+        case Topology::Triangles: vertices_in_primitives = 3; break;
+        case Topology::Quads:     vertices_in_primitives = 4; break;
+        default: break;
         }
-        mesh->EndPolygon();
+
+        int pi = 0;
+        while (pi < num_indices) {
+            mesh->BeginPolygon();
+            for (int vi = 0; vi < vertices_in_primitives; ++vi) {
+                mesh->AddPolygon(indices[pi++]);
+            }
+            mesh->EndPolygon();
+        }
     }
 
     node->SetNodeAttribute(mesh);
     node->SetShadingMode(FbxNode::eTextureShading);
 
 
+    // skinning
     if (num_bones > 0 && bones && weights) {
         auto skin = FbxSkin::Create(m_scene, "");
         skin->SetGeometry(mesh);

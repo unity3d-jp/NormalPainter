@@ -7,6 +7,14 @@ using FBXNode = void;
 class IFBXExporterContext
 {
 public:
+    enum class Topology
+    {
+        Points,
+        Lines,
+        Triangles,
+        Quads,
+    };
+
     virtual void release() = 0;
     virtual bool clear() = 0;
 
@@ -19,7 +27,7 @@ public:
     virtual FBXNode* addTransform(FBXNode *parent, const char *name, float3 t, quatf r, float3 s) = 0;
     virtual FBXNode* addMesh(FBXNode *parent, const char *name,
         float3 t, quatf r, float3 s,
-        int num_triangles, int num_vertices,
+        Topology topology, int num_indices, int num_vertices,
         const int indices[], const float3 points[], const float3 normals[], const float4 tangents[], const float2 uv[], const float4 colors[],
         Weights4 weights[] = nullptr, FBXNode *bones[] = nullptr, int num_bones = 0) = 0;
 
