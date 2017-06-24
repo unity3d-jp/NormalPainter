@@ -19,6 +19,7 @@ public:
     bool createScene(const char *name) override;
     bool write(const char *path, bool ascii) override;
 
+    FBXNode* getRootNode() override;
     FBXNode* addTransform(FBXNode *parent, const char *name, float3 t, quatf r, float3 s) override;
     FBXNode* addMesh(FBXNode *parent, const char *name,
         float3 t, quatf r, float3 s,
@@ -37,10 +38,13 @@ npAPI IFBXExporterContext* CreateFBXExporter()
 }
 
 
-static inline FbxDouble3 ToFbxD3(float3 v)
-{
-    return {v.x, v.y, v.z};
-}
+static inline FbxVector2 ToV2(float2 v) { return { v.x, v.y }; }
+static inline FbxDouble3 ToP3(float3 v) { return { v.x, v.y, v.z }; }
+static inline FbxDouble4 ToP4(float3 v) { return { v.x, v.y, v.z, 1.0f }; }
+static inline FbxVector4 ToV4(float3 v) { return { v.x, v.y, v.z, 0.0f }; }
+static inline FbxDouble4 ToP4(float4 v) { return { v.x, v.y, v.z, v.w }; }
+static inline FbxVector4 ToV4(float4 v) { return { v.x, v.y, v.z, v.w }; }
+static inline FbxColor   ToC4(float4 v) { return { v.x, v.y, v.z, v.w }; }
 
 
 
@@ -100,8 +104,8 @@ bool FBXExporterContext::write(const char *path, bool ascii)
         }
     }
 
-    {
-        auto settings = m_manager->GetIOSettings();
+    auto settings = m_manager->GetIOSettings();
+    if (settings) {
         settings->SetBoolProp(EXP_FBX_MATERIAL, true);
         settings->SetBoolProp(EXP_FBX_TEXTURE, true);
         settings->SetBoolProp(EXP_FBX_EMBEDDED, false);
@@ -109,9 +113,9 @@ bool FBXExporterContext::write(const char *path, bool ascii)
         settings->SetBoolProp(EXP_FBX_GOBO, true);
         settings->SetBoolProp(EXP_FBX_ANIMATION, true);
         settings->SetBoolProp(EXP_FBX_GLOBAL_SETTINGS, true);
-        if (!exporter->Initialize(path, file_format, m_manager->GetIOSettings())) {
-            return false;
-        }
+    }
+    if (!exporter->Initialize(path, file_format, m_manager->GetIOSettings())) {
+        return false;
     }
 
     bool ret = exporter->Export(m_scene);
@@ -119,12 +123,18 @@ bool FBXExporterContext::write(const char *path, bool ascii)
     return ret;
 }
 
+FBXNode* FBXExporterContext::getRootNode()
+{
+    if (!m_scene) { return nullptr; }
+    return m_scene->GetRootNode();
+}
+
 FBXNode* FBXExporterContext::addTransform(FBXNode *parent, const char *name, float3 t, quatf r, float3 s)
 {
     if (!m_scene) { return nullptr; }
 
     auto node = FbxNode::Create(m_scene, name);
-    node->LclTranslation.Set(ToFbxD3(t));
+    node->LclTranslation.Set(ToP3(t));
 
     if (parent) {
         reinterpret_cast<FbxNode*>(parent)->AddChild(node);
@@ -142,8 +152,74 @@ FBXNode* FBXExporterContext::addMesh(FBXNode *parent, const char *name,
     if (!m_scene) { return nullptr; }
 
     auto mesh = FbxMesh::Create(m_scene, "");
+
+    if (points) {
+        // set points
+        mesh->InitControlPoints(num_vertices);
+        auto dst = mesh->GetControlPoints();
+        for (int i = 0; i < num_vertices; ++i) {
+            dst[i] = ToP4(points[i]);
+        }
+    }
+    if (normals) {
+        // set normals
+        auto element = mesh->CreateElementNormal();
+        element->SetMappingMode(FbxGeometryElement::eByControlPoint);
+        element->SetReferenceMode(FbxGeometryElement::eDirect);
+
+        element->GetDirectArray().Resize(num_vertices);
+        auto dst = (FbxVector4*)element->GetDirectArray().GetLocked();
+        for (int i = 0; i < num_vertices; ++i) {
+            dst[i] = ToV4(normals[i]);
+        }
+    }
+    if (tangents) {
+        // set tangents
+        auto element = mesh->CreateElementTangent();
+        element->SetMappingMode(FbxGeometryElement::eByControlPoint);
+        element->SetReferenceMode(FbxGeometryElement::eDirect);
+
+        element->GetDirectArray().Resize(num_vertices);
+        auto dst = (FbxVector4*)element->GetDirectArray().GetLocked();
+        for (int i = 0; i < num_vertices; ++i) {
+            dst[i] = ToV4(tangents[i]);
+        }
+    }
+    if (uv) {
+        // set uv
+        auto element = mesh->CreateElementUV("UVSet1");
+        element->SetMappingMode(FbxGeometryElement::eByControlPoint);
+        element->SetReferenceMode(FbxGeometryElement::eDirect);
+
+        element->GetDirectArray().Resize(num_vertices);
+        auto dst = (FbxVector2*)element->GetDirectArray().GetLocked();
+        for (int i = 0; i < num_vertices; ++i) {
+            dst[i] = ToV2(uv[i]);
+        }
+    }
+    if (colors) {
+        // set colors
+        auto element = mesh->CreateElementVertexColor();
+        element->SetMappingMode(FbxGeometryElement::eByControlPoint);
+        element->SetReferenceMode(FbxGeometryElement::eDirect);
+
+        element->GetDirectArray().Resize(num_vertices);
+        auto dst = (FbxColor*)element->GetDirectArray().GetLocked();
+        for (int i = 0; i < num_vertices; ++i) {
+            dst[i] = ToC4(colors[i]);
+        }
+    }
+
+    for (int ti = 0; ti < num_triangles; ++ti) {
+        mesh->BeginPolygon();
+        for (int i = 0; i < 3; ++i) {
+            mesh->AddPolygon(indices[ti * 3 + i]);
+        }
+        mesh->EndPolygon();
+    }
+
     auto node = FbxNode::Create(m_scene, name);
-    node->LclTranslation.Set(ToFbxD3(t));
+    node->LclTranslation.Set(ToP3(t));
 
     node->SetNodeAttribute(mesh);
     node->SetShadingMode(FbxNode::eTextureShading);

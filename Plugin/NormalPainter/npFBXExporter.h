@@ -13,6 +13,7 @@ public:
     virtual bool createScene(const char *name) = 0;
     virtual bool write(const char *path, bool ascii) = 0;
 
+    virtual FBXNode* getRootNode() = 0;
     virtual FBXNode* addTransform(FBXNode *parent, const char *name, float3 t, quatf r, float3 s) = 0;
     virtual FBXNode* addMesh(FBXNode *parent, const char *name,
         float3 t, quatf r, float3 s,
