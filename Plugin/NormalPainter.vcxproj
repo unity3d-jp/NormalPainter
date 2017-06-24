@@ -31,6 +31,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="NormalPainter\NormalPainter.h" />
+    <ClInclude Include="NormalPainter\npFBXExporter.h" />
     <ClInclude Include="NormalPainter\pch.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

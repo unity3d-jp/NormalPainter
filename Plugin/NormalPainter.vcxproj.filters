@@ -29,5 +29,8 @@
     <ClInclude Include="NormalPainter\NormalPainter.h">
       <Filter>NormalPainter</Filter>
     </ClInclude>
+    <ClInclude Include="NormalPainter\npFBXExporter.h">
+      <Filter>NormalPainter</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

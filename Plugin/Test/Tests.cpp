@@ -61,7 +61,7 @@ void Test_GenNormals()
     refiner.genSubmesh(materialIDs);
 }
 
-void MatrixSwapHandedness()
+void TestMatrixSwapHandedness()
 {
     quatf rot1 = rotate(normalize(float3{0.15f, 0.3f, 0.6f}), 60.0f);
     quatf rot2 = swap_handedness(rot1);
@@ -364,16 +364,35 @@ void TestPolygonInside()
     printf("\n");
 }
 
+
+#include "NormalPainter/NormalPainter.h"
+#ifdef npEnableFBX
+    #include "NormalPainter/npFBXExporter.h"
+#endif
+
+void TestFBXExport()
+{
+#ifdef npEnableFBX
+    auto exporter = CreateFBXExporter();
+
+    exporter->createScene("TestScene");
+    exporter->addTransform(nullptr, "Hoge", {0.0f, 1.0f, 2.0f}, quatf::identity(), float3::one());
+
+    exporter->write("test_binary.fbx", false);
+    exporter->write("test_ascii.fbx", true);
+    exporter->release();
+#endif
+}
+
 int main(int argc, char *argv[])
 {
     //Test_IndexedArrays();
-    //Test_Sync(false);
-    //Test_Get();
     //Test_GenNormals();
-    //MatrixSwapHandedness();
-    TestMulPoints();
+    //TestMatrixSwapHandedness();
+    //TestMulPoints();
     //TestRayTrianglesIntersection();
     //TestPolygonInside();
+    TestFBXExport();
 
     char dummy;
     scanf("%c", &dummy);

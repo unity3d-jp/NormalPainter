@@ -21,6 +21,9 @@
     <ProjectReference Include="..\MeshUtils.vcxproj">
       <Project>{fd3fe1ff-abe5-40db-b867-144e9dd9b23c}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\NormalPainter.vcxproj">
+      <Project>{98eb8d3a-2692-4854-a236-00e5d97bbb0e}</Project>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />

@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "NormalPainter.h"
+#include "npFBXExporter.h"
 
 #ifdef npEnableFBX
 #include <fbxsdk.h>
@@ -7,27 +8,33 @@
     #pragma comment(lib, "libfbxsdk-md.lib")
 #endif
 
-using namespace mu;
-
-class FBXExporterContext
+class FBXExporterContext : public IFBXExporterContext
 {
 public:
     FBXExporterContext();
-    ~FBXExporterContext();
-    bool clear();
+    ~FBXExporterContext() override;
+    void release() override;
+    bool clear() override;
 
-    bool createScene(const char *name);
-    bool write(const char *path, bool ascii);
-    FbxNode* addTransform(const char *name, float3 t, quatf r, float3 s);
-    FbxNode* addMesh(const char *name,
+    bool createScene(const char *name) override;
+    bool write(const char *path, bool ascii) override;
+
+    FBXNode* addTransform(FBXNode *parent, const char *name, float3 t, quatf r, float3 s) override;
+    FBXNode* addMesh(FBXNode *parent, const char *name,
         float3 t, quatf r, float3 s,
         int num_triangles, int num_vertices,
-        const int indices[], const float3 points[], const float3 normals[], const float4 tangents[], const float2 uv[], const float4 colors[]);
+        const int indices[], const float3 points[], const float3 normals[], const float4 tangents[], const float2 uv[], const float4 colors[],
+        Weights4 weights[], int num_bones, const char *bone_names[]) override;
 
 private:
     FbxManager *m_manager = nullptr;
     FbxScene *m_scene = nullptr;
 };
+
+npAPI IFBXExporterContext* CreateFBXExporter()
+{
+    return new FBXExporterContext();
+}
 
 
 static inline FbxDouble3 ToFbxD3(float3 v)
@@ -48,6 +55,10 @@ FBXExporterContext::~FBXExporterContext()
     m_manager->Destroy();
 }
 
+void FBXExporterContext::release()
+{
+    delete this;
+}
 
 bool FBXExporterContext::clear()
 {
@@ -108,20 +119,25 @@ bool FBXExporterContext::write(const char *path, bool ascii)
     return ret;
 }
 
-FbxNode* FBXExporterContext::addTransform(const char *name, float3 t, quatf r, float3 s)
+FBXNode* FBXExporterContext::addTransform(FBXNode *parent, const char *name, float3 t, quatf r, float3 s)
 {
     if (!m_scene) { return nullptr; }
 
     auto node = FbxNode::Create(m_scene, name);
     node->LclTranslation.Set(ToFbxD3(t));
 
+    if (parent) {
+        reinterpret_cast<FbxNode*>(parent)->AddChild(node);
+    }
+
     return node;
 }
 
-FbxNode* FBXExporterContext::addMesh(const char *name,
+FBXNode* FBXExporterContext::addMesh(FBXNode *parent, const char *name,
     float3 t, quatf r, float3 s,
     int num_triangles, int num_vertices,
-    const int indices[], const float3 points[], const float3 normals[], const float4 tangents[], const float2 uv[], const float4 colors[])
+    const int indices[], const float3 points[], const float3 normals[], const float4 tangents[], const float2 uv[], const float4 colors[],
+    Weights4 weights[], int num_bones, const char *bone_names[])
 {
     if (!m_scene) { return nullptr; }
 
@@ -132,6 +148,9 @@ FbxNode* FBXExporterContext::addMesh(const char *name,
     node->SetNodeAttribute(mesh);
     node->SetShadingMode(FbxNode::eTextureShading);
 
+    if (parent) {
+        reinterpret_cast<FbxNode*>(parent)->AddChild(node);
+    }
 
     return node;
 }
