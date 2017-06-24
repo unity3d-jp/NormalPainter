@@ -29,7 +29,7 @@ public:
         float3 t, quatf r, float3 s,
         Topology topology, int num_indices, int num_vertices,
         const int indices[], const float3 points[], const float3 normals[], const float4 tangents[], const float2 uv[], const float4 colors[],
-        Weights4 weights[] = nullptr, FBXNode *bones[] = nullptr, int num_bones = 0) = 0;
+        Weights4 weights[] = nullptr, FBXNode *bones[] = nullptr, float4x4 bindposes[] = nullptr, int num_bones = 0) = 0;
 
 protected:
     virtual ~IFBXExporterContext() {}

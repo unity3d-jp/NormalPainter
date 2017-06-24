@@ -27,7 +27,7 @@ public:
         float3 t, quatf r, float3 s,
         Topology topology, int num_indices, int num_vertices,
         const int indices[], const float3 points[], const float3 normals[], const float4 tangents[], const float2 uv[], const float4 colors[],
-        Weights4 weights[], FBXNode *bones[], int num_bones) override;
+        Weights4 weights[], FBXNode *bones[], float4x4 bindposes[], int num_bones) override;
 
 private:
     FbxManager *m_manager = nullptr;
@@ -47,6 +47,16 @@ static inline FbxVector4 ToV4(float3 v) { return { v.x, v.y, v.z, 0.0f }; }
 static inline FbxDouble4 ToP4(float4 v) { return { v.x, v.y, v.z, v.w }; }
 static inline FbxVector4 ToV4(float4 v) { return { v.x, v.y, v.z, v.w }; }
 static inline FbxColor   ToC4(float4 v) { return { v.x, v.y, v.z, v.w }; }
+static inline FbxAMatrix ToAM(float4x4 v)
+{
+    FbxAMatrix ret;
+    auto src = &v[0][0];
+    auto dst = (double*)ret;
+    for (int i = 0; i < 16; ++i) {
+        dst[i] = src[i];
+    }
+    return ret;
+}
 
 
 
@@ -170,8 +180,11 @@ static int GetInfluence(Weights<N> weights[], int num_vertices, int bone_index, 
     for (int vi = 0; vi < num_vertices; ++vi) {
         for (int i = 0; i < N; ++i) {
             if (weights[vi].indices[i] == bone_index) {
-                dindices.push_back(vi);
-                dweights.push_back(weights[vi].weights[i]);
+                float w = weights[vi].weights[i];
+                if (w > 0.0f) {
+                    dindices.push_back(vi);
+                    dweights.push_back(w);
+                }
                 break;
             }
         }
@@ -183,7 +196,7 @@ FBXNode* FBXExporterContext::addMesh(FBXNode *parent, const char *name,
     float3 t, quatf r, float3 s,
     Topology topology, int num_indices, int num_vertices,
     const int indices[], const float3 points[], const float3 normals[], const float4 tangents[], const float2 uv[], const float4 colors[],
-    Weights4 weights[], FBXNode *bones[], int num_bones)
+    Weights4 weights[], FBXNode *bones[], float4x4 bindposes[], int num_bones)
 {
     if (!m_scene) { return nullptr; }
 
@@ -283,6 +296,7 @@ FBXNode* FBXExporterContext::addMesh(FBXNode *parent, const char *name,
         for (int bi = 0; bi < num_bones; ++bi) {
             auto cluster = FbxCluster::Create(m_scene, "");
             cluster->SetLink((FbxNode*)bones[bi]);
+            cluster->SetTransformMatrix(ToAM(invert(bindposes[bi])));
 
             GetInfluence(weights, num_vertices, bi, dindices, dweights);
             cluster->SetControlPointIWCount((int)dindices.size());

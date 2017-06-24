@@ -204,10 +204,15 @@ void TestFBXExportSkinnedMesh()
 
     const int num_bones = 5;
     FBXNode *bones[num_bones];
+    float4x4 bindposes[num_bones];
+
     for (int i = 0; i < num_bones; ++i) {
         char name[128];
         sprintf(name, "Bone%d", i);
         bones[i] = ctx->addTransform(i == 0 ? root : bones[i - 1], name, {0.0f, 1.0f, 0.0f}, quatf::identity(), float3::one());
+
+        bindposes[i] = float4x4::identity();
+        bindposes[i][3].y = -1.0f * i;
     }
 
     std::vector<int> counts;
@@ -218,7 +223,7 @@ void TestFBXExportSkinnedMesh()
     GenerateCylinderMeshWithSkinning(counts, indices, points, uv, weights, 0.2f, 5.0f, 32, 128, false);
     auto mesh = ctx->addMesh(root, "SkinnedMesh", float3::zero(), quatf::identity(), float3::one(),
         IFBXExporterContext::Topology::Quads, indices.size(), points.size(), indices.data(), points.data(), nullptr, nullptr, uv.data(), nullptr,
-        weights.data(), bones, num_bones);
+        weights.data(), bones, bindposes, num_bones);
 
     ctx->write("skinnedmesh_binary.fbx", false);
     ctx->write("skinnedmesh_ascii.fbx", true);
