@@ -178,18 +178,25 @@ void TestFBXExportMesh()
 
     ctx->createScene("MeshExportTest");
     auto root = ctx->getRootNode();
-    auto parent = ctx->addTransform(root, "Parent", { 0.0f, 1.0f, 2.0f }, quatf::identity(), float3::one());
+    auto parent = ctx->createNode(root, "Parent");
+    ctx->setTRS(parent, { 0.0f, 1.0f, 2.0f }, quatf::identity(), float3::one());
 
-    std::vector<int> counts;
-    std::vector<int> indices;
-    std::vector<float3> points;
-    std::vector<float2> uv;
-    GenerateWaveMesh(counts, indices, points, uv, 1.0f, 0.25f, 128, 0.0f, false);
-    auto mesh = ctx->addMesh(parent, "Mesh", float3::zero(), quatf::identity(), float3::one(),
-        IFBXExporterContext::Topology::Quads, indices.size(), points.size(), indices.data(), points.data(), nullptr, nullptr, uv.data(), nullptr);
+    {
+        std::vector<int> counts;
+        std::vector<int> indices;
+        std::vector<float3> points;
+        std::vector<float2> uv;
+        GenerateWaveMesh(counts, indices, points, uv, 1.0f, 0.25f, 128, 0.0f, false);
 
-    ctx->write("mesh_binary.fbx", false);
-    ctx->write("mesh_ascii.fbx", true);
+        auto mesh = ctx->createNode(root, "Mesh");
+        ctx->addMesh(mesh, IFBXExporterContext::Topology::Quads, indices.size(),
+            points.size(), indices.data(), points.data(), nullptr, nullptr, uv.data(), nullptr);
+    }
+
+    ctx->write("mesh_binary.fbx");
+    ctx->write("mesh_ascii.fbx", IFBXExporterContext::Format::FBXAscii);
+    ctx->write("mesh_encrypted.fbx", IFBXExporterContext::Format::FBXEncrypted);
+    ctx->write("mesh_obj.obj", IFBXExporterContext::Format::Obj);
     ctx->release();
 #endif
 }
@@ -209,7 +216,8 @@ void TestFBXExportSkinnedMesh()
     for (int i = 0; i < num_bones; ++i) {
         char name[128];
         sprintf(name, "Bone%d", i);
-        bones[i] = ctx->addTransform(i == 0 ? root : bones[i - 1], name, {0.0f, 1.0f, 0.0f}, quatf::identity(), float3::one());
+        bones[i] = ctx->createNode(i == 0 ? root : bones[i - 1], name);
+        ctx->setTRS(bones[i], { 0.0f, 1.0f, 0.0f }, quatf::identity(), float3::one());
 
         bindposes[i] = float4x4::identity();
         bindposes[i][3].y = -1.0f * i;
@@ -221,12 +229,14 @@ void TestFBXExportSkinnedMesh()
     std::vector<float2> uv;
     std::vector<Weights4> weights;
     GenerateCylinderMeshWithSkinning(counts, indices, points, uv, weights, 0.2f, 5.0f, 32, 128, false);
-    auto mesh = ctx->addMesh(root, "SkinnedMesh", float3::zero(), quatf::identity(), float3::one(),
-        IFBXExporterContext::Topology::Quads, indices.size(), points.size(), indices.data(), points.data(), nullptr, nullptr, uv.data(), nullptr,
-        weights.data(), bones, bindposes, num_bones);
 
-    ctx->write("skinnedmesh_binary.fbx", false);
-    ctx->write("skinnedmesh_ascii.fbx", true);
+    auto mesh = ctx->createNode(root, "SkinnedMesh");
+    ctx->addMesh(mesh,
+        IFBXExporterContext::Topology::Quads, indices.size(), points.size(), indices.data(), points.data(), nullptr, nullptr, uv.data(), nullptr);
+    ctx->addSkin(mesh, weights.data(), bones, bindposes, num_bones);
+
+    ctx->write("skinnedmesh_binary.fbx");
+    ctx->write("skinnedmesh_ascii.fbx", IFBXExporterContext::Format::FBXAscii);
     ctx->release();
 #endif
 }

@@ -17,17 +17,16 @@ public:
     bool clear() override;
 
     bool createScene(const char *name) override;
-    bool write(const char *path, bool ascii) override;
+    bool write(const char *path, Format format) override;
 
     FBXNode* getRootNode() override;
     FBXNode* findNodeByName(const char *name) override;
 
-    FBXNode* addTransform(FBXNode *parent, const char *name, float3 t, quatf r, float3 s) override;
-    FBXNode* addMesh(FBXNode *parent, const char *name,
-        float3 t, quatf r, float3 s,
-        Topology topology, int num_indices, int num_vertices,
-        const int indices[], const float3 points[], const float3 normals[], const float4 tangents[], const float2 uv[], const float4 colors[],
-        Weights4 weights[], FBXNode *bones[], float4x4 bindposes[], int num_bones) override;
+    FBXNode* createNode(FBXNode *parent, const char *name) override;
+    void     setTRS(FBXNode *node, float3 t, quatf r, float3 s) override;
+    void     addMesh(FBXNode *node, Topology topology, int num_indices, int num_vertices,
+        const int indices[], const float3 points[], const float3 normals[], const float4 tangents[], const float2 uv[], const float4 colors[]) override;
+    void     addSkin(FBXNode *node, Weights4 weights[], FBXNode *bones[], float4x4 bindposes[], int num_bones) override;
 
 private:
     FbxManager *m_manager = nullptr;
@@ -95,41 +94,39 @@ bool FBXExporterContext::createScene(const char *name)
     return m_scene != nullptr;
 }
 
-bool FBXExporterContext::write(const char *path, bool ascii)
+bool FBXExporterContext::write(const char *path, Format format)
 {
     if (!m_scene) { return false; }
 
-    auto exporter = FbxExporter::Create(m_manager, "");
+    int file_format = 0;
+    {
+        // search file format index
+        const char *format_name = nullptr;
+        switch (format) {
+        case IFBXExporterContext::Format::FBXAscii: format_name = "FBX ascii"; break;
+        case IFBXExporterContext::Format::FBXEncrypted: format_name = "FBX encrypted"; break;
+        case IFBXExporterContext::Format::Obj: format_name = "OBJ"; break;
+        default: format_name = "FBX binary"; break;
+        }
 
-    int file_format = m_manager->GetIOPluginRegistry()->GetNativeWriterFormat();
-    if (ascii) {
-        int count = m_manager->GetIOPluginRegistry()->GetWriterFormatCount();
-        for (int i = 0; i < count; ++i) {
-            if (m_manager->GetIOPluginRegistry()->WriterIsFBX(i)) {
-                auto desc = m_manager->GetIOPluginRegistry()->GetWriterFormatDescription(i);
-                if (std::strstr(desc, "ascii") != nullptr)
-                {
-                    file_format = i;
-                    break;
-                }
+        int n = m_manager->GetIOPluginRegistry()->GetWriterFormatCount();
+        for (int i = 0; i < n; ++i) {
+            auto desc = m_manager->GetIOPluginRegistry()->GetWriterFormatDescription(i);
+            if (std::strstr(desc, format_name) != nullptr)
+            {
+                file_format = i;
+                break;
             }
         }
     }
 
-    auto settings = m_manager->GetIOSettings();
-    if (settings) {
-        settings->SetBoolProp(EXP_FBX_MATERIAL, true);
-        settings->SetBoolProp(EXP_FBX_TEXTURE, true);
-        settings->SetBoolProp(EXP_FBX_EMBEDDED, false);
-        settings->SetBoolProp(EXP_FBX_SHAPE, true);
-        settings->SetBoolProp(EXP_FBX_GOBO, true);
-        settings->SetBoolProp(EXP_FBX_ANIMATION, true);
-        settings->SetBoolProp(EXP_FBX_GLOBAL_SETTINGS, true);
-    }
+    // create exporter
+    auto exporter = FbxExporter::Create(m_manager, "");
     if (!exporter->Initialize(path, file_format, m_manager->GetIOSettings())) {
         return false;
     }
 
+    // do export
     bool ret = exporter->Export(m_scene);
     exporter->Destroy();
     return ret;
@@ -156,51 +153,35 @@ FBXNode* FBXExporterContext::findNodeByName(const char *name)
     return nullptr;
 }
 
-FBXNode* FBXExporterContext::addTransform(FBXNode *parent, const char *name, float3 t, quatf r, float3 s)
+FBXNode* FBXExporterContext::createNode(FBXNode *parent, const char *name)
 {
     if (!m_scene) { return nullptr; }
 
     auto node = FbxNode::Create(m_scene, name);
-    node->LclTranslation.Set(ToP3(t));
+    if (!node) { return nullptr; }
 
     if (parent) {
         reinterpret_cast<FbxNode*>(parent)->AddChild(node);
     }
-
     return node;
 }
 
-
-template<int N>
-static int GetInfluence(Weights<N> weights[], int num_vertices, int bone_index, RawVector<int>& dindices, RawVector<double>& dweights)
+void FBXExporterContext::setTRS(FBXNode *node_, float3 t, quatf r, float3 s)
 {
-    dindices.clear();
-    dweights.clear();
+    if (!node_) { return; }
 
-    for (int vi = 0; vi < num_vertices; ++vi) {
-        for (int i = 0; i < N; ++i) {
-            if (weights[vi].indices[i] == bone_index) {
-                float w = weights[vi].weights[i];
-                if (w > 0.0f) {
-                    dindices.push_back(vi);
-                    dweights.push_back(w);
-                }
-                break;
-            }
-        }
-    }
-    return (int)dindices.size();
+    auto node = (FbxNode*)node_;
+    node->LclTranslation.Set(ToP3(t));
+    node->LclScaling.Set(ToP3(s));
+   
 }
 
-FBXNode* FBXExporterContext::addMesh(FBXNode *parent, const char *name,
-    float3 t, quatf r, float3 s,
-    Topology topology, int num_indices, int num_vertices,
-    const int indices[], const float3 points[], const float3 normals[], const float4 tangents[], const float2 uv[], const float4 colors[],
-    Weights4 weights[], FBXNode *bones[], float4x4 bindposes[], int num_bones)
+void FBXExporterContext::addMesh(FBXNode *node_, Topology topology, int num_indices, int num_vertices,
+    const int indices[], const float3 points[], const float3 normals[], const float4 tangents[], const float2 uv[], const float4 colors[])
 {
-    if (!m_scene) { return nullptr; }
+    if (!node_) { return; }
 
-    auto node = (FbxNode*)addTransform(parent, name, t, r, s);
+    auto node = reinterpret_cast<FbxNode*>(node_);
     auto mesh = FbxMesh::Create(m_scene, "");
 
     if (points) {
@@ -260,22 +241,23 @@ FBXNode* FBXExporterContext::addMesh(FBXNode *parent, const char *name,
         }
     }
 
-    // set primitives
     {
-        int vertices_in_primitives = 0;
-        switch (topology) 
+        // set primitives
+
+        int vertices_in_primitive = 0;
+        switch (topology)
         {
-        case Topology::Points:    vertices_in_primitives = 1; break;
-        case Topology::Lines:     vertices_in_primitives = 2; break;
-        case Topology::Triangles: vertices_in_primitives = 3; break;
-        case Topology::Quads:     vertices_in_primitives = 4; break;
+        case Topology::Points:    vertices_in_primitive = 1; break;
+        case Topology::Lines:     vertices_in_primitive = 2; break;
+        case Topology::Triangles: vertices_in_primitive = 3; break;
+        case Topology::Quads:     vertices_in_primitive = 4; break;
         default: break;
         }
 
         int pi = 0;
         while (pi < num_indices) {
             mesh->BeginPolygon();
-            for (int vi = 0; vi < vertices_in_primitives; ++vi) {
+            for (int vi = 0; vi < vertices_in_primitive; ++vi) {
                 mesh->AddPolygon(indices[pi++]);
             }
             mesh->EndPolygon();
@@ -284,35 +266,68 @@ FBXNode* FBXExporterContext::addMesh(FBXNode *parent, const char *name,
 
     node->SetNodeAttribute(mesh);
     node->SetShadingMode(FbxNode::eTextureShading);
+}
 
+template<int N>
+static int GetInfluence(Weights<N> weights[], int num_vertices, int bone_index, RawVector<int>& dindices, RawVector<double>& dweights)
+{
+    dindices.clear();
+    dweights.clear();
 
-    // skinning
-    if (num_bones > 0 && bones && weights) {
-        auto skin = FbxSkin::Create(m_scene, "");
-        skin->SetGeometry(mesh);
-
-        RawVector<int> dindices;
-        RawVector<double> dweights;
-        for (int bi = 0; bi < num_bones; ++bi) {
-            auto cluster = FbxCluster::Create(m_scene, "");
-            cluster->SetLink((FbxNode*)bones[bi]);
-            cluster->SetTransformMatrix(ToAM(invert(bindposes[bi])));
-
-            GetInfluence(weights, num_vertices, bi, dindices, dweights);
-            cluster->SetControlPointIWCount((int)dindices.size());
-            dindices.copy_to(cluster->GetControlPointIndices());
-            dweights.copy_to(cluster->GetControlPointWeights());
-
-            skin->AddCluster(cluster);
+    for (int vi = 0; vi < num_vertices; ++vi) {
+        for (int i = 0; i < N; ++i) {
+            if (weights[vi].indices[i] == bone_index) {
+                float w = weights[vi].weights[i];
+                if (w > 0.0f) {
+                    dindices.push_back(vi);
+                    dweights.push_back(w);
+                }
+                break;
+            }
         }
     }
+    return (int)dindices.size();
+}
 
-
-    if (parent) {
-        reinterpret_cast<FbxNode*>(parent)->AddChild(node);
+static FbxMesh* FindMesh(FbxNode *node)
+{
+    int n = node->GetNodeAttributeCount();
+    for (int i = 0; i < n; ++i) {
+        auto attr = node->GetNodeAttributeByIndex(i);
+        auto name = attr->GetTypeName();
+        if (std::strcmp(name, "Mesh") == 0) {
+            return static_cast<FbxMesh*>(attr);
+        }
     }
+    return nullptr;
+}
 
-    return node;
+void FBXExporterContext::addSkin(FBXNode *node_, Weights4 weights[], FBXNode *bones[], float4x4 bindposes[], int num_bones)
+{
+    if (!node_) { return; }
+
+    auto node = reinterpret_cast<FbxNode*>(node_);
+    auto mesh = FindMesh(node);
+    if (!mesh) { return; }
+
+    auto skin = FbxSkin::Create(m_scene, "");
+    skin->SetGeometry(mesh);
+
+    RawVector<int> dindices;
+    RawVector<double> dweights;
+    int num_vertices = mesh->GetControlPointsCount();
+    for (int bi = 0; bi < num_bones; ++bi) {
+        auto cluster = FbxCluster::Create(m_scene, "");
+        cluster->SetLink((FbxNode*)bones[bi]);
+        cluster->SetTransformMatrix(ToAM(invert(bindposes[bi])));
+
+        GetInfluence(weights, num_vertices, bi, dindices, dweights);
+        cluster->SetControlPointIWCount((int)dindices.size());
+        dindices.copy_to(cluster->GetControlPointIndices());
+        dweights.copy_to(cluster->GetControlPointWeights());
+
+        skin->AddCluster(cluster);
+    }
 }
 
 #endif // npEnableFBX
