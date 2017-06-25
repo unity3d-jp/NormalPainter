@@ -170,7 +170,8 @@ void GenerateCylinderMeshWithSkinning(
 
 void TestFBXExportMesh()
 {
-    auto ctx = fbxeCreateContext();
+    fbxe::ExportOptions opt;
+    auto ctx = fbxeCreateContext(&opt);
 
     fbxeCreateScene(ctx, "MeshExportTest");
     auto root = fbxeGetRootNode(ctx);
@@ -198,7 +199,9 @@ void TestFBXExportMesh()
 
 void TestFBXExportSkinnedMesh()
 {
-    auto ctx = fbxeCreateContext();
+    fbxe::ExportOptions opt;
+    opt.scale_factor = 2.0f;
+    auto ctx = fbxeCreateContext(&opt);
 
     fbxeCreateScene(ctx, "SkinnedMeshExportTest");
     auto root = fbxeGetRootNode(ctx);

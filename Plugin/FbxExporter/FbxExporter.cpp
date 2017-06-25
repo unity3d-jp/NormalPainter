@@ -2,9 +2,9 @@
 #include "FbxExporter.h"
 #include "fbxeContext.h"
 
-fbxeAPI fbxe::IContext* fbxeCreateContext()
+fbxeAPI fbxe::IContext* fbxeCreateContext(const fbxe::ExportOptions *opt)
 {
-    return fbxe::CreateContext();
+    return fbxe::CreateContext(opt);
 }
 
 fbxeAPI void fbxeReleaseContext(fbxe::IContext *ctx)
@@ -13,13 +13,13 @@ fbxeAPI void fbxeReleaseContext(fbxe::IContext *ctx)
     ctx->release();
 }
 
-fbxeAPI bool fbxeCreateScene(fbxe::IContext *ctx, const char *name)
+fbxeAPI int fbxeCreateScene(fbxe::IContext *ctx, const char *name)
 {
     if (!ctx) { return false; }
     return ctx->createScene(name);
 }
 
-fbxeAPI bool fbxeWrite(fbxe::IContext *ctx, const char *path, fbxe::Format format)
+fbxeAPI int fbxeWrite(fbxe::IContext *ctx, const char *path, fbxe::Format format)
 {
     if (!ctx) { return false; }
     return ctx->write(path, format);

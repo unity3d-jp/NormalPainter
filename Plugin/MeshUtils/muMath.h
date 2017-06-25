@@ -487,6 +487,9 @@ inline float4x4& operator*=(float4x4& a, const float4x4 &b)
     return a;
 }
 
+inline float3 swap_handedness(const float3& v) { return { -v.x, v.y, v.z }; }
+inline float4 swap_handedness(const float4& v) { return { -v.x, v.y, v.z, v.w }; }
+
 inline static float clamp01(float v) { return std::max<float>(std::min<float>(v, 1.0f), 0.0f); }
 inline static float clamp11(float v) { return std::max<float>(std::min<float>(v, 1.0f), -1.0f); }
 inline static int clamp01(int v) { return std::max<int>(std::min<int>(v, 1), 0); }

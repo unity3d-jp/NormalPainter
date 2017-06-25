@@ -12,7 +12,7 @@ namespace fbxe {
 class Context : public IContext
 {
 public:
-    Context();
+    Context(const ExportOptions *opt);
     ~Context() override;
     void release() override;
     bool clear() override;
@@ -24,19 +24,20 @@ public:
     Node* findNodeByName(const char *name) override;
 
     Node* createNode(Node *parent, const char *name) override;
-    void     setTRS(Node *node, float3 t, quatf r, float3 s) override;
-    void     addMesh(Node *node, Topology topology, int num_indices, int num_vertices,
+    void setTRS(Node *node, float3 t, quatf r, float3 s) override;
+    void addMesh(Node *node, Topology topology, int num_indices, int num_vertices,
         const int indices[], const float3 points[], const float3 normals[], const float4 tangents[], const float2 uv[], const float4 colors[]) override;
-    void     addSkin(Node *node, Weights4 weights[], Node *bones[], float4x4 bindposes[], int num_bones) override;
+    void addSkin(Node *node, Weights4 weights[], Node *bones[], float4x4 bindposes[], int num_bones) override;
 
 private:
+    ExportOptions m_opt;
     FbxManager *m_manager = nullptr;
     FbxScene *m_scene = nullptr;
 };
 
-fbxeAPI IContext* CreateContext()
+fbxeAPI IContext* CreateContext(const ExportOptions *opt)
 {
-    return new Context();
+    return new Context(opt);
 }
 
 
@@ -58,10 +59,21 @@ static inline FbxAMatrix ToAM(float4x4 v)
     return ret;
 }
 
-
-
-Context::Context()
+static inline void FlipHandedness(FbxDouble4 *v, int n)
 {
+    for (int i = 0; i < n; ++i) { v[i].mData[0] *= -1.0; }
+}
+static inline void FlipHandedness(FbxVector4 *v, int n)
+{
+    for (int i = 0; i < n; ++i) { v[i].mData[0] *= -1.0; }
+}
+
+
+
+
+Context::Context(const ExportOptions *opt)
+{
+    if (opt) { m_opt = *opt; }
     m_manager = FbxManager::Create();
 }
 
@@ -171,11 +183,19 @@ void Context::setTRS(Node *node_, float3 t, quatf r, float3 s)
 {
     if (!node_) { return; }
 
+    t *= m_opt.scale_factor;
+    if (m_opt.flip_handedness) {
+        t = swap_handedness(t);
+        r = swap_handedness(r);
+    }
+
     auto node = (FbxNode*)node_;
     node->LclTranslation.Set(ToP3(t));
+    node->RotationOrder.Set(FbxEuler::eOrderZXY);
+    node->LclRotation.Set(ToP3(eularZXY(r)));
     node->LclScaling.Set(ToP3(s));
-   
 }
+
 
 void Context::addMesh(Node *node_, Topology topology, int num_indices, int num_vertices,
     const int indices[], const float3 points[], const float3 normals[], const float4 tangents[], const float2 uv[], const float4 colors[])
@@ -190,8 +210,9 @@ void Context::addMesh(Node *node_, Topology topology, int num_indices, int num_v
         mesh->InitControlPoints(num_vertices);
         auto dst = mesh->GetControlPoints();
         for (int i = 0; i < num_vertices; ++i) {
-            dst[i] = ToP4(points[i]);
+            dst[i] = ToP4(points[i] * m_opt.scale_factor);
         }
+        if (m_opt.flip_handedness) { FlipHandedness(dst, num_vertices); }
     }
     if (normals) {
         // set normals
@@ -204,6 +225,7 @@ void Context::addMesh(Node *node_, Topology topology, int num_indices, int num_v
         for (int i = 0; i < num_vertices; ++i) {
             dst[i] = ToV4(normals[i]);
         }
+        if (m_opt.flip_handedness) { FlipHandedness(dst, num_vertices); }
     }
     if (tangents) {
         // set tangents
@@ -216,6 +238,7 @@ void Context::addMesh(Node *node_, Topology topology, int num_indices, int num_v
         for (int i = 0; i < num_vertices; ++i) {
             dst[i] = ToV4(tangents[i]);
         }
+        if (m_opt.flip_handedness) { FlipHandedness(dst, num_vertices); }
     }
     if (uv) {
         // set uv
@@ -256,12 +279,25 @@ void Context::addMesh(Node *node_, Topology topology, int num_indices, int num_v
         }
 
         int pi = 0;
-        while (pi < num_indices) {
-            mesh->BeginPolygon();
-            for (int vi = 0; vi < vertices_in_primitive; ++vi) {
-                mesh->AddPolygon(indices[pi++]);
+        if (m_opt.flip_faces) {
+            while (pi < num_indices) {
+                mesh->BeginPolygon();
+                for (int vi = vertices_in_primitive - 1; vi >= 0; --vi) {
+                    mesh->AddPolygon(indices[pi + vi]);
+                }
+                pi += vertices_in_primitive;
+                mesh->EndPolygon();
             }
-            mesh->EndPolygon();
+        }
+        else {
+            while (pi < num_indices) {
+                mesh->BeginPolygon();
+                for (int vi = 0; vi < vertices_in_primitive; ++vi) {
+                    mesh->AddPolygon(indices[pi + vi]);
+                }
+                pi += vertices_in_primitive;
+                mesh->EndPolygon();
+            }
         }
     }
 
@@ -320,7 +356,13 @@ void Context::addSkin(Node *node_, Weights4 weights[], Node *bones[], float4x4 b
     for (int bi = 0; bi < num_bones; ++bi) {
         auto cluster = FbxCluster::Create(m_scene, "");
         cluster->SetLink((FbxNode*)bones[bi]);
-        cluster->SetTransformMatrix(ToAM(invert(bindposes[bi])));
+
+        auto bindpose = bindposes[bi];
+        (float3&)bindpose[3] *= m_opt.scale_factor;
+        if (m_opt.flip_handedness) {
+            bindpose = swap_handedness(bindpose);
+        }
+        cluster->SetTransformMatrix(ToAM(invert(bindpose)));
 
         GetInfluence(weights, num_vertices, bi, dindices, dweights);
         cluster->SetControlPointIWCount((int)dindices.size());

@@ -20,15 +20,15 @@ public:
     virtual Node* findNodeByName(const char *name) = 0;
 
     virtual Node* createNode(Node *parent, const char *name) = 0;
-    virtual void     setTRS(Node *node, float3 t, quatf r, float3 s) = 0;
-    virtual void     addMesh(Node *node, Topology topology, int num_indices, int num_vertices,
+    virtual void setTRS(Node *node, float3 t, quatf r, float3 s) = 0;
+    virtual void addMesh(Node *node, Topology topology, int num_indices, int num_vertices,
         const int indices[], const float3 points[], const float3 normals[], const float4 tangents[], const float2 uv[], const float4 colors[]) = 0;
-    virtual void     addSkin(Node *node, Weights4 weights[], Node *bones[], float4x4 bindposes[], int num_bones) = 0;
+    virtual void addSkin(Node *node, Weights4 weights[], Node *bones[], float4x4 bindposes[], int num_bones) = 0;
 
 protected:
     virtual ~IContext() {}
 };
 
-fbxeAPI IContext* CreateContext();
+fbxeAPI IContext* CreateContext(const ExportOptions *opt);
 
 } // namespace fbxe

@@ -27,14 +27,22 @@ namespace fbxe {
         FBXEncrypted,
         Obj,
     };
+
+    struct ExportOptions
+    {
+        int flip_handedness = 0;
+        int flip_faces = 0;
+        float scale_factor = 1.0f;
+    };
+
 } // namespace fbxe
 
 
-fbxeAPI fbxe::IContext* fbxeCreateContext();
+fbxeAPI fbxe::IContext* fbxeCreateContext(const fbxe::ExportOptions *opt);
 fbxeAPI void            fbxeReleaseContext(fbxe::IContext *ctx);
 
-fbxeAPI bool        fbxeCreateScene(fbxe::IContext *ctx, const char *name);
-fbxeAPI bool        fbxeWrite(fbxe::IContext *ctx, const char *path, fbxe::Format format);
+fbxeAPI int         fbxeCreateScene(fbxe::IContext *ctx, const char *name);
+fbxeAPI int         fbxeWrite(fbxe::IContext *ctx, const char *path, fbxe::Format format);
 
 fbxeAPI fbxe::Node* fbxeGetRootNode(fbxe::IContext *ctx);
 fbxeAPI fbxe::Node* fbxeFindNodeByName(fbxe::IContext *ctx, const char *name);
