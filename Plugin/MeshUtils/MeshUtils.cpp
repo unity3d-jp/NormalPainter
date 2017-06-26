@@ -379,7 +379,9 @@ struct SelectEdgeImpl
     const IArray<float3>& vertices;
     const ConnectionData& connection;
     RawVector<int>& dst;
+
     std::vector<bool> checked;
+    std::vector<std::pair<int, int>> opened;
 
     SelectEdgeImpl(const IArray<int>& indices_, const TOC& oc_, const IArray<float3>& vertices_, const ConnectionData& connection_, RawVector<int>& dst_)
         : indices(indices_)
@@ -391,38 +393,12 @@ struct SelectEdgeImpl
         checked.resize(vertices.size());
     }
 
-    void selectEdge(int i0, int i1)
-    {
-        if (checked[i1]) { return; }
-
-        if (IsEdgeOpenedImpl(indices, oc, connection, i0, i1)) {
-            checked[i1] = true;
-            dst.push_back(i1);
-
-            int num_shared = connection.counts[i1];
-            int offset = connection.offsets[i1];
-            for (int si = 0; si < num_shared; ++si) {
-                int fi = connection.faces[offset + si];
-                int fo = oc.getOffset(fi);
-                int c = oc.getCount(fi);
-                int nth = connection.indices[offset + si] - fo;
-
-                int f0 = nth;
-                int f1 = f0 - 1; if (f1 < 0) { f1 = c - 1; }
-                int f2 = f0 + 1; if (f2 == c) { f2 = 0; }
-
-                selectEdge(indices[fo + f0], indices[fo + f1]);
-                selectEdge(indices[fo + f0], indices[fo + f2]);
-            }
-        }
-    }
-
     void selectEdge(int vertex_index)
     {
         if (checked[vertex_index]) { return; }
 
+        checked[vertex_index] = true;
         if (OnEdgeImpl(indices, oc, vertices, connection, vertex_index)) {
-            checked[vertex_index] = true;
             dst.push_back(vertex_index);
 
             int num_shared = connection.counts[vertex_index];
@@ -437,8 +413,37 @@ struct SelectEdgeImpl
                 int f1 = f0 - 1; if (f1 < 0) { f1 = c - 1; }
                 int f2 = f0 + 1; if (f2 == c) { f2 = 0; }
 
-                selectEdge(indices[fo + f0], indices[fo + f1]);
-                selectEdge(indices[fo + f0], indices[fo + f2]);
+                opened.push_back(std::make_pair(indices[fo + f0], indices[fo + f1]));
+                opened.push_back(std::make_pair(indices[fo + f0], indices[fo + f2]));
+            }
+        }
+
+        while (!opened.empty()) {
+            int i0 = opened.back().first;
+            int i1 = opened.back().second;
+            opened.pop_back();
+
+            if (checked[i1]) { continue; }
+
+            if (IsEdgeOpenedImpl(indices, oc, connection, i0, i1)) {
+                checked[i1] = true;
+                dst.push_back(i1);
+
+                int num_shared = connection.counts[i1];
+                int offset = connection.offsets[i1];
+                for (int si = 0; si < num_shared; ++si) {
+                    int fi = connection.faces[offset + si];
+                    int fo = oc.getOffset(fi);
+                    int c = oc.getCount(fi);
+                    int nth = connection.indices[offset + si] - fo;
+
+                    int f0 = nth;
+                    int f1 = f0 - 1; if (f1 < 0) { f1 = c - 1; }
+                    int f2 = f0 + 1; if (f2 == c) { f2 = 0; }
+
+                    opened.push_back(std::make_pair(indices[fo + f0], indices[fo + f1]));
+                    opened.push_back(std::make_pair(indices[fo + f0], indices[fo + f2]));
+                }
             }
         }
     }
