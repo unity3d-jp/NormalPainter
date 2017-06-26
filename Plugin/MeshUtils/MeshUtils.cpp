@@ -200,6 +200,15 @@ bool GenerateWeightsN(RawVector<Weights<N>>& dst, IArray<int> bone_indices, IArr
 template bool GenerateWeightsN(RawVector<Weights<4>>& dst, IArray<int> bone_indices, IArray<float> bone_weights, int bones_per_vertex);
 template bool GenerateWeightsN(RawVector<Weights<8>>& dst, IArray<int> bone_indices, IArray<float> bone_weights, int bones_per_vertex);
 
+
+void ConnectionData::clear()
+{
+    counts.clear();
+    offsets.clear();
+    faces.clear();
+    indices.clear();
+}
+
 void BuildVerticesConnection(
     const IArray<int>& indices, const IArray<int>& counts, size_t num_points, ConnectionData& connection)
 {
@@ -290,11 +299,11 @@ void BuildVerticesConnection(
 bool IsEdge(const IArray<int>& indices, const IArray<float3>& vertices, const ConnectionData& connection, int vertex_index)
 {
     int num_shared = connection.counts[vertex_index];
-    int offsets = connection.offsets[vertex_index];
+    int offset = connection.offsets[vertex_index];
 
     float angle = 0.0f;
     for (int i = 0; i < num_shared; ++i) {
-        int fi = connection.faces[offsets + i];
+        int fi = connection.faces[offset + i];
 
         int f0 = indices[fi * 3 + 0];
         int f1 = indices[fi * 3 + 1];
@@ -315,5 +324,61 @@ bool IsEdge(const IArray<int>& indices, const IArray<float3>& vertices, const Co
 
     return !near_equal(angle, 360.0f * Deg2Rad);
 }
+
+
+struct SelectEdgeImpl
+{
+    const IArray<int>& indices;
+    const IArray<float3>& vertices;
+    const ConnectionData& connection;
+    RawVector<int>& dst;
+    std::vector<bool> checked;
+
+    SelectEdgeImpl(const IArray<int>& indices_, const IArray<float3>& vertices_, const ConnectionData& connection_, RawVector<int>& dst_)
+        : indices(indices_)
+        , vertices(vertices_)
+        , connection(connection_)
+        , dst(dst_)
+    {
+        checked.resize(vertices.size());
+    }
+
+    void selectEdges(int vertex_index)
+    {
+        if (checked[vertex_index]) { return; }
+        checked[vertex_index] = true;
+
+        if (IsEdge(indices, vertices, connection, vertex_index)) {
+            dst.push_back(vertex_index);
+
+            int num_shared = connection.counts[vertex_index];
+            int offset = connection.offsets[vertex_index];
+            for (int i = 0; i < num_shared; ++i) {
+                int fi = connection.faces[offset + i];
+                selectEdges(indices[fi * 3 + 0]);
+                selectEdges(indices[fi * 3 + 1]);
+                selectEdges(indices[fi * 3 + 2]);
+            }
+        }
+    }
+};
+
+void SelectEdge(const IArray<int>& indices, const IArray<float3>& vertices, const ConnectionData& connection,
+    int vertex_index, RawVector<int>& edge_indices)
+{
+    SelectEdgeImpl impl(indices, vertices, connection, edge_indices);
+    impl.selectEdges(vertex_index);
+}
+
+void SelectEdge(const IArray<int>& indices, const IArray<float3>& vertices, const ConnectionData& connection,
+    const IArray<int>& vertex_indices, RawVector<int>& edge_indices)
+{
+    SelectEdgeImpl impl(indices, vertices, connection, edge_indices);
+    for (int vi : vertex_indices) {
+        impl.selectEdges(vi);
+    }
+}
+
+
 
 } // namespace mu

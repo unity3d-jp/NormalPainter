@@ -398,5 +398,14 @@ void TestEdge()
         bool is_edge = IsEdge(indices, points, connection, vi);
         printf("    IsEdge(): %d %d\n", vi, (int)is_edge);
     }
+
+    RawVector<int> edges;
+    SelectEdge(indices, points, connection, 1, edges);
+
+    printf("    SelectEdge():");
+    for (int e : edges) {
+        printf(" %d", e);
+    }
+    printf("\n");
 }
 RegisterTestEntry(TestEdge)

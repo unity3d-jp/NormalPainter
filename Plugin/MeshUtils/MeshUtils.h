@@ -33,13 +33,7 @@ struct ConnectionData
     RawVector<int> faces;
     RawVector<int> indices;
 
-    void clear()
-    {
-        counts.clear();
-        offsets.clear();
-        faces.clear();
-        indices.clear();
-    }
+    void clear();
 };
 
 void BuildVerticesConnection(
@@ -49,6 +43,12 @@ void BuildVerticesConnection(
 
 // assume all faces are triangle
 bool IsEdge(const IArray<int>& indices, const IArray<float3>& vertices, const ConnectionData& connection, int vertex_index);
+
+// assume all faces are triangle
+void SelectEdge(const IArray<int>& indices, const IArray<float3>& vertices, const ConnectionData& connection,
+    int vertex_index, RawVector<int>& edge_indices);
+void SelectEdge(const IArray<int>& indices, const IArray<float3>& vertices, const ConnectionData& connection,
+    const IArray<int>& vertex_indices, RawVector<int>& edge_indices);
 
 
 // ------------------------------------------------------------
