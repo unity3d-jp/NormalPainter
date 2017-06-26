@@ -364,6 +364,29 @@ void TestPolygonInside()
     printf("\n");
 }
 
+void TestEdge()
+{
+    float3 points[] = {
+        { 0.0f, 0.5f, 0.0f },
+        { 1.0f, 0.0f, 0.0f },
+        { 0.0f, 1.0f, 0.0f },
+        {-1.0f, 0.0f, 0.0f },
+    };
+    int indices[] = {
+        0, 1, 2,
+        0, 2, 3,
+        0, 3, 1,
+    };
+
+    ConnectionData connection;
+    BuildVerticesConnection(indices, 3, 4, connection);
+
+    for (int vi = 0; vi < 4; ++vi) {
+        bool is_edge = IsEdge(indices, points, connection, vi);
+        printf("IsEdge(): %d %d\n", vi, (int)is_edge);
+    }
+}
+
 
 void TestFBXExportMesh();
 void TestFBXExportSkinnedMesh();
@@ -376,6 +399,7 @@ int main(int argc, char *argv[])
     //TestMulPoints();
     //TestRayTrianglesIntersection();
     //TestPolygonInside();
+    //TestEdge();
     TestFBXExportMesh();
     TestFBXExportSkinnedMesh();
 

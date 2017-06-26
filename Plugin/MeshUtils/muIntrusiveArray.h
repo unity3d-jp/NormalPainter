@@ -19,6 +19,8 @@ public:
     IntrusiveArray(const IntrusiveArray& v) : m_data(const_cast<T*>(v.m_data)), m_size(v.m_size) {}
     template<class Container>
     IntrusiveArray(const Container& v) : m_data(const_cast<T*>(v.data())), m_size(v.size()) {}
+    template<int N>
+    IntrusiveArray(const T (&v)[N]) : m_data(const_cast<T*>(v)), m_size(N) {}
     IntrusiveArray& operator=(const IntrusiveArray& v) { m_data = const_cast<T*>(v.m_data); m_size = v.m_size; return *this; }
 
     void reset(T *d, size_t s)

@@ -201,38 +201,36 @@ template bool GenerateWeightsN(RawVector<Weights<4>>& dst, IArray<int> bone_indi
 template bool GenerateWeightsN(RawVector<Weights<8>>& dst, IArray<int> bone_indices, IArray<float> bone_weights, int bones_per_vertex);
 
 void BuildVerticesConnection(
-    const RawVector<int>& indices, const RawVector<int>& counts, size_t num_points,
-    RawVector<int>& share_counts, RawVector<int>& shared_faces, RawVector<int>& shared_indices)
+    const IArray<int>& indices, const IArray<int>& counts, size_t num_points, ConnectionData& connection)
 {
     size_t num_faces = counts.size();
     size_t num_indices = indices.size();
 
-    RawVector<int> v2f_offsets;
-    v2f_offsets.resize(num_points);
-    shared_faces.resize(num_indices);
-    shared_indices.resize(num_indices);
+    connection.offsets.resize(num_points);
+    connection.faces.resize(num_indices);
+    connection.indices.resize(num_indices);
 
-    share_counts.resize(num_points);
-    share_counts.zeroclear();
+    connection.counts.resize(num_points);
+    connection.counts.zeroclear();
     {
         const int *idx = indices.data();
         for (int c : counts) {
             for (int i = 0; i < c; ++i) {
-                share_counts[idx[i]]++;
+                connection.counts[idx[i]]++;
             }
             idx += c;
         }
     }
 
-    RawVector<int> v2f_num_shared;
-    v2f_num_shared.resize(num_points);
-    v2f_num_shared.zeroclear();
+    RawVector<int> share_count;
+    share_count.resize(num_points);
+    share_count.zeroclear();
 
     {
         int offset = 0;
         for (size_t i = 0; i < num_points; ++i) {
-            v2f_offsets[i] = offset;
-            offset += share_counts[i];
+            connection.offsets[i] = offset;
+            offset += connection.counts[i];
         }
     }
     {
@@ -241,9 +239,9 @@ void BuildVerticesConnection(
             int c = counts[fi];
             for (int ci = 0; ci < c; ++ci) {
                 int vi = indices[i + ci];
-                int ti = v2f_offsets[vi] + v2f_num_shared[vi]++;
-                shared_faces[ti] = fi;
-                shared_indices[ti] = i + ci;
+                int ti = connection.offsets[vi] + share_count[vi]++;
+                connection.faces[ti] = fi;
+                connection.indices[ti] = i + ci;
             }
             i += c;
         }
@@ -251,38 +249,36 @@ void BuildVerticesConnection(
 }
 
 void BuildVerticesConnection(
-    const RawVector<int>& indices, int ngon, size_t num_points,
-    RawVector<int>& share_counts, RawVector<int>& shared_faces, RawVector<int>& shared_indices)
+    const IArray<int>& indices, int ngon, size_t num_points, ConnectionData& connection)
 {
     size_t num_faces = indices.size() / ngon;
     size_t num_indices = indices.size();
 
-    RawVector<int> v2f_offsets;
-    v2f_offsets.resize(num_points);
-    shared_faces.resize(num_indices);
-    shared_indices.resize(num_indices);
+    connection.offsets.resize(num_points);
+    connection.faces.resize(num_indices);
+    connection.indices.resize(num_indices);
 
-    share_counts.resize(num_points);
-    share_counts.zeroclear();
+    connection.counts.resize(num_points);
+    connection.counts.zeroclear();
     {
         const int *idx = indices.data();
         for (size_t ti = 0; ti < num_faces; ++ti) {
             for (int ci = 0; ci < ngon; ++ci) {
-                share_counts[idx[ci]]++;
+                connection.counts[idx[ci]]++;
             }
             idx += ngon;
         }
     }
 
-    RawVector<int> v2f_num_shared;
-    v2f_num_shared.resize(num_points);
-    v2f_num_shared.zeroclear();
+    RawVector<int> share_count;
+    share_count.resize(num_points);
+    share_count.zeroclear();
 
     {
         int offset = 0;
         for (size_t i = 0; i < num_points; ++i) {
-            v2f_offsets[i] = offset;
-            offset += share_counts[i];
+            connection.offsets[i] = offset;
+            offset += connection.counts[i];
         }
     }
     {
@@ -290,13 +286,42 @@ void BuildVerticesConnection(
         for (int fi = 0; fi < (int)num_faces; ++fi) {
             for (int ci = 0; ci < ngon; ++ci) {
                 int vi = indices[i + ci];
-                int ti = v2f_offsets[vi] + v2f_num_shared[vi]++;
-                shared_faces[ti] = fi;
-                shared_indices[ti] = i + ci;
+                int ti = connection.offsets[vi] + share_count[vi]++;
+                connection.faces[ti] = fi;
+                connection.indices[ti] = i + ci;
             }
             i += ngon;
         }
     }
+}
+
+bool IsEdge(const IArray<int>& indices, const IArray<float3>& vertices, const ConnectionData& connection, int vertex_index)
+{
+    int num_shared = connection.counts[vertex_index];
+    int offsets = connection.offsets[vertex_index];
+
+    float angle = 0.0f;
+    for (int i = 0; i < num_shared; ++i) {
+        int fi = connection.faces[offsets + i];
+
+        int f0 = indices[fi * 3 + 0];
+        int f1 = indices[fi * 3 + 1];
+        int f2 = indices[fi * 3 + 2];
+        float3 v0 = vertices[f0];
+        float3 v1 = vertices[f1];
+        float3 v2 = vertices[f2];
+        if (vertex_index == f0) {
+            angle += angle_between(v1, v2, v0);
+        }
+        else if (vertex_index == f1) {
+            angle += angle_between(v0, v2, v1);
+        }
+        else if (vertex_index == f2) {
+            angle += angle_between(v0, v1, v2);
+        }
+    }
+
+    return !near_equal(angle, 360.0f * Deg2Rad);
 }
 
 } // namespace mu

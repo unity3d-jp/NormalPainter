@@ -561,6 +561,18 @@ inline float3 cross(const float3& l, const float3& r)
         l.x * r.y - l.y * r.x };
 }
 
+// a & b must be normalized
+inline float angle_between(float3 a, float3 b)
+{
+    return std::acos(dot(a, b));
+}
+inline float angle_between(float3 pos1, float3 pos2, float3 center)
+{
+    return angle_between(
+        normalize(pos1 - center),
+        normalize(pos2 - center));
+}
+
 inline float3 apply_rotation(const quatf& q, const float3& p)
 {
     float3 a = cross((float3&)q, p);
