@@ -32,6 +32,14 @@ struct ConnectionData
     RawVector<int> offsets;
     RawVector<int> faces;
     RawVector<int> indices;
+
+    void clear()
+    {
+        counts.clear();
+        offsets.clear();
+        faces.clear();
+        indices.clear();
+    }
 };
 
 void BuildVerticesConnection(

@@ -36,7 +36,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    printf("Press anything to exit\n");
+    printf("Press any key to exit\n");
     char dummy;
     scanf("%c", &dummy);
 }

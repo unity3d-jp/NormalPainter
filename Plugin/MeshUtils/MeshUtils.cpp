@@ -220,26 +220,22 @@ void BuildVerticesConnection(
             }
             idx += c;
         }
-    }
 
-    RawVector<int> share_count;
-    share_count.resize(num_points);
-    share_count.zeroclear();
-
-    {
         int offset = 0;
         for (size_t i = 0; i < num_points; ++i) {
             connection.offsets[i] = offset;
             offset += connection.counts[i];
         }
     }
+
+    connection.counts.zeroclear();
     {
         int i = 0;
         for (int fi = 0; fi < (int)num_faces; ++fi) {
             int c = counts[fi];
             for (int ci = 0; ci < c; ++ci) {
                 int vi = indices[i + ci];
-                int ti = connection.offsets[vi] + share_count[vi]++;
+                int ti = connection.offsets[vi] + connection.counts[vi]++;
                 connection.faces[ti] = fi;
                 connection.indices[ti] = i + ci;
             }
@@ -268,25 +264,21 @@ void BuildVerticesConnection(
             }
             idx += ngon;
         }
-    }
 
-    RawVector<int> share_count;
-    share_count.resize(num_points);
-    share_count.zeroclear();
-
-    {
         int offset = 0;
         for (size_t i = 0; i < num_points; ++i) {
             connection.offsets[i] = offset;
             offset += connection.counts[i];
         }
     }
+
+    connection.counts.zeroclear();
     {
         int i = 0;
         for (int fi = 0; fi < (int)num_faces; ++fi) {
             for (int ci = 0; ci < ngon; ++ci) {
                 int vi = indices[i + ci];
-                int ti = connection.offsets[vi] + share_count[vi]++;
+                int ti = connection.offsets[vi] + connection.counts[vi]++;
                 connection.faces[ti] = fi;
                 connection.indices[ti] = i + ci;
             }
