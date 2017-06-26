@@ -25,6 +25,13 @@ bool GenerateTangents(
 template<int N>
 bool GenerateWeightsN(RawVector<Weights<N>>& dst, IArray<int> bone_indices, IArray<float> bone_weights, int bones_per_vertex);
 
+void BuildVerticesConnection(
+    const RawVector<int>& indices, const RawVector<int>& counts, size_t num_points,
+    RawVector<int>& share_counts, RawVector<int>& shared_faces, RawVector<int>& shared_indices);
+void BuildVerticesConnection(
+    const RawVector<int>& indices, int ngon, size_t num_points,
+    RawVector<int>& share_counts, RawVector<int>& shared_faces, RawVector<int>& shared_indices);
+
 
 // ------------------------------------------------------------
 // impl

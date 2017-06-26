@@ -200,4 +200,103 @@ bool GenerateWeightsN(RawVector<Weights<N>>& dst, IArray<int> bone_indices, IArr
 template bool GenerateWeightsN(RawVector<Weights<4>>& dst, IArray<int> bone_indices, IArray<float> bone_weights, int bones_per_vertex);
 template bool GenerateWeightsN(RawVector<Weights<8>>& dst, IArray<int> bone_indices, IArray<float> bone_weights, int bones_per_vertex);
 
+void BuildVerticesConnection(
+    const RawVector<int>& indices, const RawVector<int>& counts, size_t num_points,
+    RawVector<int>& share_counts, RawVector<int>& shared_faces, RawVector<int>& shared_indices)
+{
+    size_t num_faces = counts.size();
+    size_t num_indices = indices.size();
+
+    RawVector<int> v2f_offsets;
+    v2f_offsets.resize(num_points);
+    shared_faces.resize(num_indices);
+    shared_indices.resize(num_indices);
+
+    share_counts.resize(num_points);
+    share_counts.zeroclear();
+    {
+        const int *idx = indices.data();
+        for (int c : counts) {
+            for (int i = 0; i < c; ++i) {
+                share_counts[idx[i]]++;
+            }
+            idx += c;
+        }
+    }
+
+    RawVector<int> v2f_num_shared;
+    v2f_num_shared.resize(num_points);
+    v2f_num_shared.zeroclear();
+
+    {
+        int offset = 0;
+        for (size_t i = 0; i < num_points; ++i) {
+            v2f_offsets[i] = offset;
+            offset += share_counts[i];
+        }
+    }
+    {
+        int i = 0;
+        for (int fi = 0; fi < (int)num_faces; ++fi) {
+            int c = counts[fi];
+            for (int ci = 0; ci < c; ++ci) {
+                int vi = indices[i + ci];
+                int ti = v2f_offsets[vi] + v2f_num_shared[vi]++;
+                shared_faces[ti] = fi;
+                shared_indices[ti] = i + ci;
+            }
+            i += c;
+        }
+    }
+}
+
+void BuildVerticesConnection(
+    const RawVector<int>& indices, int ngon, size_t num_points,
+    RawVector<int>& share_counts, RawVector<int>& shared_faces, RawVector<int>& shared_indices)
+{
+    size_t num_faces = indices.size() / ngon;
+    size_t num_indices = indices.size();
+
+    RawVector<int> v2f_offsets;
+    v2f_offsets.resize(num_points);
+    shared_faces.resize(num_indices);
+    shared_indices.resize(num_indices);
+
+    share_counts.resize(num_points);
+    share_counts.zeroclear();
+    {
+        const int *idx = indices.data();
+        for (size_t ti = 0; ti < num_faces; ++ti) {
+            for (int ci = 0; ci < ngon; ++ci) {
+                share_counts[idx[ci]]++;
+            }
+            idx += ngon;
+        }
+    }
+
+    RawVector<int> v2f_num_shared;
+    v2f_num_shared.resize(num_points);
+    v2f_num_shared.zeroclear();
+
+    {
+        int offset = 0;
+        for (size_t i = 0; i < num_points; ++i) {
+            v2f_offsets[i] = offset;
+            offset += share_counts[i];
+        }
+    }
+    {
+        int i = 0;
+        for (int fi = 0; fi < (int)num_faces; ++fi) {
+            for (int ci = 0; ci < ngon; ++ci) {
+                int vi = indices[i + ci];
+                int ti = v2f_offsets[vi] + v2f_num_shared[vi]++;
+                shared_faces[ti] = fi;
+                shared_indices[ti] = i + ci;
+            }
+            i += ngon;
+        }
+    }
+}
+
 } // namespace mu

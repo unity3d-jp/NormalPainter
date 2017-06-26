@@ -533,12 +533,12 @@ void MeshRefiner::buildConnection()
     size_t num_indices = indices.size();
     size_t num_points = points.size();
 
-    v2f_counts.resize(num_points);
     v2f_offsets.resize(num_points);
     shared_faces.resize(num_indices);
     shared_indices.resize(num_indices);
-    memset(v2f_counts.data(), 0, sizeof(int)*num_points);
 
+    v2f_counts.resize(num_points);
+    v2f_counts.zeroclear();
     {
         const int *idx = indices.data();
         for (auto& c : counts) {
@@ -549,9 +549,9 @@ void MeshRefiner::buildConnection()
         }
     }
 
-    RawVector<int> v2f_indices;
-    v2f_indices.resize(num_points);
-    memset(v2f_indices.data(), 0, sizeof(int)*num_points);
+    RawVector<int> v2f_num_shared;
+    v2f_num_shared.resize(num_points);
+    v2f_num_shared.zeroclear();
 
     {
         int offset = 0;
@@ -566,7 +566,7 @@ void MeshRefiner::buildConnection()
             int c = counts[fi];
             for (int ci = 0; ci < c; ++ci) {
                 int vi = indices[i + ci];
-                int ti = v2f_offsets[vi] + v2f_indices[vi]++;
+                int ti = v2f_offsets[vi] + v2f_num_shared[vi]++;
                 shared_faces[ti] = fi;
                 shared_indices[ti] = i + ci;
             }
