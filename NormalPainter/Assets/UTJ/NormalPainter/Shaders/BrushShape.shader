@@ -1,4 +1,4 @@
-﻿Shader "Hidden/NormalPainter/Brush"
+﻿Shader "Hidden/NormalPainter/BrushShape"
 {
 CGINCLUDE
 #include "UnityCG.cginc"

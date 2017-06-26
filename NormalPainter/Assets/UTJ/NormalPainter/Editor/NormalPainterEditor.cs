@@ -13,6 +13,9 @@ namespace UTJ.NormalPainter
                 NormalPainterWindow.Open();
 
             EditorGUILayout.Space();
+
+            //// debug stuff here
+            //var t = target as NormalPainter;
         }
     }
 }

@@ -679,8 +679,20 @@ namespace UTJ.NormalPainter
                 return;
             }
 
+            bool brushMode = m_settings.editMode == EditMode.Brush ||
+                 (m_settings.editMode == EditMode.Select && m_settings.selectMode == SelectMode.Brush);
+
             var trans = GetComponent<Transform>();
             var matrix = trans.localToWorldMatrix;
+
+            var cam = Camera.current;
+            if (cam != null)
+            {
+                var view = cam.worldToCameraMatrix;
+                var proj = GL.GetGPUProjectionMatrix(cam.projectionMatrix, false);
+                var invViewProj = (proj * view).inverse;
+                m_matVisualize.SetMatrix("_InvViewProj", invViewProj);
+            }
 
             m_matVisualize.SetMatrix("_Transform", matrix);
             m_matVisualize.SetFloat("_VertexSize", m_settings.vertexSize);
@@ -695,9 +707,7 @@ namespace UTJ.NormalPainter
             m_matVisualize.SetColor("_BinormalColor", m_settings.binormalColor);
             m_matVisualize.SetInt("_OnlySelected", m_settings.showSelectedOnly ? 1 : 0);
 
-            if (m_rayHit && 
-                (m_settings.editMode == EditMode.Brush ||
-                 (m_settings.editMode == EditMode.Select && m_settings.selectMode == SelectMode.Brush)))
+            if (m_rayHit && brushMode)
             {
                 var bd = m_settings.activeBrush;
                 if (m_cbBrushSamples == null)
@@ -706,6 +716,7 @@ namespace UTJ.NormalPainter
                 }
                 m_cbBrushSamples.SetData(bd.samples);
                 m_matVisualize.SetVector("_BrushPos", new Vector4(m_rayPos.x, m_rayPos.y, m_rayPos.z, bd.radius));
+                m_matVisualize.SetInt("_NumBrushSamples", bd.samples.Length);
                 m_matVisualize.SetBuffer("_BrushSamples", m_cbBrushSamples);
             }
             else
@@ -742,16 +753,42 @@ namespace UTJ.NormalPainter
                         m_cmdDraw.DrawMesh(m_meshTarget, matrix, m_matVisualize, si, 6);
                     break;
             }
+
+            // visualize brush range
+            if (m_rayHit && brushMode)
+            {
+                int rtid = Shader.PropertyToID("_TmpDepth");
+                //m_cmdDraw.GetTemporaryRT(rtid, -1, -1, 0, FilterMode.Point, RenderTextureFormat.RFloat);
+                m_cmdDraw.GetTemporaryRT(rtid, -1, -1, 0, FilterMode.Point, RenderTextureFormat.ARGBFloat);
+                m_cmdDraw.SetRenderTarget(rtid);
+                m_cmdDraw.ClearRenderTarget(false, true, Color.black);
+                m_cmdDraw.DrawMesh(m_meshTarget, matrix, m_matVisualize, 0, 8);
+
+                m_cmdDraw.SetRenderTarget(BuiltinRenderTextureType.CameraTarget);
+                m_cmdDraw.DrawMesh(m_meshCube, Matrix4x4.identity, m_matVisualize, 0, 9);
+                m_cmdDraw.ReleaseTemporaryRT(rtid);
+            }
+
+            // visualize vertices
             if (m_settings.showVertices && m_points != null)
                 m_cmdDraw.DrawMeshInstancedIndirect(m_meshCube, 0, m_matVisualize, 0, m_cbArg);
+
+            // visualize binormals
             if (m_settings.showBinormals && m_tangents != null)
                 m_cmdDraw.DrawMeshInstancedIndirect(m_meshLine, 0, m_matVisualize, 3, m_cbArg);
+
+            // visualize tangents
             if (m_settings.showTangents && m_tangents != null)
                 m_cmdDraw.DrawMeshInstancedIndirect(m_meshLine, 0, m_matVisualize, 2, m_cbArg);
+
+            // visualize normals
             if (m_settings.showNormals && m_normals != null)
                 m_cmdDraw.DrawMeshInstancedIndirect(m_meshLine, 0, m_matVisualize, 1, m_cbArg);
+
+            // lasso lines
             if (m_meshLasso.vertexCount > 1)
                 m_cmdDraw.DrawMesh(m_meshLasso, Matrix4x4.identity, m_matVisualize, 0, 7);
+
             Graphics.ExecuteCommandBuffer(m_cmdDraw);
         }
 
