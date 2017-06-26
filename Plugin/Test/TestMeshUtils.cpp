@@ -393,7 +393,7 @@ void TestEdge()
         };
 
         ConnectionData connection;
-        BuildVerticesConnection(indices, 3, points, connection);
+        BuildConnectionData(indices, 3, points, connection);
 
         for (int vi = 0; vi < 4; ++vi) {
             bool is_edge = OnEdge(indices, 3, points, connection, vi);
@@ -440,7 +440,7 @@ void TestEdge()
         }
 
         ConnectionData connection;
-        BuildVerticesConnection(indices, counts, offsets, points, connection);
+        BuildConnectionData(indices, counts, offsets, points, connection);
 
         for (int vi = 0; vi < 16; ++vi) {
             bool is_edge = OnEdge(indices, 4, points, connection, vi);

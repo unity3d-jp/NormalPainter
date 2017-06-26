@@ -528,7 +528,7 @@ void MeshRefiner::buildConnection()
     // skip if already built
     if (connection.counts.size() == points.size()) { return; }
 
-    BuildVerticesConnection(indices, counts, offsets, points, connection);
+    BuildConnectionData(indices, counts, offsets, points, connection);
 }
 
 int MeshRefiner::findOrAddVertexPNTUC(int vi, const float3& p, const float3& n, const float4& t, const float2& u, const float4& c)

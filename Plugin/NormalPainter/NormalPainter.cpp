@@ -198,6 +198,31 @@ npAPI int npSelectTriangle(
     return 0;
 }
 
+npAPI int npSelectEdge(
+    const float3 vertices_[], const int indices_[], int num_vertices, int num_triangles, float seletion[], float strength, int clear)
+{
+    auto indices = IArray<int>(indices_, num_triangles * 3);
+    auto vertices = IArray<float3>(vertices_, num_vertices);
+
+    ConnectionData connection;
+    BuildConnectionData(indices, 3, vertices, connection);
+
+    RawVector<int> targets, edge;
+    targets.reserve(num_vertices);
+    for (int vi = 0; vi < num_vertices; ++vi) {
+        if (seletion[vi] > 0.0f) {
+            targets.push_back(vi);
+        }
+    }
+    SelectEdge(indices, 3, vertices, connection, targets, edge);
+
+    if (clear) { memset(seletion, 0, num_vertices * 4); }
+    for (int vi : edge) {
+        seletion[vi] = clamp01(seletion[vi] + strength);
+    }
+    return (int)edge.size();
+}
+
 
 
 npAPI int npSelectRect(

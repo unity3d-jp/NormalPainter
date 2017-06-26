@@ -233,7 +233,7 @@ struct OffsetsCounts_Indexed
 } // namespace
 
 template<class TOC>
-static void BuildVerticesConnectionImpl(
+static void BuildConnectionDataImpl(
     const IArray<int>& indices, const TOC& oc, const IArray<float3>& vertices, ConnectionData& connection)
 {
     size_t num_points = vertices.size();
@@ -279,18 +279,18 @@ static void BuildVerticesConnectionImpl(
     }
 }
 
-void BuildVerticesConnection(
+void BuildConnectionData(
     const IArray<int>& indices, int ngon, const IArray<float3>& vertices, ConnectionData& connection)
 {
     OffsetsCounts_Constant oc{ngon};
-    BuildVerticesConnectionImpl(indices, oc, vertices, connection);
+    BuildConnectionDataImpl(indices, oc, vertices, connection);
 }
 
-void BuildVerticesConnection(
+void BuildConnectionData(
     const IArray<int>& indices, const IArray<int>& counts, const IArray<int>& offsets, const IArray<float3>& vertices, ConnectionData& connection)
 {
     OffsetsCounts_Indexed oc{ counts, offsets };
-    BuildVerticesConnectionImpl(indices, oc, vertices, connection);
+    BuildConnectionDataImpl(indices, oc, vertices, connection);
 }
 
 template<class TOC>
@@ -394,9 +394,9 @@ struct SelectEdgeImpl
     void selectEdge(int i0, int i1)
     {
         if (checked[i1]) { return; }
-        checked[i1] = true;
 
         if (IsEdgeOpenedImpl(indices, oc, connection, i0, i1)) {
+            checked[i1] = true;
             dst.push_back(i1);
 
             int num_shared = connection.counts[i1];
@@ -420,9 +420,9 @@ struct SelectEdgeImpl
     void selectEdge(int vertex_index)
     {
         if (checked[vertex_index]) { return; }
-        checked[vertex_index] = true;
 
         if (OnEdgeImpl(indices, oc, vertices, connection, vertex_index)) {
+            checked[vertex_index] = true;
             dst.push_back(vertex_index);
 
             int num_shared = connection.counts[vertex_index];

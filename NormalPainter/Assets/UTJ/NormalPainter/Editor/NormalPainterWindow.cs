@@ -11,6 +11,8 @@ namespace UTJ.NormalPainter
         NormalPainter m_target;
         GameObject m_active;
 
+        bool m_shift;
+        bool m_ctrl;
 
 
         string tips = "";
@@ -298,7 +300,16 @@ namespace UTJ.NormalPainter
                 EditorGUILayout.Space();
 
                 GUILayout.BeginHorizontal();
-                GUILayout.Space(EditorGUI.indentLevel * indentSize);
+                if (GUILayout.Button("Select Edge"))
+                {
+                    m_target.SelectEdge(m_ctrl ? -1.0f : 1.0f, !m_shift);
+                    m_target.UpdateSelection();
+                }
+                GUILayout.EndHorizontal();
+
+                EditorGUILayout.Space();
+
+                GUILayout.BeginHorizontal();
                 if (GUILayout.Button("Select All [A]"))
                 {
                     if (m_target.SelectAll())
@@ -702,6 +713,9 @@ namespace UTJ.NormalPainter
             bool handled = false;
             var settings = m_target.settings;
             var e = Event.current;
+
+            m_shift = e.shift;
+            m_ctrl = e.control;
 
             if (e.type == EventType.KeyDown)
             {

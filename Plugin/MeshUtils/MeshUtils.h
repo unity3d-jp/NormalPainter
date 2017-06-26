@@ -36,9 +36,9 @@ struct ConnectionData
     void clear();
 };
 
-void BuildVerticesConnection(
+void BuildConnectionData(
     const IArray<int>& indices, int ngon, const IArray<float3>& vertices, ConnectionData& connection);
-void BuildVerticesConnection(
+void BuildConnectionData(
     const IArray<int>& indices, const IArray<int>& counts, const IArray<int>& offsets, const IArray<float3>& vertices, ConnectionData& connection);
 
 bool OnEdge(const IArray<int>& indices, int ngon, const IArray<float3>& vertices, const ConnectionData& connection, int vertex_index);
