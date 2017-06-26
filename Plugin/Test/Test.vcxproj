@@ -15,8 +15,9 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Master|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="TestFBXExport.cpp" />
-    <ClCompile Include="Tests.cpp" />
+    <ClCompile Include="Test.cpp" />
+    <ClCompile Include="TestFbxExporter.cpp" />
+    <ClCompile Include="TestMeshUtils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\FbxExporterCore.vcxproj">
@@ -31,6 +32,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
+    <ClInclude Include="Test.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{11990C37-1C63-418F-9AB1-74076C470584}</ProjectGuid>

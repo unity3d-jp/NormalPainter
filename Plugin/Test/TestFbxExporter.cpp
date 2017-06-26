@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "Test.h"
 #include "FbxExporter/FbxExporter.h"
 using namespace mu;
 
@@ -196,6 +197,7 @@ void TestFBXExportMesh()
     fbxeWrite(ctx, "mesh_obj.obj", fbxe::Format::Obj);
     fbxeReleaseContext(ctx);
 }
+RegisterTestEntry(TestFBXExportMesh)
 
 void TestFBXExportSkinnedMesh()
 {
@@ -236,3 +238,4 @@ void TestFBXExportSkinnedMesh()
     fbxeWrite(ctx, "skinnedmesh_ascii.fbx", fbxe::Format::FBXAscii);
     fbxeReleaseContext(ctx);
 }
+RegisterTestEntry(TestFBXExportSkinnedMesh)

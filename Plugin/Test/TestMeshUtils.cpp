@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "Test.h"
 
 using namespace mu;
 
@@ -20,6 +21,8 @@ void Test_IndexedArrays()
     for (auto& v : iia2) { printf("%.f ", v); }
     printf("\n");
 }
+RegisterTestEntry(Test_IndexedArrays)
+
 
 void Test_GenNormals()
 {
@@ -60,6 +63,8 @@ void Test_GenNormals()
     refiner.refine(false);
     refiner.genSubmesh(materialIDs);
 }
+RegisterTestEntry(Test_GenNormals)
+
 
 void TestMatrixSwapHandedness()
 {
@@ -76,6 +81,8 @@ void TestMatrixSwapHandedness()
     bool r2 = near_equal(imat2, imat3);
     printf("");
 }
+RegisterTestEntry(TestMatrixSwapHandedness)
+
 
 void TestMulPoints()
 {
@@ -139,6 +146,8 @@ void TestMulPoints()
         eq1, eq2);
     printf("\n");
 }
+RegisterTestEntry(TestMulPoints)
+
 
 void TestRayTrianglesIntersection()
 {
@@ -273,6 +282,8 @@ void TestRayTrianglesIntersection()
         float(s6_end - s6_begin) / 1000000.0f);
     printf("\n");
 }
+RegisterTestEntry(TestRayTrianglesIntersection)
+
 
 void TestPolygonInside()
 {
@@ -363,6 +374,8 @@ void TestPolygonInside()
     printf("    ISPC SoA: %d (%.2fms)\n", num_inside, float(s4_end - s4_begin) / 1000000.0f);
     printf("\n");
 }
+RegisterTestEntry(TestPolygonInside)
+
 
 void TestEdge()
 {
@@ -383,26 +396,7 @@ void TestEdge()
 
     for (int vi = 0; vi < 4; ++vi) {
         bool is_edge = IsEdge(indices, points, connection, vi);
-        printf("IsEdge(): %d %d\n", vi, (int)is_edge);
+        printf("    IsEdge(): %d %d\n", vi, (int)is_edge);
     }
 }
-
-
-void TestFBXExportMesh();
-void TestFBXExportSkinnedMesh();
-
-int main(int argc, char *argv[])
-{
-    //Test_IndexedArrays();
-    //Test_GenNormals();
-    //TestMatrixSwapHandedness();
-    //TestMulPoints();
-    //TestRayTrianglesIntersection();
-    //TestPolygonInside();
-    //TestEdge();
-    TestFBXExportMesh();
-    TestFBXExportSkinnedMesh();
-
-    char dummy;
-    scanf("%c", &dummy);
-}
+RegisterTestEntry(TestEdge)

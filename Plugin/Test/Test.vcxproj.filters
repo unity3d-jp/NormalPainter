@@ -1,11 +1,13 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="Tests.cpp" />
     <ClCompile Include="pch.cpp" />
-    <ClCompile Include="TestFBXExport.cpp" />
+    <ClCompile Include="TestFbxExporter.cpp" />
+    <ClCompile Include="TestMeshUtils.cpp" />
+    <ClCompile Include="Test.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
+    <ClInclude Include="Test.h" />
   </ItemGroup>
 </Project>
