@@ -396,7 +396,7 @@ void TestEdge()
         BuildVerticesConnection(indices, 3, points, connection);
 
         for (int vi = 0; vi < 4; ++vi) {
-            bool is_edge = IsEdge(indices, 3, points, connection, vi);
+            bool is_edge = OnEdge(indices, 3, points, connection, vi);
             printf("    IsEdge(): %d %d\n", vi, (int)is_edge);
         }
 
@@ -414,7 +414,7 @@ void TestEdge()
 
     {
         float3 points[4 * 4];
-        int indices[3 * 3 * 4];
+        RawVector<int> indices(3 * 3 * 4);
 
         for (int yi = 0; yi < 4; ++yi) {
             for (int xi = 0; xi < 4; ++xi) {
@@ -430,10 +430,11 @@ void TestEdge()
                 indices[4 * i + 3] = 4 * (yi + 1) + (xi + 0);
             }
         }
+        indices.erase(indices.begin() + 4 * 4, indices.begin() + 5 * 4);
 
-        int counts[9] = { 4,4,4,4,4,4,4,4,4 };
-        int offsets[9] = { 0,4,8,12,16,20,24,28,32 };
-        for (int i = 0; i < 9; ++i) {
+        int counts[8] = { 4,4,4,4,4,4,4,4 };
+        int offsets[8] = { 0,4,8,12,16,20,24,28 };
+        for (int i = 0; i < 8; ++i) {
             counts[i] = 4;
             offsets[i] = i * 4;
         }
@@ -442,14 +443,23 @@ void TestEdge()
         BuildVerticesConnection(indices, counts, offsets, points, connection);
 
         for (int vi = 0; vi < 16; ++vi) {
-            bool is_edge = IsEdge(indices, 4, points, connection, vi);
+            bool is_edge = OnEdge(indices, 4, points, connection, vi);
             printf("    IsEdge(): %d %d\n", vi, (int)is_edge);
         }
 
         RawVector<int> edges;
         int vi[] = { 1 };
-        SelectEdge(indices, counts, offsets, points, connection, vi, edges);
 
+        SelectEdge(indices, counts, offsets, points, connection, vi, edges);
+        printf("    SelectEdge (quads):");
+        for (int e : edges) {
+            printf(" %d", e);
+        }
+        printf("\n");
+
+        edges.clear();
+        vi[0] = 5;
+        SelectEdge(indices, counts, offsets, points, connection, vi, edges);
         printf("    SelectEdge (quads):");
         for (int e : edges) {
             printf(" %d", e);

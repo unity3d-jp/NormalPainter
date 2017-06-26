@@ -209,11 +209,35 @@ void ConnectionData::clear()
     indices.clear();
 }
 
-void BuildVerticesConnection(
-    const IArray<int>& indices, int ngon, const IArray<float3>& vertices, ConnectionData& connection)
+namespace {
+
+struct OffsetsCounts_Constant
+{
+    int ngon;
+
+    size_t getNumFaces(size_t num_indices) const { return num_indices / ngon; }
+    int getCount(size_t /*fi*/) const { return ngon; }
+    int getOffset(size_t fi) const { return ngon * (int)fi; }
+};
+
+struct OffsetsCounts_Indexed
+{
+    const IArray<int>& counts;
+    const IArray<int>& offsets;
+
+    size_t getNumFaces(size_t /*num_indices*/) const { return counts.size(); }
+    int getCount(size_t fi) const { return counts[fi]; }
+    int getOffset(size_t fi) const { return offsets[fi]; }
+};
+
+} // namespace
+
+template<class TOC>
+static void BuildVerticesConnectionImpl(
+    const IArray<int>& indices, const TOC& oc, const IArray<float3>& vertices, ConnectionData& connection)
 {
     size_t num_points = vertices.size();
-    size_t num_faces = indices.size() / ngon;
+    size_t num_faces = oc.getNumFaces(indices.size());
     size_t num_indices = indices.size();
 
     connection.offsets.resize(num_points);
@@ -224,53 +248,10 @@ void BuildVerticesConnection(
     connection.counts.zeroclear();
     {
         const int *idx = indices.data();
-        for (size_t ti = 0; ti < num_faces; ++ti) {
-            for (int ci = 0; ci < ngon; ++ci) {
+        for (size_t fi = 0; fi < num_faces; ++fi) {
+            int c = oc.getCount(fi);
+            for (int ci = 0; ci < c; ++ci) {
                 connection.counts[idx[ci]]++;
-            }
-            idx += ngon;
-        }
-
-        int offset = 0;
-        for (size_t i = 0; i < num_points; ++i) {
-            connection.offsets[i] = offset;
-            offset += connection.counts[i];
-        }
-    }
-
-    connection.counts.zeroclear();
-    {
-        int i = 0;
-        for (int fi = 0; fi < (int)num_faces; ++fi) {
-            for (int ci = 0; ci < ngon; ++ci) {
-                int vi = indices[i + ci];
-                int ti = connection.offsets[vi] + connection.counts[vi]++;
-                connection.faces[ti] = fi;
-                connection.indices[ti] = i + ci;
-            }
-            i += ngon;
-        }
-    }
-}
-
-void BuildVerticesConnection(
-    const IArray<int>& indices, const IArray<int>& counts, const IArray<int>& /*offsets*/, const IArray<float3>& vertices, ConnectionData& connection)
-{
-    size_t num_points = vertices.size();
-    size_t num_faces = counts.size();
-    size_t num_indices = indices.size();
-
-    connection.offsets.resize(num_points);
-    connection.faces.resize(num_indices);
-    connection.indices.resize(num_indices);
-
-    connection.counts.resize(num_points);
-    connection.counts.zeroclear();
-    {
-        const int *idx = indices.data();
-        for (int c : counts) {
-            for (int i = 0; i < c; ++i) {
-                connection.counts[idx[i]]++;
             }
             idx += c;
         }
@@ -286,7 +267,7 @@ void BuildVerticesConnection(
     {
         int i = 0;
         for (int fi = 0; fi < (int)num_faces; ++fi) {
-            int c = counts[fi];
+            int c = oc.getCount(fi);
             for (int ci = 0; ci < c; ++ci) {
                 int vi = indices[i + ci];
                 int ti = connection.offsets[vi] + connection.counts[vi]++;
@@ -298,30 +279,22 @@ void BuildVerticesConnection(
     }
 }
 
-bool IsEdge(const IArray<int>& indices, int ngon, const IArray<float3>& vertices, const ConnectionData& connection, int vertex_index)
+void BuildVerticesConnection(
+    const IArray<int>& indices, int ngon, const IArray<float3>& vertices, ConnectionData& connection)
 {
-    if (ngon < 3) { return false; }
-
-    int num_shared = connection.counts[vertex_index];
-    int offset = connection.offsets[vertex_index];
-
-    float angle = 0.0f;
-    for (int si = 0; si < num_shared; ++si) {
-        int fi = connection.faces[offset + si];
-        int nth = connection.indices[offset + si] % ngon;
-
-        int f0 = nth;
-        int f1 = f0 - 1; if (f1 < 0) { f1 = ngon - 1; }
-        int f2 = f0 + 1; if (f2 == ngon) { f2 = 0; }
-        float3 v0 = vertices[indices[ngon * fi + f0]];
-        float3 v1 = vertices[indices[ngon * fi + f1]];
-        float3 v2 = vertices[indices[ngon * fi + f2]];
-        angle += angle_between(v1, v2, v0);
-    }
-    return !near_equal(angle, 360.0f * Deg2Rad);
+    OffsetsCounts_Constant oc{ngon};
+    BuildVerticesConnectionImpl(indices, oc, vertices, connection);
 }
 
-bool IsEdge(const IArray<int>& indices, const IArray<int>& counts, const IArray<int>& offsets, const IArray<float3>& vertices, const ConnectionData& connection, int vertex_index)
+void BuildVerticesConnection(
+    const IArray<int>& indices, const IArray<int>& counts, const IArray<int>& offsets, const IArray<float3>& vertices, ConnectionData& connection)
+{
+    OffsetsCounts_Indexed oc{ counts, offsets };
+    BuildVerticesConnectionImpl(indices, oc, vertices, connection);
+}
+
+template<class TOC>
+bool OnEdgeImpl(const IArray<int>& indices, const TOC& oc, const IArray<float3>& vertices, const ConnectionData& connection, int vertex_index)
 {
     int num_shared = connection.counts[vertex_index];
     int offset = connection.offsets[vertex_index];
@@ -329,37 +302,88 @@ bool IsEdge(const IArray<int>& indices, const IArray<int>& counts, const IArray<
     float angle = 0.0f;
     for (int si = 0; si < num_shared; ++si) {
         int fi = connection.faces[offset + si];
-        int nth = connection.indices[offset + si] - offsets[fi];
-        int ngon = counts[fi];
-        if (ngon < 3) { continue; }
+        int fo = oc.getOffset(fi);
+        int c = oc.getCount(fi);
+        //if (c < 3) { continue; }
+        int nth = connection.indices[offset + si] - fo;
 
         int f0 = nth;
-        int f1 = f0 - 1; if (f1 < 0) { f1 = ngon - 1; }
-        int f2 = f0 + 1; if (f2 == ngon) { f2 = 0; }
-        float3 v0 = vertices[indices[ngon * fi + f0]];
-        float3 v1 = vertices[indices[ngon * fi + f1]];
-        float3 v2 = vertices[indices[ngon * fi + f2]];
+        int f1 = f0 - 1; if (f1 < 0) { f1 = c - 1; }
+        int f2 = f0 + 1; if (f2 == c) { f2 = 0; }
+        float3 v0 = vertices[indices[c * fi + f0]];
+        float3 v1 = vertices[indices[c * fi + f1]];
+        float3 v2 = vertices[indices[c * fi + f2]];
         angle += angle_between(v1, v2, v0);
     }
     return !near_equal(angle, 360.0f * Deg2Rad);
 }
 
+bool OnEdge(const IArray<int>& indices, int ngon, const IArray<float3>& vertices, const ConnectionData& connection, int vertex_index)
+{
+    OffsetsCounts_Constant oc{ ngon };
+    return OnEdgeImpl(indices, oc, vertices, connection, vertex_index);
+}
 
+bool OnEdge(const IArray<int>& indices, const IArray<int>& counts, const IArray<int>& offsets, const IArray<float3>& vertices, const ConnectionData& connection, int vertex_index)
+{
+    OffsetsCounts_Indexed oc{ counts, offsets };
+    return OnEdgeImpl(indices, oc, vertices, connection, vertex_index);
+}
+
+
+template<class TOC>
+bool IsEdgeOpenedImpl(const IArray<int>& indices, const TOC& oc, const ConnectionData& connection, int i0, int i1)
+{
+    if (i1 < i0) { std::swap(i0, i1); }
+    int edge[2]{ i0, i1 };
+
+    int num_connection = 0;
+    for (int e : edge) {
+        int num_shared = connection.counts[e];
+        int offset = connection.offsets[e];
+        for (int si = 0; si < num_shared; ++si) {
+            int fi = connection.faces[offset + si];
+            int fo = oc.getOffset(fi);
+            int c = oc.getCount(fi);
+            for (int ci = 0; ci < c; ++ci) {
+                int j0 = indices[fo + ci];
+                int j1 = indices[fo + (ci + 1) % c];
+                if (j1 < j0) { std::swap(j0, j1); }
+
+                if (i0 == j0 && i1 == j1) { ++num_connection; }
+            }
+        }
+    }
+    return num_connection == 2;
+}
+
+bool IsEdgeOpened(const IArray<int>& indices, int ngon, const ConnectionData& connection, int i0, int i1)
+{
+    OffsetsCounts_Constant oc{ ngon };
+    return IsEdgeOpenedImpl(indices, oc, connection, i0, i1);
+}
+
+bool IsEdgeOpened(const IArray<int>& indices, const IArray<int>& counts, const IArray<int>& offsets, const ConnectionData& connection, int i0, int i1)
+{
+    OffsetsCounts_Indexed oc{ counts, offsets };
+    return IsEdgeOpenedImpl(indices, oc, connection, i0, i1);
+}
+
+
+
+template<class TOC>
 struct SelectEdgeImpl
 {
-    IArray<int> indices;
-    IArray<int> counts;
-    IArray<int> offsets;
-    int ngon = 0;
-    IArray<float3> vertices;
+    const IArray<int>& indices;
+    const TOC& oc;
+    const IArray<float3>& vertices;
     const ConnectionData& connection;
     RawVector<int>& dst;
     std::vector<bool> checked;
 
-    SelectEdgeImpl(const IArray<int>& indices_, const IArray<int>& counts_, const IArray<int>& offsets_, const IArray<float3>& vertices_, const ConnectionData& connection_, RawVector<int>& dst_)
+    SelectEdgeImpl(const IArray<int>& indices_, const TOC& oc_, const IArray<float3>& vertices_, const ConnectionData& connection_, RawVector<int>& dst_)
         : indices(indices_)
-        , counts(counts_)
-        , offsets(offsets_)
+        , oc(oc_)
         , vertices(vertices_)
         , connection(connection_)
         , dst(dst_)
@@ -367,14 +391,30 @@ struct SelectEdgeImpl
         checked.resize(vertices.size());
     }
 
-    SelectEdgeImpl(const IArray<int>& indices_, int ngon_, const IArray<float3>& vertices_, const ConnectionData& connection_, RawVector<int>& dst_)
-        : indices(indices_)
-        , ngon(ngon_)
-        , vertices(vertices_)
-        , connection(connection_)
-        , dst(dst_)
+    void selectEdge(int i0, int i1)
     {
-        checked.resize(vertices.size());
+        if (checked[i1]) { return; }
+        checked[i1] = true;
+
+        if (IsEdgeOpenedImpl(indices, oc, connection, i0, i1)) {
+            dst.push_back(i1);
+
+            int num_shared = connection.counts[i1];
+            int offset = connection.offsets[i1];
+            for (int si = 0; si < num_shared; ++si) {
+                int fi = connection.faces[offset + si];
+                int fo = oc.getOffset(fi);
+                int c = oc.getCount(fi);
+                int nth = connection.indices[offset + si] - fo;
+
+                int f0 = nth;
+                int f1 = f0 - 1; if (f1 < 0) { f1 = c - 1; }
+                int f2 = f0 + 1; if (f2 == c) { f2 = 0; }
+
+                selectEdge(indices[fo + f0], indices[fo + f1]);
+                selectEdge(indices[fo + f0], indices[fo + f2]);
+            }
+        }
     }
 
     void selectEdge(int vertex_index)
@@ -382,49 +422,23 @@ struct SelectEdgeImpl
         if (checked[vertex_index]) { return; }
         checked[vertex_index] = true;
 
-        if (IsEdge(indices, counts, offsets, vertices, connection, vertex_index)) {
+        if (OnEdgeImpl(indices, oc, vertices, connection, vertex_index)) {
             dst.push_back(vertex_index);
 
             int num_shared = connection.counts[vertex_index];
             int offset = connection.offsets[vertex_index];
             for (int si = 0; si < num_shared; ++si) {
                 int fi = connection.faces[offset + si];
-                int c = counts[fi];
-                int nth = connection.indices[offset + si] - offsets[fi];
+                int fo = oc.getOffset(fi);
+                int c = oc.getCount(fi);
+                int nth = connection.indices[offset + si] - fo;
 
                 int f0 = nth;
                 int f1 = f0 - 1; if (f1 < 0) { f1 = c - 1; }
                 int f2 = f0 + 1; if (f2 == c) { f2 = 0; }
 
-                selectEdge(indices[offsets[fi] + f0]);
-                selectEdge(indices[offsets[fi] + f1]);
-                selectEdge(indices[offsets[fi] + f2]);
-            }
-        }
-    }
-
-    void selectEdgesNgon(int vertex_index)
-    {
-        if (checked[vertex_index]) { return; }
-        checked[vertex_index] = true;
-
-        if (IsEdge(indices, ngon, vertices, connection, vertex_index)) {
-            dst.push_back(vertex_index);
-
-            int num_shared = connection.counts[vertex_index];
-            int offset = connection.offsets[vertex_index];
-            for (int si = 0; si < num_shared; ++si) {
-                int fi = connection.faces[offset + si];
-                int c = ngon;
-                int nth = connection.indices[offset + si] % c;
-
-                int f0 = nth;
-                int f1 = f0 - 1; if (f1 < 0) { f1 = c - 1; }
-                int f2 = f0 + 1; if (f2 == c) { f2 = 0; }
-
-                selectEdgesNgon(indices[c * fi + f0]);
-                selectEdgesNgon(indices[c * fi + f1]);
-                selectEdgesNgon(indices[c * fi + f2]);
+                selectEdge(indices[fo + f0], indices[fo + f1]);
+                selectEdge(indices[fo + f0], indices[fo + f2]);
             }
         }
     }
@@ -433,16 +447,18 @@ struct SelectEdgeImpl
 void SelectEdge(const IArray<int>& indices, int ngon, const IArray<float3>& vertices, const ConnectionData& connection,
     const IArray<int>& vertex_indices, RawVector<int>& edge_indices)
 {
-    SelectEdgeImpl impl(indices, ngon, vertices, connection, edge_indices);
+    OffsetsCounts_Constant oc{ ngon };
+    SelectEdgeImpl<OffsetsCounts_Constant> impl(indices, oc, vertices, connection, edge_indices);
     for (int vi : vertex_indices) {
-        impl.selectEdgesNgon(vi);
+        impl.selectEdge(vi);
     }
 }
 
 void SelectEdge(const IArray<int>& indices, const IArray<int>& counts, const IArray<int>& offsets, const IArray<float3>& vertices, const ConnectionData& connection,
     const IArray<int>& vertex_indices, RawVector<int>& edge_indices)
 {
-    SelectEdgeImpl impl(indices, counts, offsets, vertices, connection, edge_indices);
+    OffsetsCounts_Indexed oc{ counts, offsets };
+    SelectEdgeImpl<OffsetsCounts_Indexed> impl(indices, oc, vertices, connection, edge_indices);
     for (int vi : vertex_indices) {
         impl.selectEdge(vi);
     }
