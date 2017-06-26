@@ -37,17 +37,17 @@ struct ConnectionData
 };
 
 void BuildVerticesConnection(
-    const IArray<int>& indices, const IArray<int>& counts, size_t num_points, ConnectionData& connection);
+    const IArray<int>& indices, int ngon, const IArray<float3>& vertices, ConnectionData& connection);
 void BuildVerticesConnection(
-    const IArray<int>& indices, int ngon, size_t num_points, ConnectionData& connection);
+    const IArray<int>& indices, const IArray<int>& counts, const IArray<int>& offsets, const IArray<float3>& vertices, ConnectionData& connection);
+
+bool IsEdge(const IArray<int>& indices, int ngon, const IArray<float3>& vertices, const ConnectionData& connection, int vertex_index);
+bool IsEdge(const IArray<int>& indices, const IArray<int>& counts, const IArray<int>& offsets, const IArray<float3>& vertices, const ConnectionData& connection, int vertex_index);
 
 // assume all faces are triangle
-bool IsEdge(const IArray<int>& indices, const IArray<float3>& vertices, const ConnectionData& connection, int vertex_index);
-
-// assume all faces are triangle
-void SelectEdge(const IArray<int>& indices, const IArray<float3>& vertices, const ConnectionData& connection,
-    int vertex_index, RawVector<int>& edge_indices);
-void SelectEdge(const IArray<int>& indices, const IArray<float3>& vertices, const ConnectionData& connection,
+void SelectEdge(const IArray<int>& indices, int ngon, const IArray<float3>& vertices, const ConnectionData& connection,
+    const IArray<int>& vertex_indices, RawVector<int>& edge_indices);
+void SelectEdge(const IArray<int>& indices, const IArray<int>& counts, const IArray<int>& offsets, const IArray<float3>& vertices, const ConnectionData& connection,
     const IArray<int>& vertex_indices, RawVector<int>& edge_indices);
 
 

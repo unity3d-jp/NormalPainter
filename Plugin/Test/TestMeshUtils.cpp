@@ -379,33 +379,82 @@ RegisterTestEntry(TestPolygonInside)
 
 void TestEdge()
 {
-    float3 points[] = {
-        { 0.0f, 0.5f, 0.0f },
-        { 1.0f, 0.0f, 0.0f },
-        { 0.0f, 1.0f, 0.0f },
-        {-1.0f, 0.0f, 0.0f },
-    };
-    int indices[] = {
-        0, 1, 2,
-        0, 2, 3,
-        0, 3, 1,
-    };
+    {
+        float3 points[] = {
+            { 0.0f, 0.5f, 0.0f },
+            { 1.0f, 0.0f, 0.0f },
+            { 0.0f, 1.0f, 0.0f },
+            { -1.0f, 0.0f, 0.0f },
+        };
+        int indices[] = {
+            0, 1, 2,
+            0, 2, 3,
+            0, 3, 1,
+        };
 
-    ConnectionData connection;
-    BuildVerticesConnection(indices, 3, 4, connection);
+        ConnectionData connection;
+        BuildVerticesConnection(indices, 3, points, connection);
 
-    for (int vi = 0; vi < 4; ++vi) {
-        bool is_edge = IsEdge(indices, points, connection, vi);
-        printf("    IsEdge(): %d %d\n", vi, (int)is_edge);
-    }
+        for (int vi = 0; vi < 4; ++vi) {
+            bool is_edge = IsEdge(indices, 3, points, connection, vi);
+            printf("    IsEdge(): %d %d\n", vi, (int)is_edge);
+        }
 
-    RawVector<int> edges;
-    SelectEdge(indices, points, connection, 1, edges);
+        RawVector<int> edges;
+        int vi[] = { 1 };
+        SelectEdge(indices, 3, points, connection, vi, edges);
 
-    printf("    SelectEdge():");
-    for (int e : edges) {
-        printf(" %d", e);
+        printf("    SelectEdge (triangles):");
+        for (int e : edges) {
+            printf(" %d", e);
+        }
+        printf("\n");
     }
     printf("\n");
+
+    {
+        float3 points[4 * 4];
+        int indices[3 * 3 * 4];
+
+        for (int yi = 0; yi < 4; ++yi) {
+            for (int xi = 0; xi < 4; ++xi) {
+                points[4 * yi + xi] = {(float)xi, 0.0f, (float)yi};
+            }
+        }
+        for (int yi = 0; yi < 3; ++yi) {
+            for (int xi = 0; xi < 3; ++xi) {
+                int i = 3 * yi + xi;
+                indices[4 * i + 0] = 4 * (yi + 0) + (xi + 0);
+                indices[4 * i + 1] = 4 * (yi + 0) + (xi + 1);
+                indices[4 * i + 2] = 4 * (yi + 1) + (xi + 1);
+                indices[4 * i + 3] = 4 * (yi + 1) + (xi + 0);
+            }
+        }
+
+        int counts[9] = { 4,4,4,4,4,4,4,4,4 };
+        int offsets[9] = { 0,4,8,12,16,20,24,28,32 };
+        for (int i = 0; i < 9; ++i) {
+            counts[i] = 4;
+            offsets[i] = i * 4;
+        }
+
+        ConnectionData connection;
+        BuildVerticesConnection(indices, counts, offsets, points, connection);
+
+        for (int vi = 0; vi < 16; ++vi) {
+            bool is_edge = IsEdge(indices, 4, points, connection, vi);
+            printf("    IsEdge(): %d %d\n", vi, (int)is_edge);
+        }
+
+        RawVector<int> edges;
+        int vi[] = { 1 };
+        SelectEdge(indices, counts, offsets, points, connection, vi, edges);
+
+        printf("    SelectEdge (quads):");
+        for (int e : edges) {
+            printf(" %d", e);
+        }
+        printf("\n");
+    }
 }
 RegisterTestEntry(TestEdge)
