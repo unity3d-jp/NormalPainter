@@ -3,7 +3,7 @@
 CGINCLUDE
 #include "UnityCG.cginc"
 
-sampler2D _TmpDepth;
+sampler2D _PositionBuffer;
 
 float _VertexSize;
 float _NormalSize;
@@ -20,7 +20,6 @@ float4 _BrushPos;
 int _OnlySelected = 0;
 
 float4x4 _Transform;
-float4x4 _InvViewProj;
 StructuredBuffer<float3> _BaseNormals;
 StructuredBuffer<float4> _BaseTangents;
 StructuredBuffer<float3> _Points;
@@ -30,6 +29,8 @@ StructuredBuffer<float> _Selection;
 
 int _NumBrushSamples;
 StructuredBuffer<float> _BrushSamples;
+
+
 
 struct ia_out
 {
@@ -45,6 +46,13 @@ struct vs_out
 {
     float4 vertex : SV_POSITION;
     float4 color : TEXCOORD0;
+};
+
+struct vs_out2
+{
+    float4 vertex : SV_POSITION;
+    float4 position : TEXCOORD0;
+    float4 aux : TEXCOORD1;
 };
 
 
@@ -169,23 +177,27 @@ vs_out vert_lasso(ia_out v)
     return o;
 }
 
-vs_out vert_depth(ia_out v)
+vs_out2 vert_depth(ia_out v)
 {
-    vs_out o;
+    vs_out2 o;
     o.vertex = UnityObjectToClipPos(v.vertex);
-    //o.color = ComputeScreenPos(o.vertex);
-    o.color = mul(UNITY_MATRIX_M, v.vertex);
+    o.position = mul(_Transform, v.vertex);
+    o.aux = 0.0;
     return o;
 }
 
-vs_out vert_brush_range(ia_out v)
+vs_out2 vert_brush_range(ia_out v)
 {
-    vs_out o;
-    o.vertex = mul(UNITY_MATRIX_VP, float4(v.vertex.xyz * (_BrushPos.w * 2.0) + _BrushPos.xyz, 1.0));
-    o.color = ComputeScreenPos(o.vertex);
+    float4 pos = float4(v.vertex.xyz * (_BrushPos.w * 2.0) + _BrushPos.xyz, 1.0);
+
+    vs_out2 o;
+    o.vertex = mul(UNITY_MATRIX_VP, pos);
+    o.position = ComputeScreenPos(o.vertex);
+
+    float z = abs(UnityObjectToViewPos(float4(_BrushPos.xyz, 1.0)).z);
+    o.aux = float4(z,0,0,0);
     return o;
 }
-
 
 
 float4 frag(vs_out v) : SV_Target
@@ -193,55 +205,28 @@ float4 frag(vs_out v) : SV_Target
     return v.color;
 }
 
-
-float3 GetWorldPosition(float2 uv, float depth)
+float4 frag_depth(vs_out2 v) : SV_Target
 {
-    float4 pos4 = mul(_InvViewProj, float4(uv * 2.0 - 1.0, depth, 1.0));
-    return pos4.xyz / pos4.w;
+    return v.position;
 }
 
-float ComputeDepth(float4 clippos)
+float4 frag_brush_range(vs_out2 v) : SV_Target
 {
-#if defined(SHADER_TARGET_GLSL) || defined(SHADER_API_GLES) || defined(SHADER_API_GLES3)
-    return (clippos.z / clippos.w) * 0.5 + 0.5;
-#else
-    return clippos.z / clippos.w;
-#endif
-}
+    float2 uv = v.position.xy / v.position.w;
 
-float4 frag_depth(vs_out v) : SV_Target
-{
-    float depth = ComputeDepth(v.color);
-    //return depth;
-
-    return v.color;
-}
-
-float4 frag_brush_range(vs_out v) : SV_Target
-{
-    float2 uv = v.color.xy / v.color.w;
-    float depth = tex2D(_TmpDepth, uv).r;
-
-    //float3 pixel_pos = GetWorldPosition(uv, depth);
-    float3 pixel_pos = tex2D(_TmpDepth, uv).xyz;
+    float3 pixel_pos = tex2D(_PositionBuffer, uv).xyz;
     float3 brush_pos = _BrushPos.xyz;
     float distance = length(pixel_pos - brush_pos);
 
-    if (distance >= _BrushPos.w) { discard; }
     float range = clamp(1.0f - distance / _BrushPos.w, 0, 1);
-    int bsi = range * (_NumBrushSamples - 1);
-    float4 color = float4(_VertexColor3.rgb, _VertexColor3.a * _BrushSamples[bsi]);
-    if (range < 0.01) {
-        color = float4(1,0,0,1);
-    }
+    float border = 0.002 / _BrushPos.w * v.aux.x;
+    if (distance > _BrushPos.w || range > border) { discard; }
 
+    //int bsi = range * (_NumBrushSamples - 1);
+    //float4 color = float4(_VertexColor3.rgb, _VertexColor3.a * _BrushSamples[bsi]);
+
+    float4 color = float4(1, 0, 0, 1);
     return color;
-    //return float4(uv, depth, 1.0);
-    //return float4(abs(pixel_pos.xyz * 0.02), 1.0);
-    //return float4(abs(tex2D(_TmpDepth, uv).xyz), 1.0);
-    //return float4(abs(brush_pos.xyz), 1.0);
-    //return float4(distance, distance, distance, 1.0);
-    //return float4(depth, depth, depth, 1.0);
 }
 
 ENDCG
@@ -250,11 +235,11 @@ ENDCG
     {
         Tags{ "RenderType" = "Transparent" "Queue" = "Transparent+100" }
         Blend SrcAlpha OneMinusSrcAlpha
-        ZWrite Off
 
         // pass 0: visualize vertices
         Pass
         {
+            ZWrite Off
             ZTest LEqual
 
             CGPROGRAM
@@ -267,6 +252,7 @@ ENDCG
         // pass 1: visualize normals
         Pass
         {
+            ZWrite Off
             ZTest LEqual
 
             CGPROGRAM
@@ -279,6 +265,7 @@ ENDCG
         // pass 2: visualize tangents
         Pass
         {
+            ZWrite Off
             ZTest LEqual
 
             CGPROGRAM
@@ -291,6 +278,7 @@ ENDCG
         // pass 3: visualize binormals
         Pass
         {
+            ZWrite Off
             ZTest LEqual
 
             CGPROGRAM
@@ -303,6 +291,7 @@ ENDCG
         // pass 4: local space normals overlay
         Pass
         {
+            ZWrite Off
             ZTest LEqual
 
             CGPROGRAM
@@ -315,6 +304,7 @@ ENDCG
         // pass 5: tangent space normals overlay
         Pass
         {
+            ZWrite Off
             ZTest LEqual
 
             CGPROGRAM
@@ -327,7 +317,8 @@ ENDCG
         // pass 6: vertex color overlay
         Pass
         {
-            ZTest LEqual
+        ZWrite Off
+        ZTest LEqual
 
             CGPROGRAM
             #pragma vertex vert_color
@@ -339,6 +330,7 @@ ENDCG
         // pass 7: lasso
         Pass
         {
+            ZWrite Off
             ZTest Always
 
             CGPROGRAM
@@ -351,6 +343,7 @@ ENDCG
         // pass 8: depth
         Pass
         {
+            ZWrite On
             ZTest LEqual
 
             CGPROGRAM
@@ -363,7 +356,8 @@ ENDCG
         // pass 9: brush range
         Pass
         {
-            ZTest LEqual
+            ZWrite Off
+            ZTest Always
 
             CGPROGRAM
             #pragma vertex vert_brush_range

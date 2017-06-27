@@ -100,6 +100,7 @@ namespace UTJ.NormalPainter
         public Color primary = NormalPainter.ToColor(Vector3.up);
 
         // display options
+        public bool showBrushRange = true;
         public bool showVertices = true;
         public bool showNormals = true;
         public bool showTangents = false;

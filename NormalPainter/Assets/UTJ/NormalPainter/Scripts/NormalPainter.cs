@@ -681,18 +681,8 @@ namespace UTJ.NormalPainter
 
             bool brushMode = m_settings.editMode == EditMode.Brush ||
                  (m_settings.editMode == EditMode.Select && m_settings.selectMode == SelectMode.Brush);
-
             var trans = GetComponent<Transform>();
             var matrix = trans.localToWorldMatrix;
-
-            var cam = Camera.current;
-            if (cam != null)
-            {
-                var view = cam.worldToCameraMatrix;
-                var proj = GL.GetGPUProjectionMatrix(cam.projectionMatrix, false);
-                var invViewProj = (proj * view).inverse;
-                m_matVisualize.SetMatrix("_InvViewProj", invViewProj);
-            }
 
             m_matVisualize.SetMatrix("_Transform", matrix);
             m_matVisualize.SetFloat("_VertexSize", m_settings.vertexSize);
@@ -755,11 +745,10 @@ namespace UTJ.NormalPainter
             }
 
             // visualize brush range
-            if (m_rayHit && brushMode)
+            if (m_settings.showBrushRange && m_rayHit && brushMode)
             {
-                int rtid = Shader.PropertyToID("_TmpDepth");
-                //m_cmdDraw.GetTemporaryRT(rtid, -1, -1, 0, FilterMode.Point, RenderTextureFormat.RFloat);
-                m_cmdDraw.GetTemporaryRT(rtid, -1, -1, 0, FilterMode.Point, RenderTextureFormat.ARGBFloat);
+                int rtid = Shader.PropertyToID("_PositionBuffer");
+                m_cmdDraw.GetTemporaryRT(rtid, -1, -1, 24, FilterMode.Point, RenderTextureFormat.ARGBFloat);
                 m_cmdDraw.SetRenderTarget(rtid);
                 m_cmdDraw.ClearRenderTarget(false, true, Color.black);
                 m_cmdDraw.DrawMesh(m_meshTarget, matrix, m_matVisualize, 0, 8);

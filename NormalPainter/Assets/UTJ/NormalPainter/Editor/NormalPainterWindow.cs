@@ -76,6 +76,16 @@ namespace UTJ.NormalPainter
                     var windowHeight = position.height;
                     var settings = m_target.settings;
 
+                    if (settings.editing)
+                    {
+                        if (HandleShortcutKeys())
+                        {
+                            Event.current.Use();
+                            RepaintAllViews();
+                        }
+                    }
+
+
                     EditorGUILayout.BeginHorizontal();
                     EditorGUI.BeginChangeCheck();
                     settings.editing = GUILayout.Toggle(settings.editing, EditorGUIUtility.IconContent("EditCollider"),
@@ -104,12 +114,6 @@ namespace UTJ.NormalPainter
 
                         EditorGUILayout.LabelField(tips);
                         EditorGUILayout.EndVertical();
-
-                        if (HandleShortcutKeys())
-                        {
-                            Event.current.Use();
-                            RepaintAllViews();
-                        }
                     }
                 }
             }
@@ -207,8 +211,8 @@ namespace UTJ.NormalPainter
             EditorGUILayout.Space();
 
             var bd = settings.activeBrush;
-            bd.radius = EditorGUILayout.Slider("Brush Radius", bd.radius, 0.01f, 1.0f);
-            bd.strength = EditorGUILayout.Slider("Brush Strength", bd.strength, -1.0f, 1.0f);
+            bd.radius = EditorGUILayout.Slider("Radius [Shift+Wheel]", bd.radius, 0.01f, 1.0f);
+            bd.strength = EditorGUILayout.Slider("Strength [Ctrl+Wheel]", bd.strength, -1.0f, 1.0f);
             EditorGUI.BeginChangeCheck();
             bd.curve = EditorGUILayout.CurveField("Brush Shape", bd.curve, GUILayout.Width(EditorGUIUtility.labelWidth + 32), GUILayout.Height(32));
             if (EditorGUI.EndChangeCheck())
@@ -649,6 +653,7 @@ namespace UTJ.NormalPainter
                 settings.showSelectedOnly = EditorGUILayout.Toggle("Only Selected", settings.showSelectedOnly);
                 EditorGUI.indentLevel--;
                 settings.modelOverlay = (ModelOverlay)EditorGUILayout.EnumPopup("Overlay", settings.modelOverlay);
+                settings.showBrushRange = EditorGUILayout.Toggle("Brush Range", settings.showBrushRange);
             }
             else if (settings.displayIndex == 1)
             {
