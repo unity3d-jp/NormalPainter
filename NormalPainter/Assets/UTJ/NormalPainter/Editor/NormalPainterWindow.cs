@@ -211,7 +211,7 @@ namespace UTJ.NormalPainter
             EditorGUILayout.Space();
 
             var bd = settings.activeBrush;
-            bd.radius = EditorGUILayout.Slider("Radius [Shift+Wheel]", bd.radius, 0.01f, 1.0f);
+            bd.radius = EditorGUILayout.Slider("Radius [Shift+Wheel]", bd.radius, 0.01f, settings.brushMaxRadius);
             bd.strength = EditorGUILayout.Slider("Strength [Ctrl+Wheel]", bd.strength, -1.0f, 1.0f);
             EditorGUI.BeginChangeCheck();
             bd.curve = EditorGUILayout.CurveField("Brush Shape", bd.curve, GUILayout.Width(EditorGUIUtility.labelWidth + 32), GUILayout.Height(32));
@@ -281,6 +281,35 @@ namespace UTJ.NormalPainter
                     }
                     settings.selectFrontSideOnly = EditorGUILayout.Toggle("Front Side Only", settings.selectFrontSideOnly);
                 }
+
+                EditorGUILayout.Space();
+
+                GUILayout.BeginHorizontal();
+                if (GUILayout.Button("Select Edge [E]"))
+                {
+                    m_target.SelectEdge(m_ctrl ? -1.0f : 1.0f, !m_shift && !m_ctrl);
+                    m_target.UpdateSelection();
+                }
+                if (GUILayout.Button("Select Connected [C]"))
+                {
+                    m_target.SelectConnected(m_ctrl ? -1.0f : 1.0f, !m_shift && !m_ctrl);
+                    m_target.UpdateSelection();
+                }
+                GUILayout.EndHorizontal();
+
+                GUILayout.BeginHorizontal();
+                if (GUILayout.Button("Select All [A]"))
+                {
+                    m_target.SelectAll();
+                    m_target.UpdateSelection();
+                }
+                if (GUILayout.Button("Clear Selection [D]"))
+                {
+                    m_target.ClearSelection();
+                    m_target.UpdateSelection();
+                }
+                GUILayout.EndHorizontal();
+
                 EditorGUILayout.Space();
 
                 GUILayout.BeginHorizontal();
@@ -300,36 +329,6 @@ namespace UTJ.NormalPainter
                         m_target.selection = settings.selectionSets[i].selection;
                 }
                 GUILayout.EndHorizontal();
-
-                EditorGUILayout.Space();
-
-                GUILayout.BeginHorizontal();
-                if (GUILayout.Button("Select Edge [E]"))
-                {
-                    m_target.SelectEdge(m_ctrl ? -1.0f : 1.0f, !m_shift && !m_ctrl);
-                    m_target.UpdateSelection();
-                }
-                if (GUILayout.Button("Select Connected [C]"))
-                {
-                    m_target.SelectConnected(m_ctrl ? -1.0f : 1.0f, !m_shift && !m_ctrl);
-                    m_target.UpdateSelection();
-                }
-                GUILayout.EndHorizontal();
-
-                EditorGUILayout.Space();
-
-                GUILayout.BeginHorizontal();
-                if (GUILayout.Button("Select All [A]"))
-                {
-                    m_target.SelectAll();
-                    m_target.UpdateSelection();
-                }
-                if (GUILayout.Button("Clear Selection [D]"))
-                {
-                    m_target.ClearSelection();
-                    m_target.UpdateSelection();
-                }
-                GUILayout.EndHorizontal();
             }
             else if (settings.editMode == EditMode.Brush)
             {
@@ -345,14 +344,14 @@ namespace UTJ.NormalPainter
                 else if (settings.brushMode == BrushMode.Replace)
                 {
                     GUILayout.BeginHorizontal();
-                    settings.assignValue = EditorGUILayout.Vector3Field("", settings.assignValue);
+                    settings.assignValue = EditorGUILayout.Vector3Field("Value", settings.assignValue);
                     settings.pickNormal = GUILayout.Toggle(settings.pickNormal, "Pick [P]", "Button", GUILayout.Width(100));
                     GUILayout.EndHorizontal();
                 }
             }
             else if (settings.editMode == EditMode.Assign)
             {
-                settings.assignValue = EditorGUILayout.Vector3Field("", settings.assignValue);
+                settings.assignValue = EditorGUILayout.Vector3Field("Value", settings.assignValue);
                 GUILayout.BeginHorizontal();
                 if (GUILayout.Button("Copy Selected Normal [Shift+C]", GUILayout.Width(200)))
                     settings.assignValue = m_target.selectionNormal;
@@ -904,7 +903,7 @@ namespace UTJ.NormalPainter
                     var bd = settings.activeBrush;
                     if (e.shift)
                     {
-                        bd.radius = Mathf.Clamp(bd.radius + -e.delta.y * 0.01f, 0.01f, 2.0f);
+                        bd.radius = Mathf.Clamp(bd.radius + -e.delta.y * 0.01f, 0.01f, settings.brushMaxRadius);
                         handled = true;
                     }
                     else if (e.control)

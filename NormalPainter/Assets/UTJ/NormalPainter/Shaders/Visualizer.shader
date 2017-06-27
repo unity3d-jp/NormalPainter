@@ -181,7 +181,7 @@ vs_out2 vert_brush_range(ia_out v)
     o.vertex = UnityObjectToClipPos(v.vertex);
     o.position = mul(UNITY_MATRIX_M, v.vertex);
 
-    float z = abs(mul(UNITY_MATRIX_V, float4(_BrushPos.xyz, 1.0)).z);
+    float z = abs(mul(UNITY_MATRIX_V, float4(v.vertex.xyz, 1.0)).z);
     o.aux = float4(z,0,0,0);
     return o;
 }
@@ -203,9 +203,6 @@ float4 frag_brush_range(vs_out2 v) : SV_Target
     float range = clamp(1.0f - distance / _BrushPos.w, 0, 1);
     float border = 0.004 / _BrushPos.w * v.aux.x;
     if (distance > _BrushPos.w || range > border) { discard; }
-
-    //int bsi = range * (_NumBrushSamples - 1);
-    //float4 color = float4(_VertexColor3.rgb, _VertexColor3.a * _BrushSamples[bsi]);
 
     float4 color = float4(1, 0, 0, 1);
     return color;

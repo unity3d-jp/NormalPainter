@@ -85,6 +85,7 @@ namespace UTJ.NormalPainter
         public bool selectVertex = true;
         public bool selectTriangle = true;
         public bool rotatePivot = false;
+        public float brushMaxRadius = 5.0f;
         public bool brushUseSelection = false;
 
         public BrushData[] brushData = new BrushData[5] {

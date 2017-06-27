@@ -1,4 +1,5 @@
 # NormalPainter
+[English](https://translate.google.com/translate?sl=ja&tl=en&u=https://github.com/unity3d-jp/NormalPainter) (by Google Translate)  
 ![](https://user-images.githubusercontent.com/1488611/27468607-b3e9e4d0-5825-11e7-954d-fca1a7a50417.gif)
 
 Unity 上でポリゴンモデルの法線編集を可能にするツールです。
@@ -7,7 +8,7 @@ Unity 5.6 系以上、Windows (64bit) & Mac で動作します。
 ## 使い方
 - [NormalPainter.unitypackage](https://github.com/unity3d-jp/NormalPainter/releases/download/20170623/NormalPainter.unitypackage) をプロジェクトにインポート
 - Window -> Normal Painter でツールウィンドウを開く
-- MeshRenderer か SkinnedMeshRenderer を持つオブジェクトを選択するとツールウィンドウに "Add NormalPainter" が出てくるのでそれを押す
+- MeshRenderer か SkinnedMeshRenderer を持つオブジェクトを選択するとツールウィンドウに "Add NormalPainter" が出てくるのでそれでコンポーネントを追加
 
 
 ## 実装されている機能
