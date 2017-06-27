@@ -754,7 +754,7 @@ namespace UTJ.NormalPainter
                 int rtid = Shader.PropertyToID("_PositionBuffer");
                 m_cmdDraw.GetTemporaryRT(rtid, -1, -1, 24, FilterMode.Point, RenderTextureFormat.ARGBFloat);
                 m_cmdDraw.SetRenderTarget(rtid);
-                m_cmdDraw.ClearRenderTarget(false, true, Color.black);
+                m_cmdDraw.ClearRenderTarget(true, true, Color.black);
                 m_cmdDraw.DrawMesh(m_meshTarget, matrix, m_matVisualize, 0, 8);
 
                 m_cmdDraw.SetRenderTarget(BuiltinRenderTextureType.CameraTarget);

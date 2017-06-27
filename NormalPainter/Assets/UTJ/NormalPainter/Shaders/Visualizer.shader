@@ -219,7 +219,7 @@ float4 frag_brush_range(vs_out2 v) : SV_Target
     float distance = length(pixel_pos - brush_pos);
 
     float range = clamp(1.0f - distance / _BrushPos.w, 0, 1);
-    float border = 0.002 / _BrushPos.w * v.aux.x;
+    float border = 0.004 / _BrushPos.w * v.aux.x;
     if (distance > _BrushPos.w || range > border) { discard; }
 
     //int bsi = range * (_NumBrushSamples - 1);

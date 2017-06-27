@@ -11,7 +11,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "setup", "setup.vcxproj", "{
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Test", "Test\Test.vcxproj", "{11990C37-1C63-418F-9AB1-74076C470584}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "NormalPainter", "NormalPainter.vcxproj", "{98EB8D3A-2692-4854-A236-00E5D97BBB0E}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "NormalPainterCore", "NormalPainterCore.vcxproj", "{98EB8D3A-2692-4854-A236-00E5D97BBB0E}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FbxExporterCore", "FbxExporterCore.vcxproj", "{40308791-CAC5-46B9-981A-2376D1BD493A}"
 EndProject

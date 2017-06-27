@@ -3,11 +3,17 @@
 
 using namespace mu;
 
+struct TestEntry
+{
+    std::string name;
+    std::function<void()> body;
+};
+
 static std::vector<TestEntry> g_tests;
 
-void RegisterTestEntryImpl(const TestEntry& v)
+void RegisterTestEntryImpl(const char *name, const std::function<void()>& body)
 {
-    g_tests.push_back(v);
+    g_tests.push_back({name, body});
 }
 
 static void ExecuteTest(const TestEntry& v)

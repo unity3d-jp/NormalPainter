@@ -786,102 +786,102 @@ namespace UTJ.NormalPainter
         }
 
 
-        [DllImport("NormalPainter")] static extern int npRaycast(
+        [DllImport("NormalPainterCore")] static extern int npRaycast(
             Vector3 pos, Vector3 dir, Vector3[] vertices, int[] indices, int num_triangles,
             ref int tindex, ref float distance, ref Matrix4x4 trans);
 
-        [DllImport("NormalPainter")] static extern Vector3 npTriangleInterpolation(
+        [DllImport("NormalPainterCore")] static extern Vector3 npTriangleInterpolation(
             Vector3[] vertices, int[] indices, Vector3[] normals, ref Matrix4x4 trans,
             Vector3 pos, int ti);
 
-        [DllImport("NormalPainter")] static extern int npSelectSingle(
+        [DllImport("NormalPainterCore")] static extern int npSelectSingle(
             Vector3[] vertices, Vector3[] normals, int[] indices, int num_vertices, int num_triangles, float[] seletion, float strength,
             ref Matrix4x4 mvp, ref Matrix4x4 trans, Vector2 rmin, Vector2 rmax, Vector3 campos, bool frontfaceOnly);
 
-        [DllImport("NormalPainter")] static extern int npSelectTriangle(
+        [DllImport("NormalPainterCore")] static extern int npSelectTriangle(
             Vector3[] vertices, int[] indices, int num_triangles, float[] seletion, float strength,
             ref Matrix4x4 trans, Vector3 pos, Vector3 dir);
         
-        [DllImport("NormalPainter")] static extern int npSelectEdge(
+        [DllImport("NormalPainterCore")] static extern int npSelectEdge(
             Vector3[] vertices, int[] indices, int num_vertices, int num_triangles, float[] seletion, float strength, bool clear);
 
-        [DllImport("NormalPainter")] static extern int npSelectRect(
+        [DllImport("NormalPainterCore")] static extern int npSelectRect(
             Vector3[] vertices, int[] indices, int num_vertices, int num_triangles, float[] seletion, float strength,
             ref Matrix4x4 mvp, ref Matrix4x4 trans, Vector2 rmin, Vector2 rmax, Vector3 campos, bool frontfaceOnly);
 
-        [DllImport("NormalPainter")] static extern int npSelectLasso(
+        [DllImport("NormalPainterCore")] static extern int npSelectLasso(
             Vector3[] vertices, int[] indices, int num_vertices, int num_triangles, float[] seletion, float strength,
             ref Matrix4x4 mvp, ref Matrix4x4 trans, Vector2[] points, int num_points, Vector3 campos, bool frontfaceOnly);
         
-        [DllImport("NormalPainter")] static extern int npSelectBrush(
+        [DllImport("NormalPainterCore")] static extern int npSelectBrush(
             Vector3[] vertices, int num_vertices, ref Matrix4x4 trans,
             Vector3 pos, float radius, float strength, float[] bsamples, int num_bsamples, float[] seletion);
 
-        [DllImport("NormalPainter")] static extern int npUpdateSelection(
+        [DllImport("NormalPainterCore")] static extern int npUpdateSelection(
             Vector3[] vertices, Vector3[] normals, float[] seletion, int num_vertices, ref Matrix4x4 trans,
             ref Vector3 selection_pos, ref Vector3 selection_normal);
 
 
-        [DllImport("NormalPainter")] static extern int npBrushReplace(
+        [DllImport("NormalPainterCore")] static extern int npBrushReplace(
             Vector3[] vertices, float[] seletion, int num_vertices, ref Matrix4x4 trans,
             Vector3 pos, float radius, float strength, float[] bsamples, int num_bsamples, Vector3 amount, Vector3[] normals);
 
-        [DllImport("NormalPainter")] static extern int npBrushPaint(
+        [DllImport("NormalPainterCore")] static extern int npBrushPaint(
             Vector3[] vertices, float[] seletion, int num_vertices, ref Matrix4x4 trans,
             Vector3 pos, float radius, float strength, float[] bsamples, int num_bsamples, Vector3 baseNormal, Vector3[] normals);
 
-        [DllImport("NormalPainter")] static extern int npBrushSmooth(
+        [DllImport("NormalPainterCore")] static extern int npBrushSmooth(
             Vector3[] vertices, float[] seletion, int num_vertices, ref Matrix4x4 trans,
             Vector3 pos, float radius, float strength, float[] bsamples, int num_bsamples, Vector3[] normals);
 
-        [DllImport("NormalPainter")] static extern int npBrushLerp(
+        [DllImport("NormalPainterCore")] static extern int npBrushLerp(
             Vector3[] vertices, float[] seletion, int num_vertices, ref Matrix4x4 trans,
             Vector3 pos, float radius, float strength, float[] bsamples, int num_bsamples, Vector3[] baseNormals, Vector3[] normals);
 
-        [DllImport("NormalPainter")] static extern int npAssign(
+        [DllImport("NormalPainterCore")] static extern int npAssign(
             float[] selection, int num_vertices, ref Matrix4x4 trans, Vector3 amount, Vector3[] normals);
         
-        [DllImport("NormalPainter")] static extern int npMove(
+        [DllImport("NormalPainterCore")] static extern int npMove(
             float[] selection, int num_vertices, ref Matrix4x4 trans, Vector3 amount, Vector3[] normals);
         
-        [DllImport("NormalPainter")] static extern int npRotate(
+        [DllImport("NormalPainterCore")] static extern int npRotate(
             Vector3[] vertices, float[] selection, int num_vertices, ref Matrix4x4 trans,
             Quaternion amount, Quaternion pivotRot, Vector3[] normals);
 
-        [DllImport("NormalPainter")] static extern int npRotatePivot(
+        [DllImport("NormalPainterCore")] static extern int npRotatePivot(
             Vector3[] vertices, float[] selection, int num_vertices, ref Matrix4x4 trans,
             Quaternion amount, Vector3 pivotPos, Quaternion pivotRot, Vector3[] normals);
 
-        [DllImport("NormalPainter")] static extern int npScale(
+        [DllImport("NormalPainterCore")] static extern int npScale(
             Vector3[] vertices, float[] selection, int num_vertices, ref Matrix4x4 trans,
             Vector3 amount, Vector3 pivotPos, Quaternion pivotRot, Vector3[] normals);
 
-        [DllImport("NormalPainter")] static extern int npSmooth(
+        [DllImport("NormalPainterCore")] static extern int npSmooth(
             Vector3[] vertices, float[] selection, int num_vertices, ref Matrix4x4 trans,
             float radius, float strength, Vector3[] normals);
 
-        [DllImport("NormalPainter")] static extern int npBuildMirroringRelation(
+        [DllImport("NormalPainterCore")] static extern int npBuildMirroringRelation(
             Vector3[] vertices, Vector3[] base_normals, int num_vertices, Vector3 plane_normal, float epsilon, int[] relation);
 
-        [DllImport("NormalPainter")] static extern void npApplyMirroring(
+        [DllImport("NormalPainterCore")] static extern void npApplyMirroring(
             int[] relation, int num_vertices, Vector3 plane_normal, Vector3[] normals);
 
-        [DllImport("NormalPainter")] static extern void npProjectNormals(
+        [DllImport("NormalPainterCore")] static extern void npProjectNormals(
             Vector3[] vertices, Vector3[] normals, float[] selection, int num_vertices, ref Matrix4x4 trans,
             Vector3[] pvertices, Vector3[] pnormals, int[] pindices, int num_triangles, ref Matrix4x4 ptrans,
             Vector3[] dst);
 
-        [DllImport("NormalPainter")] static extern void npApplySkinning(
+        [DllImport("NormalPainterCore")] static extern void npApplySkinning(
             BoneWeight[] weights, ref Matrix4x4 root, Matrix4x4[] bones, Matrix4x4[] bindposes, int num_vertices, int num_bones,
             Vector3[] ipoints, Vector3[] inormals, Vector4[] itangents,
             Vector3[] opoints, Vector3[] onormals, Vector4[] otangents);
 
-        [DllImport("NormalPainter")] static extern void npApplyReverseSkinning(
+        [DllImport("NormalPainterCore")] static extern void npApplyReverseSkinning(
             BoneWeight[] weights, ref Matrix4x4 root, Matrix4x4[] bones, Matrix4x4[] bindposes, int num_vertices, int num_bones,
             Vector3[] ipoints, Vector3[] inormals, Vector4[] itangents,
             Vector3[] opoints, Vector3[] onormals, Vector4[] otangents);
 
-        [DllImport("NormalPainter")] static extern void npInitializePenInput();
+        [DllImport("NormalPainterCore")] static extern void npInitializePenInput();
 #endif
     }
 }

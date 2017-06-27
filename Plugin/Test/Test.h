@@ -1,17 +1,8 @@
 #pragma once
 
-struct TestEntry
-{
-    std::string name;
-    std::function<void()> body;
-};
-
-void RegisterTestEntryImpl(const TestEntry& v);
+void RegisterTestEntryImpl(const char *name, const std::function<void()>& body);
 
 #define RegisterTestEntry(Name)\
     struct Register##Name {\
-        Register##Name() {\
-            TestEntry entry {#Name, Name};\
-            RegisterTestEntryImpl(entry);\
-        }\
+        Register##Name() { RegisterTestEntryImpl(#Name, Name); }\
     } g_Register##Name;

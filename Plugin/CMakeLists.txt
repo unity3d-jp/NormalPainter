@@ -10,6 +10,7 @@ MARK_AS_ADVANCED(FORCE ISPC)
 
 OPTION(ENABLE_ISPC "Use Intel ISPC to generate SIMDified code. It can significantly boost performance." ON)
 OPTION(ENABLE_FBX "Enable FBX support." OFF)
+OPTION(ENABLE_DEPLOY "Copy built binaries to plugins directory." ON)
 OPTION(ENABLE_TESTS "Build tests" OFF)
 
 SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
@@ -28,7 +29,6 @@ ELSEIF(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
 ENDIF()
 
 SET(ASSETS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../NormalPainter/Assets")
-SET(PLUGINS_DIR "${ASSETS_DIR}/UTJ/NormalPainter/Plugins/x86_64")
 
 INCLUDE_DIRECTORIES(
     ${CMAKE_CURRENT_SOURCE_DIR}
@@ -97,46 +97,61 @@ ENDIF()
 FILE(GLOB NP_CXX_FILES NormalPainter/*.cpp)
 FILE(GLOB NP_H_FILES NormalPainter/*.h)
 IF(ENABLE_OSX_BUNDLE)
-    ADD_LIBRARY(NormalPainter MODULE ${NP_CXX_FILES} ${NP_H_FILES})
+    ADD_LIBRARY(NormalPainterCore MODULE ${NP_CXX_FILES} ${NP_H_FILES})
+    SET_TARGET_PROPERTIES(NormalPainterCore PROPERTIES BUNDLE ON)
 ELSE()
-    ADD_LIBRARY(NormalPainter SHARED ${NP_CXX_FILES} ${NP_H_FILES})
+    ADD_LIBRARY(NormalPainterCore SHARED ${NP_CXX_FILES} ${NP_H_FILES})
 ENDIF()
-ADD_DEPENDENCIES(NormalPainter MeshUtils)
-TARGET_INCLUDE_DIRECTORIES(NormalPainter PUBLIC ./NormalPainter)
-TARGET_LINK_LIBRARIES(NormalPainter MeshUtils)
+ADD_DEPENDENCIES(NormalPainterCore MeshUtils)
+TARGET_INCLUDE_DIRECTORIES(NormalPainterCore PUBLIC ./NormalPainter)
+TARGET_LINK_LIBRARIES(NormalPainterCore MeshUtils)
+
+IF(ENABLE_DEPLOY)
+    SET(NP_PLUGINS_DIR "${ASSETS_DIR}/UTJ/NormalPainter/Plugins/x86_64")
+    ADD_CUSTOM_TARGET(DeployNormalPainterCore ALL
+        COMMAND rm -rf ${NP_PLUGINS_DIR}/$<TARGET_FILE_NAME:NormalPainterCore>
+        COMMAND cp $<TARGET_FILE:NormalPainterCore> ${NP_PLUGINS_DIR}
+        DEPENDS NormalPainterCore
+    )
+ENDIF()
+
 
 IF(ENABLE_FBX)
-    ADD_DEFINITIONS(-DnpEnableFBX)
-    TARGET_INCLUDE_DIRECTORIES(NormalPainter PUBLIC ${FBX_INCLUDE_DIR})
-    TARGET_LINK_LIBRARIES(NormalPainter ${FBX_LIBRARY})
+    FILE(GLOB FBXE_CXX_FILES FbxExporter/*.cpp)
+    FILE(GLOB FBXE_H_FILES FbxExporter/*.h)
+    IF(ENABLE_OSX_BUNDLE)
+        ADD_LIBRARY(FbxExporterCore MODULE ${FBXE_CXX_FILES} ${FBXE_H_FILES})
+        SET_TARGET_PROPERTIES(FbxExporterCore PROPERTIES BUNDLE ON)
+    ELSE()
+        ADD_LIBRARY(FbxExporterCore SHARED ${FBXE_CXX_FILES} ${FBXE_H_FILES})
+    ENDIF()
+    ADD_DEPENDENCIES(FbxExporterCore MeshUtils)
+    TARGET_INCLUDE_DIRECTORIES(FbxExporterCore PUBLIC ${FBX_INCLUDE_DIR})
+    TARGET_LINK_LIBRARIES(FbxExporterCore ${FBX_LIBRARY})
+    
+    IF(ENABLE_DEPLOY)
+        SET(FBXE_PLUGINS_DIR "${ASSETS_DIR}/UTJ/NormalPainter/Plugins/x86_64")
+        ADD_CUSTOM_TARGET(DeployFbxExporterCore ALL
+            COMMAND rm -rf ${FBXE_PLUGINS_DIR}/$<TARGET_FILE_NAME:FbxExporterCore>
+            COMMAND cp $<TARGET_FILE:FbxExporterCore> ${FBXE_PLUGINS_DIR}
+            DEPENDS FbxExporterCore
+        )
+    ENDIF()
 ENDIF()
-IF(ENABLE_OSX_BUNDLE)
-    SET_TARGET_PROPERTIES(NormalPainter PROPERTIES BUNDLE ON)
-ENDIF()
 
 
-IF(ENABLE_OSX_BUNDLE)
-    # deploy
-    ADD_CUSTOM_TARGET(deploy ALL
-        COMMAND rm -rf ${PLUGINS_DIR}/NormalPainter.bundle
-        COMMAND cp -r NormalPainter.bundle ${PLUGINS_DIR}
-        DEPENDS NormalPainter
-    )
-ELSE()
-    # tests
-    IF(ENABLE_TESTS)
-        FILE(GLOB Tests_CXX_FILES Test/*.cpp)
-        FILE(GLOB Tests_H_FILES Test/*.h)
-
-        ADD_EXECUTABLE(Tests ${Tests_CXX_FILES} ${Tests_H_FILES})
-        ADD_DEPENDENCIES(Tests MeshUtils)
-        TARGET_LINK_LIBRARIES(Tests MeshUtils)
+IF(ENABLE_TESTS)
+    FILE(GLOB TEST_CXX_FILES Test/*.cpp)
+    FILE(GLOB TEST_H_FILES Test/*.h)
+    IF(NOT ENABLE_FBX)
+        LIST(REMOVE_ITEM TEST_CXX_FILES Test/TestFbxExporter.cpp)
     ENDIF()
 
-    # deploy
-    ADD_CUSTOM_TARGET(deploy ALL
-        COMMAND rm -rf ${PLUGINS_DIR}/$<TARGET_FILE_NAME:NormalPainter>
-        COMMAND cp $<TARGET_FILE:NormalPainter> ${PLUGINS_DIR}
-        DEPENDS NormalPainter
-    )
+    ADD_EXECUTABLE(Tests ${TEST_CXX_FILES} ${TEST_H_FILES})
+    ADD_DEPENDENCIES(Tests MeshUtils)
+    TARGET_LINK_LIBRARIES(Tests MeshUtils)
+    IF(ENABLE_FBX)
+        ADD_DEPENDENCIES(Tests FbxExporterCore)
+        TARGET_LINK_LIBRARIES(Tests FbxExporterCore)
+    ENDIF()
 ENDIF()

@@ -792,15 +792,6 @@ namespace UTJ.NormalPainter
                     }
                     if (settings.brushMode != prevBrushMode)
                         handled = true;
-
-                    if (settings.brushMode == BrushMode.Replace)
-                    {
-                        if(e.keyCode == KeyCode.P)
-                        {
-                            settings.pickNormal = true;
-                            handled = true;
-                        }
-                    }
                 }
 
                 if (e.keyCode == KeyCode.C && e.shift)
@@ -830,6 +821,11 @@ namespace UTJ.NormalPainter
                 {
                     handled = true;
                     m_target.RecalculateTangents();
+                }
+                else if (e.keyCode == KeyCode.P)
+                {
+                    handled = true;
+                    settings.pickNormal = true;
                 }
             }
             else if (e.type == EventType.ScrollWheel)
