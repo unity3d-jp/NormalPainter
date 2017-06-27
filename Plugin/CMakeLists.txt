@@ -106,9 +106,14 @@ TARGET_LINK_LIBRARIES(NormalPainterCore MeshUtils)
 
 IF(ENABLE_DEPLOY)
     SET(NP_PLUGINS_DIR "${ASSETS_DIR}/UTJ/NormalPainter/Plugins/x86_64")
+    IF(ENABLE_OSX_BUNDLE)
+        SET(NP_TARGET_FILENAME "NormalPainterCore.bundle")
+    ELSE()
+        SET(NP_TARGET_FILENAME $<TARGET_FILE:NormalPainterCore>)
+    ENDIF()
     ADD_CUSTOM_TARGET(DeployNormalPainterCore ALL
-        COMMAND rm -rf ${NP_PLUGINS_DIR}/$<TARGET_FILE_NAME:NormalPainterCore>
-        COMMAND cp $<TARGET_FILE:NormalPainterCore> ${NP_PLUGINS_DIR}
+        COMMAND rm -rf ${NP_PLUGINS_DIR}/${NP_TARGET_FILENAME}
+        COMMAND cp -r ${NP_TARGET_FILENAME} ${NP_PLUGINS_DIR}
         DEPENDS NormalPainterCore
     )
 ENDIF()
@@ -116,6 +121,11 @@ ENDIF()
 
 # FbxExporterCore
 IF(ENABLE_FBX)
+    IF(APPLE)
+        FIND_LIBRARY(CORE_FOUNDATION_LIBRARY CoreFoundation)
+        MARK_AS_ADVANCED(FORCE CORE_FOUNDATION_LIBRARY)
+    ENDIF()
+
     FILE(GLOB FBXE_CXX_FILES FbxExporter/*.cpp)
     FILE(GLOB FBXE_H_FILES FbxExporter/*.h)
     IF(ENABLE_OSX_BUNDLE)
@@ -126,13 +136,18 @@ IF(ENABLE_FBX)
     ENDIF()
     ADD_DEPENDENCIES(FbxExporterCore MeshUtils)
     TARGET_INCLUDE_DIRECTORIES(FbxExporterCore PUBLIC ${FBX_INCLUDE_DIR})
-    TARGET_LINK_LIBRARIES(FbxExporterCore ${FBX_LIBRARY} dl)
-    
+    TARGET_LINK_LIBRARIES(FbxExporterCore MeshUtils dl ${FBX_LIBRARY} ${CORE_FOUNDATION_LIBRARY})
+
     IF(ENABLE_DEPLOY)
         SET(FBXE_PLUGINS_DIR "${ASSETS_DIR}/UTJ/NormalPainter/Plugins/x86_64")
+        IF(ENABLE_OSX_BUNDLE)
+            SET(FBXE_TARGET_FILENAME "FbxExporterCore.bundle")
+        ELSE()
+            SET(FBXE_TARGET_FILENAME $<TARGET_FILE:FbxExporterCore>)
+        ENDIF()
         ADD_CUSTOM_TARGET(DeployFbxExporterCore ALL
-            COMMAND rm -rf ${FBXE_PLUGINS_DIR}/$<TARGET_FILE_NAME:FbxExporterCore>
-            COMMAND cp $<TARGET_FILE:FbxExporterCore> ${FBXE_PLUGINS_DIR}
+            COMMAND rm -rf ${FBXE_PLUGINS_DIR}/${FBXE_TARGET_FILENAME}
+            COMMAND cp -r ${FBXE_TARGET_FILENAME} ${FBXE_PLUGINS_DIR}
             DEPENDS FbxExporterCore
         )
     ENDIF()
