@@ -349,9 +349,9 @@ namespace UTJ.NormalPainter
             {
                 settings.assignValue = EditorGUILayout.Vector3Field("", settings.assignValue);
                 GUILayout.BeginHorizontal();
-                if (GUILayout.Button("Copy [Shift+C]", GUILayout.Width(100)))
+                if (GUILayout.Button("Copy Selected Normal [Shift+C]", GUILayout.Width(200)))
                     settings.assignValue = m_target.selectionNormal;
-                settings.pickNormal = GUILayout.Toggle(settings.pickNormal, "Pick [P]", "Button", GUILayout.Width(100));
+                settings.pickNormal = GUILayout.Toggle(settings.pickNormal, "Pick [P]", "Button", GUILayout.Width(90));
                 GUILayout.EndHorizontal();
 
                 EditorGUILayout.Space();
@@ -432,10 +432,20 @@ namespace UTJ.NormalPainter
             {
                 settings.smoothRadius = EditorGUILayout.FloatField("Smooth Radius", settings.smoothRadius);
                 settings.smoothAmount = EditorGUILayout.FloatField("Smooth Amount", settings.smoothAmount);
-                if (GUILayout.Button("Apply Smooth"))
+                if (GUILayout.Button("Apply Smoothing [Shift+S]"))
                 {
-                    m_target.ApplySmooth(settings.smoothRadius, settings.smoothAmount);
+                    m_target.ApplySmoothing(settings.smoothRadius, settings.smoothAmount);
                     m_target.PushUndo();
+                }
+
+                EditorGUILayout.Space();
+
+                if (GUILayout.Button("Apply Welding [Shift+W]"))
+                {
+                    if(m_target.ApplyWelding())
+                    {
+                        m_target.PushUndo();
+                    }
                 }
             }
             else if (settings.editMode == EditMode.Projection)
@@ -632,6 +642,22 @@ namespace UTJ.NormalPainter
             "Options",
         };
 
+
+        bool DisplayEnabledAll()
+        {
+            var settings = m_target.settings;
+            return settings.showVertices && settings.showNormals && settings.showTangents && settings.showBinormals;
+        }
+
+        void DisplayToggleAll(bool v)
+        {
+            var settings = m_target.settings;
+            settings.showVertices = v;
+            settings.showNormals = v;
+            settings.showTangents = v;
+            settings.showBinormals = v;
+        }
+
         void DrawDisplayPanel()
         {
             var settings = m_target.settings;
@@ -652,22 +678,12 @@ namespace UTJ.NormalPainter
             EditorGUILayout.BeginVertical();
             if (settings.displayIndex == 0)
             {
-                bool all = settings.showVertices && settings.showNormals && settings.showTangents && settings.showBinormals;
-                bool allChecked = EditorGUILayout.Toggle("All", all);
-                if(!all && allChecked)
-                {
-                    settings.showVertices = true;
-                    settings.showNormals = true;
-                    settings.showTangents = true;
-                    settings.showBinormals = true;
-                }
-                else if(all && !allChecked)
-                {
-                    settings.showVertices = false;
-                    settings.showNormals = false;
-                    settings.showTangents = false;
-                    settings.showBinormals = false;
-                }
+                bool all = DisplayEnabledAll();
+                bool allToggle = EditorGUILayout.Toggle("All [Tab]", all);
+                if(!all && allToggle)
+                    DisplayToggleAll(true);
+                else if (all && !allToggle)
+                    DisplayToggleAll(false);
 
                 EditorGUI.indentLevel++;
                 settings.showVertices = EditorGUILayout.Toggle("Vertices", settings.showVertices);
@@ -796,35 +812,68 @@ namespace UTJ.NormalPainter
 
                 if (e.keyCode == KeyCode.C && e.shift)
                 {
-                    settings.assignValue = m_target.selectionNormal;
                     handled = true;
+                    tips = "Copy";
+                    settings.assignValue = m_target.selectionNormal;
                 }
                 else if (e.keyCode == KeyCode.V && e.shift)
                 {
+                    handled = true;
+                    tips = "Paste";
                     m_target.ApplyAssign(settings.assignValue, settings.coordinate);
                     m_target.PushUndo();
-                    handled = true;
                 }
                 else if (e.keyCode == KeyCode.A && e.shift)
                 {
                     handled = true;
+                    tips = "Select All";
                     m_target.SelectAll();
                     m_target.UpdateSelection();
+                }
+                else if (e.keyCode == KeyCode.S && e.shift)
+                {
+                    handled = true;
+                    tips = "Apply Smoothing";
+                    m_target.ApplySmoothing(settings.smoothRadius, settings.smoothAmount);
+                    m_target.PushUndo();
+                }
+                else if (e.keyCode == KeyCode.W && e.shift)
+                {
+                    handled = true;
+                    tips = "Apply Welding";
+                    if (m_target.ApplyWelding())
+                    {
+                        m_target.PushUndo();
+                    }
+                }
+                else if (e.keyCode == KeyCode.Tab)
+                {
+                    handled = true;
+                    tips = "Toggle Display All";
+                    bool all = DisplayEnabledAll();
+                    if (!all)
+                        DisplayToggleAll(true);
+                    else
+                        DisplayToggleAll(false);
+
                 }
                 else if (e.keyCode == KeyCode.E)
                 {
                     handled = true;
+                    tips = "Select Edge";
                     m_target.SelectEdge(m_ctrl ? -1.0f : 1.0f, !m_shift && !m_ctrl);
                     m_target.UpdateSelection();
                 }
                 else if (e.keyCode == KeyCode.T)
                 {
                     handled = true;
+                    tips = "Recalculate Tangents";
                     m_target.RecalculateTangents();
                 }
                 else if (e.keyCode == KeyCode.P)
                 {
                     handled = true;
+                    tips = "Pick Normal";
                     settings.pickNormal = true;
                 }
             }

@@ -1,5 +1,5 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
-PROJECT(MeshSync)
+PROJECT(NormalPainterCore)
 
 SET(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 FIND_PACKAGE(OpenEXR QUIET)
@@ -11,10 +11,10 @@ MARK_AS_ADVANCED(FORCE ISPC)
 OPTION(ENABLE_ISPC "Use Intel ISPC to generate SIMDified code. It can significantly boost performance." ON)
 OPTION(ENABLE_FBX "Enable FBX support." OFF)
 OPTION(ENABLE_DEPLOY "Copy built binaries to plugins directory." ON)
-OPTION(ENABLE_TESTS "Build tests" OFF)
+OPTION(ENABLE_TEST "Build tests" OFF)
 
 SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -std=c++11 -Wno-deprecated -DTF_NO_GNU_EXT")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -std=c++11 -Wno-deprecated")
 
 IF(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 ELSEIF(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
@@ -29,10 +29,8 @@ ELSEIF(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
 ENDIF()
 
 SET(ASSETS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../NormalPainter/Assets")
-
 INCLUDE_DIRECTORIES(
     ${CMAKE_CURRENT_SOURCE_DIR}
-    ${Poco_INCLUDE_DIRS}
 )
 
 # MeshUtilsCore
@@ -93,7 +91,7 @@ IF(ENABLE_ISPC)
 ENDIF()
 
 
-# NormalPainter
+# NormalPainterCore
 FILE(GLOB NP_CXX_FILES NormalPainter/*.cpp)
 FILE(GLOB NP_H_FILES NormalPainter/*.h)
 IF(ENABLE_OSX_BUNDLE)
@@ -116,6 +114,7 @@ IF(ENABLE_DEPLOY)
 ENDIF()
 
 
+# FbxExporterCore
 IF(ENABLE_FBX)
     FILE(GLOB FBXE_CXX_FILES FbxExporter/*.cpp)
     FILE(GLOB FBXE_H_FILES FbxExporter/*.h)
@@ -127,7 +126,7 @@ IF(ENABLE_FBX)
     ENDIF()
     ADD_DEPENDENCIES(FbxExporterCore MeshUtils)
     TARGET_INCLUDE_DIRECTORIES(FbxExporterCore PUBLIC ${FBX_INCLUDE_DIR})
-    TARGET_LINK_LIBRARIES(FbxExporterCore ${FBX_LIBRARY})
+    TARGET_LINK_LIBRARIES(FbxExporterCore ${FBX_LIBRARY} dl)
     
     IF(ENABLE_DEPLOY)
         SET(FBXE_PLUGINS_DIR "${ASSETS_DIR}/UTJ/NormalPainter/Plugins/x86_64")
@@ -140,18 +139,20 @@ IF(ENABLE_FBX)
 ENDIF()
 
 
-IF(ENABLE_TESTS)
+# Test
+IF(ENABLE_TEST)
     FILE(GLOB TEST_CXX_FILES Test/*.cpp)
     FILE(GLOB TEST_H_FILES Test/*.h)
     IF(NOT ENABLE_FBX)
-        LIST(REMOVE_ITEM TEST_CXX_FILES Test/TestFbxExporter.cpp)
+        GET_FILENAME_COMPONENT(TMP Test/TestFbxExporter.cpp ABSOLUTE)
+        LIST(REMOVE_ITEM TEST_CXX_FILES ${TMP})
     ENDIF()
 
-    ADD_EXECUTABLE(Tests ${TEST_CXX_FILES} ${TEST_H_FILES})
-    ADD_DEPENDENCIES(Tests MeshUtils)
-    TARGET_LINK_LIBRARIES(Tests MeshUtils)
+    ADD_EXECUTABLE(Test ${TEST_CXX_FILES} ${TEST_H_FILES})
+    ADD_DEPENDENCIES(Test MeshUtils)
+    TARGET_LINK_LIBRARIES(Test MeshUtils)
     IF(ENABLE_FBX)
-        ADD_DEPENDENCIES(Tests FbxExporterCore)
-        TARGET_LINK_LIBRARIES(Tests FbxExporterCore)
+        ADD_DEPENDENCIES(Test FbxExporterCore)
+        TARGET_LINK_LIBRARIES(Test FbxExporterCore dl)
     ENDIF()
 ENDIF()

@@ -501,14 +501,51 @@ npAPI void npSmooth(
         float3 p = tvertices[vi];
         float3 average = float3::zero();
         for (int i = 0; i < num_vertices; ++i) {
+            float s2 = selection ? selection[i] : 1.0f;
             float dsq = length_sq(tvertices[i] - p);
             if (dsq <= rsq) {
-                average += normals[i];
+                average += normals[i] * s2;
             }
         }
         average = normalize(average);
         normals[vi] = normalize(normals[vi] + average * (strength * s));
     });
+}
+
+npAPI int npWeld(const float3 vertices[], const float selection[], int num_vertices, float3 normals[])
+{
+    std::vector<bool> checked;
+    checked.resize(num_vertices);
+
+    int ret = 0;
+    RawVector<int> shared;
+    for (int vi = 0; vi < num_vertices; ++vi) {
+        if (checked[vi]) { continue; }
+        float s = selection ? selection[vi] : 1.0f;
+        if (s == 0.0f) { continue; }
+
+        float3 p = vertices[vi];
+        float3 n = normals[vi];
+        for (int i = 0; i < num_vertices; ++i) {
+            if (vi != i && !checked[i] && near_equal(length(vertices[i] - p), 0.0f)) {
+                n += normals[i];
+                shared.push_back(i);
+                checked[i] = true;
+            }
+        }
+
+        if (!shared.empty()) {
+            n = normalize(n);
+            normals[vi] = n;
+            for (int si : shared) {
+                normals[si] = n;
+            }
+            shared.clear();
+            ++ret;
+        }
+    }
+
+    return ret;
 }
 
 

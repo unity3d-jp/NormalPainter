@@ -685,13 +685,22 @@ namespace UTJ.NormalPainter
             return true;
         }
 
-        public void ApplySmooth(float radius, float strength)
+        public void ApplySmoothing(float radius, float strength)
         {
             var selection = m_numSelected > 0 ? m_selection : null;
             var mat = GetComponent<Transform>().localToWorldMatrix;
             npSmooth(m_points, selection, m_points.Length, ref mat, radius, strength, m_normals);
             UpdateNormals();
-            PushUndo();
+        }
+
+        public bool ApplyWelding()
+        {
+            if(npWeld(m_points, m_selection, m_points.Length, m_normals) > 0)
+            {
+                UpdateNormals();
+                return true;
+            }
+            return false;
         }
 
         public void ApplyProjection(GameObject go, bool baseNormalsAsRayDirection)
@@ -859,6 +868,9 @@ namespace UTJ.NormalPainter
         [DllImport("NormalPainterCore")] static extern int npSmooth(
             Vector3[] vertices, float[] selection, int num_vertices, ref Matrix4x4 trans,
             float radius, float strength, Vector3[] normals);
+
+        [DllImport("NormalPainterCore")] static extern int npWeld(
+            Vector3[] vertices, float[] selection, int num_vertices, Vector3[] normals);
 
         [DllImport("NormalPainterCore")] static extern int npBuildMirroringRelation(
             Vector3[] vertices, Vector3[] base_normals, int num_vertices, Vector3 plane_normal, float epsilon, int[] relation);

@@ -13,11 +13,11 @@ void Test_IndexedArrays()
     IIArray<uint16_t, float> iia1 = { indices16, values };
     IIArray<uint32_t, float> iia2 = { indices32, values };
 
-    printf("iia1: ");
+    printf("    iia1: ");
     for(auto& v : iia1) { printf("%.f ", v); }
     printf("\n");
 
-    printf("iia2: ");
+    printf("    iia2: ");
     for (auto& v : iia2) { printf("%.f ", v); }
     printf("\n");
 }
@@ -79,7 +79,7 @@ void TestMatrixSwapHandedness()
 
     bool r1 = near_equal(mat2, mat3);
     bool r2 = near_equal(imat2, imat3);
-    printf("");
+    printf("    %d, %d\n", (int)r1, (int)r2);
 }
 RegisterTestEntry(TestMatrixSwapHandedness)
 
@@ -144,7 +144,6 @@ void TestMulPoints()
         float(s3_end - s3_begin) / 1000000.0f,
         float(s4_end - s4_begin) / 1000000.0f,
         eq1, eq2);
-    printf("\n");
 }
 RegisterTestEntry(TestMulPoints)
 
@@ -208,7 +207,6 @@ void TestRayTrianglesIntersection()
         printf("    %d hits: index %d, distance %f\n",
             num_hits, tindex, distance);
     };
-    printf("TestRayTrianglesIntersection()\n");
 
     auto s1_begin = Now();
     for (int i = 0; i < num_try; ++i) {
@@ -280,7 +278,6 @@ void TestRayTrianglesIntersection()
         float(s4_end - s4_begin) / 1000000.0f,
         float(s5_end - s5_begin) / 1000000.0f,
         float(s6_end - s6_begin) / 1000000.0f);
-    printf("\n");
 }
 RegisterTestEntry(TestRayTrianglesIntersection)
 
@@ -311,8 +308,6 @@ void TestPolygonInside()
     };
     float2 pmin, pmax;
     int num_inside = 0;
-
-    printf("TestPolygonInside():\n");
 
     auto s1_begin = Now();
     num_inside = 0;
