@@ -645,13 +645,33 @@ namespace UTJ.NormalPainter
             EditorGUILayout.BeginVertical();
             if (settings.displayIndex == 0)
             {
+                bool all = settings.showVertices && settings.showNormals && settings.showTangents && settings.showBinormals;
+                bool allChecked = EditorGUILayout.Toggle("All", all);
+                if(!all && allChecked)
+                {
+                    settings.showVertices = true;
+                    settings.showNormals = true;
+                    settings.showTangents = true;
+                    settings.showBinormals = true;
+                }
+                else if(all && !allChecked)
+                {
+                    settings.showVertices = false;
+                    settings.showNormals = false;
+                    settings.showTangents = false;
+                    settings.showBinormals = false;
+                }
+
+                EditorGUI.indentLevel++;
                 settings.showVertices = EditorGUILayout.Toggle("Vertices", settings.showVertices);
                 settings.showNormals = EditorGUILayout.Toggle("Normals", settings.showNormals);
                 settings.showTangents = EditorGUILayout.Toggle("Tangents", settings.showTangents);
                 settings.showBinormals = EditorGUILayout.Toggle("Binormals", settings.showBinormals);
-                EditorGUI.indentLevel++;
-                settings.showSelectedOnly = EditorGUILayout.Toggle("Only Selected", settings.showSelectedOnly);
                 EditorGUI.indentLevel--;
+
+                settings.showSelectedOnly = EditorGUILayout.Toggle("Selected Only", settings.showSelectedOnly);
+
+                EditorGUILayout.Space();
                 settings.modelOverlay = (ModelOverlay)EditorGUILayout.EnumPopup("Overlay", settings.modelOverlay);
                 settings.showBrushRange = EditorGUILayout.Toggle("Brush Range", settings.showBrushRange);
             }

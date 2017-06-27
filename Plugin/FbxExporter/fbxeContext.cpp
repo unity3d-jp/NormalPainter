@@ -201,11 +201,12 @@ void Context::addMesh(Node *node_, Topology topology, int num_indices, int num_v
     const int indices[], const float3 points[], const float3 normals[], const float4 tangents[], const float2 uv[], const float4 colors[])
 {
     if (!node_) { return; }
+    if (!points) { return; } // points must not be null
 
     auto node = reinterpret_cast<FbxNode*>(node_);
     auto mesh = FbxMesh::Create(m_scene, "");
 
-    if (points) {
+    {
         // set points
         mesh->InitControlPoints(num_vertices);
         auto dst = mesh->GetControlPoints();
@@ -214,6 +215,7 @@ void Context::addMesh(Node *node_, Topology topology, int num_indices, int num_v
         }
         if (m_opt.flip_handedness) { FlipHandedness(dst, num_vertices); }
     }
+
     if (normals) {
         // set normals
         auto element = mesh->CreateElementNormal();
@@ -268,7 +270,7 @@ void Context::addMesh(Node *node_, Topology topology, int num_indices, int num_v
     {
         // set primitives
 
-        int vertices_in_primitive = 0;
+        int vertices_in_primitive = 1;
         switch (topology)
         {
         case Topology::Points:    vertices_in_primitive = 1; break;
