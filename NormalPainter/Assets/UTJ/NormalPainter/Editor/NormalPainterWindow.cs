@@ -304,9 +304,9 @@ namespace UTJ.NormalPainter
                 EditorGUILayout.Space();
 
                 GUILayout.BeginHorizontal();
-                if (GUILayout.Button("Select Edge"))
+                if (GUILayout.Button("Select Edge [E]"))
                 {
-                    m_target.SelectEdge(m_ctrl ? -1.0f : 1.0f, !m_shift);
+                    m_target.SelectEdge(m_ctrl ? -1.0f : 1.0f, !m_shift && !m_ctrl);
                     m_target.UpdateSelection();
                 }
                 GUILayout.EndHorizontal();
@@ -314,12 +314,12 @@ namespace UTJ.NormalPainter
                 EditorGUILayout.Space();
 
                 GUILayout.BeginHorizontal();
-                if (GUILayout.Button("Select All [A]"))
+                if (GUILayout.Button("Select All [Shift+A]"))
                 {
                     if (m_target.SelectAll())
                         m_target.UpdateSelection();
                 }
-                if (GUILayout.Button("Clear Selection [C]"))
+                if (GUILayout.Button("Clear Selection"))
                 {
                     if (m_target.ClearSelection())
                         m_target.UpdateSelection();
@@ -340,21 +340,28 @@ namespace UTJ.NormalPainter
                 else if (settings.brushMode == BrushMode.Replace)
                 {
                     GUILayout.BeginHorizontal();
-                    settings.primary = EditorGUILayout.ColorField(settings.primary, GUILayout.Width(35));
-                    settings.primary = NormalPainter.ToColor(EditorGUILayout.Vector3Field("", NormalPainter.ToVector(settings.primary)));
-                    settings.pickNormal = GUILayout.Toggle(settings.pickNormal, "Pick [P]", "Button", GUILayout.Width(90));
+                    settings.assignValue = EditorGUILayout.Vector3Field("", settings.assignValue);
+                    settings.pickNormal = GUILayout.Toggle(settings.pickNormal, "Pick [P]", "Button", GUILayout.Width(100));
                     GUILayout.EndHorizontal();
                 }
             }
             else if (settings.editMode == EditMode.Assign)
             {
-                settings.assignValue = EditorGUILayout.Vector3Field("Value", settings.assignValue);
+                settings.assignValue = EditorGUILayout.Vector3Field("", settings.assignValue);
+                GUILayout.BeginHorizontal();
+                if (GUILayout.Button("Copy [Shift+C]", GUILayout.Width(100)))
+                    settings.assignValue = m_target.selectionNormal;
+                settings.pickNormal = GUILayout.Toggle(settings.pickNormal, "Pick [P]", "Button", GUILayout.Width(100));
+                GUILayout.EndHorizontal();
+
+                EditorGUILayout.Space();
+
                 GUILayout.BeginHorizontal();
                 EditorGUILayout.LabelField("Coordinate", GUILayout.Width(EditorGUIUtility.labelWidth));
                 settings.coordinate = (Coordinate)GUILayout.SelectionGrid((int)settings.coordinate, strCoodinate, strCoodinate.Length);
                 GUILayout.EndHorizontal();
 
-                if (GUILayout.Button("Assign"))
+                if (GUILayout.Button("Assign [Shift+V]"))
                 {
                     m_target.ApplyAssign(settings.assignValue, settings.coordinate);
                     m_target.PushUndo();
@@ -796,22 +803,33 @@ namespace UTJ.NormalPainter
                     }
                 }
 
-                if (e.keyCode == KeyCode.A)
+                if (e.keyCode == KeyCode.C && e.shift)
                 {
-                    m_target.SelectAll();
-                    m_target.UpdateSelection();
+                    settings.assignValue = m_target.selectionNormal;
                     handled = true;
                 }
-                else if (e.keyCode == KeyCode.C)
+                else if (e.keyCode == KeyCode.V && e.shift)
                 {
-                    m_target.ClearSelection();
-                    m_target.UpdateSelection();
+                    m_target.ApplyAssign(settings.assignValue, settings.coordinate);
+                    m_target.PushUndo();
                     handled = true;
+                }
+                else if (e.keyCode == KeyCode.A && e.shift)
+                {
+                    handled = true;
+                    m_target.SelectAll();
+                    m_target.UpdateSelection();
+                }
+                else if (e.keyCode == KeyCode.E)
+                {
+                    handled = true;
+                    m_target.SelectEdge(m_ctrl ? -1.0f : 1.0f, !m_shift && !m_ctrl);
+                    m_target.UpdateSelection();
                 }
                 else if (e.keyCode == KeyCode.T)
                 {
-                    m_target.RecalculateTangents();
                     handled = true;
+                    m_target.RecalculateTangents();
                 }
             }
             else if (e.type == EventType.ScrollWheel)

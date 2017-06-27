@@ -98,7 +98,7 @@ namespace UTJ.NormalPainter
         public void ApplyAssign(Vector3 v, Coordinate c)
         {
             var trans = GetComponent<Transform>().localToWorldMatrix;
-            v = ToWorldVector(v, c);
+            v = ToWorldVector(v, c).normalized;
 
             npAssign(m_selection, m_points.Length, ref trans, v, m_normals);
             ApplyMirroring();
@@ -421,7 +421,7 @@ namespace UTJ.NormalPainter
         }
 
 
-        public bool SelectEdge(float strength, bool clear)
+        public bool SelectEdge(float strength = 1.0f, bool clear = true)
         {
             return npSelectEdge(m_points, m_triangles, m_points.Length, m_triangles.Length / 3, m_selection, strength, clear) > 0;
         }

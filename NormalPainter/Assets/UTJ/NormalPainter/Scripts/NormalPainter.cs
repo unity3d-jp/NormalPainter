@@ -75,6 +75,7 @@ namespace UTJ.NormalPainter
 
         public NormalPainterSettings settings { get { return m_settings; } }
         public Mesh mesh { get { return m_meshTarget; } }
+        public Vector3 selectionNormal { get { return m_selectionNormal; } }
 
         public float[] selection
         {
@@ -489,11 +490,11 @@ namespace UTJ.NormalPainter
             var editMode = m_settings.editMode;
             bool handled = false;
 
-            if (editMode == EditMode.Brush && m_settings.pickNormal)
+            if (m_settings.pickNormal)
             {
                 if (m_rayHit)
                 {
-                    m_settings.primary = ToColor(PickNormal(m_rayPos, m_rayHitTriangle));
+                    m_settings.assignValue = PickNormal(m_rayPos, m_rayHitTriangle);
                     handled = true;
                 }
                 m_settings.pickNormal = false;
@@ -511,7 +512,7 @@ namespace UTJ.NormalPainter
                             break;
                         case BrushMode.Replace:
                             if (ApplyReplaceBrush(m_settings.brushUseSelection, m_rayPos, bd.radius, bd.strength, bd.samples,
-                                ToVector(m_settings.primary).normalized))
+                                m_settings.assignValue))
                                 ++m_brushNumPainted;
                             break;
                         case BrushMode.Smooth:
@@ -574,17 +575,20 @@ namespace UTJ.NormalPainter
                     }
                     else if (et == EventType.MouseUp)
                     {
-                        m_rectDragging = false;
-                        if (!e.shift && !e.control)
-                            System.Array.Clear(m_selection, 0, m_selection.Length);
-
-                        m_rectEndPoint = e.mousePosition;
-                        handled = true;
-
-                        if (!SelectRect(m_rectStartPoint, m_rectEndPoint, selectSign, settings.selectFrontSideOnly) && !m_rayHit)
+                        if (m_rectDragging)
                         {
+                            m_rectDragging = false;
+                            if (!e.shift && !e.control)
+                                System.Array.Clear(m_selection, 0, m_selection.Length);
+
+                            m_rectEndPoint = e.mousePosition;
+                            handled = true;
+
+                            if (!SelectRect(m_rectStartPoint, m_rectEndPoint, selectSign, settings.selectFrontSideOnly) && !m_rayHit)
+                            {
+                            }
+                            m_rectStartPoint = m_rectEndPoint = -Vector2.one;
                         }
-                        m_rectStartPoint = m_rectEndPoint = -Vector2.one;
                     }
                 }
                 else if (selectMode == SelectMode.Lasso)

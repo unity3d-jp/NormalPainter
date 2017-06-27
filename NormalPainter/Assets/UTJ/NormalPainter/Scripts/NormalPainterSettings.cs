@@ -97,7 +97,6 @@ namespace UTJ.NormalPainter
         [NonSerialized] public int brushActiveSlot = 0;
 
         [NonSerialized] public bool pickNormal = false;
-        public Color primary = NormalPainter.ToColor(Vector3.up);
 
         // display options
         public bool showBrushRange = true;
