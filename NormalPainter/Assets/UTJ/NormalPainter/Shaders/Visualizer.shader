@@ -3,8 +3,6 @@
 CGINCLUDE
 #include "UnityCG.cginc"
 
-sampler2D _PositionBuffer;
-
 float _VertexSize;
 float _NormalSize;
 float _TangentSize;
@@ -63,7 +61,7 @@ vs_out vert_vertices(ia_out v)
     float s = _Selection[v.instanceID];
     float4 vertex = v.vertex;
     vertex.xyz *= _VertexSize;
-    vertex.xyz *= abs(UnityObjectToViewPos(pos).z);
+    vertex.xyz *= abs(mul(UNITY_MATRIX_V, float4(pos, 1.0)).z);
     vertex.xyz += pos;
     vertex = mul(UNITY_MATRIX_VP, vertex);
 
@@ -177,24 +175,13 @@ vs_out vert_lasso(ia_out v)
     return o;
 }
 
-vs_out2 vert_depth(ia_out v)
+vs_out2 vert_brush_range(ia_out v)
 {
     vs_out2 o;
     o.vertex = UnityObjectToClipPos(v.vertex);
-    o.position = mul(_Transform, v.vertex);
-    o.aux = 0.0;
-    return o;
-}
+    o.position = mul(UNITY_MATRIX_M, v.vertex);
 
-vs_out2 vert_brush_range(ia_out v)
-{
-    float4 pos = float4(v.vertex.xyz * (_BrushPos.w * 2.0) + _BrushPos.xyz, 1.0);
-
-    vs_out2 o;
-    o.vertex = mul(UNITY_MATRIX_VP, pos);
-    o.position = ComputeScreenPos(o.vertex);
-
-    float z = abs(UnityObjectToViewPos(float4(_BrushPos.xyz, 1.0)).z);
+    float z = abs(mul(UNITY_MATRIX_V, float4(_BrushPos.xyz, 1.0)).z);
     o.aux = float4(z,0,0,0);
     return o;
 }
@@ -205,16 +192,11 @@ float4 frag(vs_out v) : SV_Target
     return v.color;
 }
 
-float4 frag_depth(vs_out2 v) : SV_Target
-{
-    return v.position;
-}
-
 float4 frag_brush_range(vs_out2 v) : SV_Target
 {
     float2 uv = v.position.xy / v.position.w;
 
-    float3 pixel_pos = tex2D(_PositionBuffer, uv).xyz;
+    float3 pixel_pos = v.position.xyz;
     float3 brush_pos = _BrushPos.xyz;
     float distance = length(pixel_pos - brush_pos);
 
@@ -235,11 +217,11 @@ ENDCG
     {
         Tags{ "RenderType" = "Transparent" "Queue" = "Transparent+100" }
         Blend SrcAlpha OneMinusSrcAlpha
+        ZWrite Off
 
         // pass 0: visualize vertices
         Pass
         {
-            ZWrite Off
             ZTest LEqual
 
             CGPROGRAM
@@ -252,7 +234,6 @@ ENDCG
         // pass 1: visualize normals
         Pass
         {
-            ZWrite Off
             ZTest LEqual
 
             CGPROGRAM
@@ -265,7 +246,6 @@ ENDCG
         // pass 2: visualize tangents
         Pass
         {
-            ZWrite Off
             ZTest LEqual
 
             CGPROGRAM
@@ -278,7 +258,6 @@ ENDCG
         // pass 3: visualize binormals
         Pass
         {
-            ZWrite Off
             ZTest LEqual
 
             CGPROGRAM
@@ -291,7 +270,6 @@ ENDCG
         // pass 4: local space normals overlay
         Pass
         {
-            ZWrite Off
             ZTest LEqual
 
             CGPROGRAM
@@ -304,7 +282,6 @@ ENDCG
         // pass 5: tangent space normals overlay
         Pass
         {
-            ZWrite Off
             ZTest LEqual
 
             CGPROGRAM
@@ -317,8 +294,7 @@ ENDCG
         // pass 6: vertex color overlay
         Pass
         {
-        ZWrite Off
-        ZTest LEqual
+            ZTest LEqual
 
             CGPROGRAM
             #pragma vertex vert_color
@@ -330,7 +306,6 @@ ENDCG
         // pass 7: lasso
         Pass
         {
-            ZWrite Off
             ZTest Always
 
             CGPROGRAM
@@ -340,24 +315,10 @@ ENDCG
             ENDCG
         }
 
-        // pass 8: depth
+        // pass 8: brush range
         Pass
         {
-            ZWrite On
             ZTest LEqual
-
-            CGPROGRAM
-            #pragma vertex vert_depth
-            #pragma fragment frag_depth
-            #pragma target 4.5
-            ENDCG
-        }
-
-        // pass 9: brush range
-        Pass
-        {
-            ZWrite Off
-            ZTest Always
 
             CGPROGRAM
             #pragma vertex vert_brush_range

@@ -750,17 +750,7 @@ namespace UTJ.NormalPainter
 
             // visualize brush range
             if (m_settings.showBrushRange && m_rayHit && brushMode)
-            {
-                int rtid = Shader.PropertyToID("_PositionBuffer");
-                m_cmdDraw.GetTemporaryRT(rtid, -1, -1, 24, FilterMode.Point, RenderTextureFormat.ARGBFloat);
-                m_cmdDraw.SetRenderTarget(rtid);
-                m_cmdDraw.ClearRenderTarget(true, true, Color.black);
                 m_cmdDraw.DrawMesh(m_meshTarget, matrix, m_matVisualize, 0, 8);
-
-                m_cmdDraw.SetRenderTarget(BuiltinRenderTextureType.CameraTarget);
-                m_cmdDraw.DrawMesh(m_meshCube, Matrix4x4.identity, m_matVisualize, 0, 9);
-                m_cmdDraw.ReleaseTemporaryRT(rtid);
-            }
 
             // visualize vertices
             if (m_settings.showVertices && m_points != null)
