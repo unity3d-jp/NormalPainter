@@ -530,6 +530,7 @@ npAPI int npBrushPaint(
     const float3 pos, float radius, float strength, float bsamples[], int num_bsamples, float3 n, float3 normals[])
 {
     n = normalize(mul_v(*trans, n));
+    auto itrans = invert(*trans);
     return SelectInside(pos, radius, vertices, num_vertices, *trans, [&](int vi, float d, float3 p) {
         int bsi = GetBrushSampleIndex(d, radius, num_bsamples);
         float s = clamp11(bsamples[bsi] * strength * 2.0f);
@@ -562,6 +563,7 @@ npAPI int npBrushPaint(
         }
 
         float3 r = lerp(n, t, clamp01(slope * 0.5f));
+        r = normalize(mul_v(itrans, r));
         float3 dir = lerp(normals[vi], r, s);
         normals[vi] = normalize(normals[vi] + dir * s);
     });
