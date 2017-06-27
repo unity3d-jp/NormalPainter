@@ -223,7 +223,54 @@ npAPI int npSelectEdge(
     return (int)edge.size();
 }
 
+npAPI int npSelectConnected(
+    const float3 vertices_[], const int indices_[], int num_vertices, int num_triangles, float seletion[], float strength, int clear)
+{
+    auto indices = IArray<int>(indices_, num_triangles * 3);
+    auto vertices = IArray<float3>(vertices_, num_vertices);
 
+    ConnectionData connection;
+    BuildConnectionData(indices, 3, vertices, connection);
+
+    std::vector<bool> checked;
+    checked.resize(num_vertices);
+
+    RawVector<int> next;
+    for (int vi = 0; vi < num_vertices; ++vi) {
+        if (seletion[vi] > 0.0f) { next.push_back(vi); }
+    }
+
+    if (clear) { memset(seletion, 0, num_vertices * 4); }
+
+    int ret = 0;
+    while (!next.empty()) {
+        int vi = next.back();
+        next.pop_back();
+
+        if (checked[vi]) { continue; }
+
+        ++ret;
+        checked[vi] = true;
+        seletion[vi] = clamp01(seletion[vi] + strength);
+
+        int num_shared = connection.counts[vi];
+        int offset = connection.offsets[vi];
+        for (int si = 0; si < num_shared; ++si) {
+            int fi = connection.faces[offset + si];
+            int fo = fi * 3;
+            int c = 3;
+            int nth = connection.indices[offset + si] - fo;
+
+            int f0 = nth;
+            int f1 = f0 - 1; if (f1 < 0) { f1 = c - 1; }
+            int f2 = f0 + 1; if (f2 == c) { f2 = 0; }
+
+            next.push_back(indices[fo + f1]);
+            next.push_back(indices[fo + f2]);
+        }
+    }
+    return ret;
+}
 
 npAPI int npSelectRect(
     const float3 vertices[], const int indices[], int num_vertices, int num_triangles, float seletion[], float strength,

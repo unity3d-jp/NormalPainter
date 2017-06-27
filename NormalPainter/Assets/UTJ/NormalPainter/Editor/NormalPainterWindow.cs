@@ -309,20 +309,25 @@ namespace UTJ.NormalPainter
                     m_target.SelectEdge(m_ctrl ? -1.0f : 1.0f, !m_shift && !m_ctrl);
                     m_target.UpdateSelection();
                 }
+                if (GUILayout.Button("Select Connected [C]"))
+                {
+                    m_target.SelectConnected(m_ctrl ? -1.0f : 1.0f, !m_shift && !m_ctrl);
+                    m_target.UpdateSelection();
+                }
                 GUILayout.EndHorizontal();
 
                 EditorGUILayout.Space();
 
                 GUILayout.BeginHorizontal();
-                if (GUILayout.Button("Select All [Shift+A]"))
+                if (GUILayout.Button("Select All [A]"))
                 {
-                    if (m_target.SelectAll())
-                        m_target.UpdateSelection();
+                    m_target.SelectAll();
+                    m_target.UpdateSelection();
                 }
-                if (GUILayout.Button("Clear Selection"))
+                if (GUILayout.Button("Clear Selection [D]"))
                 {
-                    if (m_target.ClearSelection())
-                        m_target.UpdateSelection();
+                    m_target.ClearSelection();
+                    m_target.UpdateSelection();
                 }
                 GUILayout.EndHorizontal();
             }
@@ -823,13 +828,6 @@ namespace UTJ.NormalPainter
                     m_target.ApplyAssign(settings.assignValue, settings.coordinate);
                     m_target.PushUndo();
                 }
-                else if (e.keyCode == KeyCode.A && e.shift)
-                {
-                    handled = true;
-                    tips = "Select All";
-                    m_target.SelectAll();
-                    m_target.UpdateSelection();
-                }
                 else if (e.keyCode == KeyCode.S && e.shift)
                 {
                     handled = true;
@@ -857,11 +855,32 @@ namespace UTJ.NormalPainter
                         DisplayToggleAll(false);
 
                 }
+                else if (e.keyCode == KeyCode.A)
+                {
+                    handled = true;
+                    tips = "Select All";
+                    m_target.SelectAll();
+                    m_target.UpdateSelection();
+                }
                 else if (e.keyCode == KeyCode.E)
                 {
                     handled = true;
                     tips = "Select Edge";
                     m_target.SelectEdge(m_ctrl ? -1.0f : 1.0f, !m_shift && !m_ctrl);
+                    m_target.UpdateSelection();
+                }
+                else if (e.keyCode == KeyCode.C)
+                {
+                    handled = true;
+                    tips = "Select Connected";
+                    m_target.SelectConnected(m_ctrl ? -1.0f : 1.0f, !m_shift && !m_ctrl);
+                    m_target.UpdateSelection();
+                }
+                else if(e.keyCode == KeyCode.D)
+                {
+                    handled = true;
+                    tips = "Clear Selection";
+                    m_target.ClearSelection();
                     m_target.UpdateSelection();
                 }
                 else if (e.keyCode == KeyCode.T)
