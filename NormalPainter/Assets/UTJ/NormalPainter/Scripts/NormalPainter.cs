@@ -507,7 +507,8 @@ namespace UTJ.NormalPainter
                     switch (m_settings.brushMode)
                     {
                         case BrushMode.Paint:
-                            if (ApplyPaintBrush(m_settings.brushUseSelection, m_rayPos, bd.radius, bd.strength, bd.samples, PickBaseNormal(m_rayPos, m_rayHitTriangle)))
+                            if (ApplyPaintBrush(m_settings.brushUseSelection, m_rayPos, bd.radius, bd.strength, bd.samples,
+                                PickBaseNormal(m_rayPos, m_rayHitTriangle), settings.brushBlendMode))
                                 ++m_brushNumPainted;
                             break;
                         case BrushMode.Replace:
@@ -683,8 +684,12 @@ namespace UTJ.NormalPainter
                 return;
             }
 
-            bool brushMode = m_settings.editMode == EditMode.Brush ||
-                 (m_settings.editMode == EditMode.Select && m_settings.selectMode == SelectMode.Brush);
+            bool pickMode = m_settings.pickNormal;
+            bool brushMode = !pickMode &&
+                (m_settings.editMode == EditMode.Brush ||
+                 (m_settings.editMode == EditMode.Select && m_settings.selectMode == SelectMode.Brush));
+            bool brushReplace = brushMode && m_settings.brushMode == BrushMode.Replace;
+
             var trans = GetComponent<Transform>();
             var matrix = trans.localToWorldMatrix;
 
@@ -701,21 +706,29 @@ namespace UTJ.NormalPainter
             m_matVisualize.SetColor("_BinormalColor", m_settings.binormalColor);
             m_matVisualize.SetInt("_OnlySelected", m_settings.showSelectedOnly ? 1 : 0);
 
-            if (m_rayHit && brushMode)
+            if (m_rayHit)
             {
-                var bd = m_settings.activeBrush;
-                if (m_cbBrushSamples == null)
+                if (brushMode)
                 {
-                    m_cbBrushSamples = new ComputeBuffer(bd.samples.Length, 4);
+                    var bd = m_settings.activeBrush;
+                    if (m_cbBrushSamples == null)
+                    {
+                        m_cbBrushSamples = new ComputeBuffer(bd.samples.Length, 4);
+                    }
+                    m_cbBrushSamples.SetData(bd.samples);
+                    m_matVisualize.SetVector("_BrushPos", new Vector4(m_rayPos.x, m_rayPos.y, m_rayPos.z, bd.radius));
+                    m_matVisualize.SetInt("_NumBrushSamples", bd.samples.Length);
+                    m_matVisualize.SetBuffer("_BrushSamples", m_cbBrushSamples);
                 }
-                m_cbBrushSamples.SetData(bd.samples);
-                m_matVisualize.SetVector("_BrushPos", new Vector4(m_rayPos.x, m_rayPos.y, m_rayPos.z, bd.radius));
-                m_matVisualize.SetInt("_NumBrushSamples", bd.samples.Length);
-                m_matVisualize.SetBuffer("_BrushSamples", m_cbBrushSamples);
-            }
-            else
-            {
-                m_matVisualize.SetVector("_BrushPos", Vector4.zero);
+                else
+                {
+                    m_matVisualize.SetVector("_BrushPos", m_rayPos);
+                }
+
+                if (pickMode)
+                    m_matVisualize.SetVector("_Direction", PickNormal(m_rayPos, m_rayHitTriangle));
+                else if (brushReplace)
+                    m_matVisualize.SetVector("_Direction", m_settings.assignValue);
             }
 
             if (m_cbPoints != null) m_matVisualize.SetBuffer("_Points", m_cbPoints);
@@ -767,6 +780,17 @@ namespace UTJ.NormalPainter
             // visualize normals
             if (m_settings.showNormals && m_normals != null)
                 m_cmdDraw.DrawMeshInstancedIndirect(m_meshLine, 0, m_matVisualize, 1, m_cbArg);
+
+            if (m_settings.showBrushRange)
+            {
+                // pick mark
+                if (m_rayHit && pickMode)
+                    m_cmdDraw.DrawMesh(m_meshCube, Matrix4x4.identity, m_matVisualize, 0, 9);
+
+                // visualize direction
+                if (m_rayHit && (pickMode || brushReplace))
+                    m_cmdDraw.DrawMesh(m_meshLine, Matrix4x4.identity, m_matVisualize, 0, 10);
+            }
 
             // lasso lines
             if (m_meshLasso.vertexCount > 1)

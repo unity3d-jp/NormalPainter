@@ -611,8 +611,9 @@ npAPI int npBrushReplace(
 
 npAPI int npBrushPaint(
     const float3 vertices[], const float selection[], int num_vertices, const float4x4 *trans,
-    const float3 pos, float radius, float strength, float bsamples[], int num_bsamples, float3 n, float3 normals[])
+    const float3 pos, float radius, float strength, float bsamples[], int num_bsamples, float3 n, int blend_mode, float3 normals[])
 {
+    float3 ln = n;
     n = normalize(mul_v(*trans, n));
     auto itrans = invert(*trans);
     return SelectInside(pos, radius, vertices, num_vertices, *trans, [&](int vi, float d, float3 p) {
@@ -646,10 +647,16 @@ npAPI int npBrushPaint(
             s *= -1.0f;
         }
 
+        float3 vn = normals[vi];
         float3 r = lerp(n, t, clamp01(slope * 0.5f));
         r = normalize(mul_v(itrans, r));
-        float3 dir = lerp(normals[vi], r, s);
-        normals[vi] = normalize(normals[vi] + dir * s);
+
+        // maybe add something here later
+        //switch (blend_mode) {
+        //}
+        r = lerp(vn, r, s);
+
+        normals[vi] = normalize(vn + r * s);
     });
 }
 

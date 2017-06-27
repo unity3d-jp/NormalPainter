@@ -15,6 +15,7 @@ float4 _NormalColor;
 float4 _TangentColor;
 float4 _BinormalColor;
 float4 _BrushPos;
+float4 _Direction;
 int _OnlySelected = 0;
 
 float4x4 _Transform;
@@ -186,6 +187,30 @@ vs_out2 vert_brush_range(ia_out v)
     return o;
 }
 
+vs_out vert_ray_position(ia_out v)
+{
+    float z = abs(mul(UNITY_MATRIX_V, float4(_BrushPos.xyz, 1.0)).z);
+    float3 pos = v.vertex.xyz * (0.01 * z) + _BrushPos.xyz;
+
+    vs_out o;
+    o.vertex = UnityObjectToClipPos(pos);
+    o.color = float4(1, 0, 0, 1);
+    return o;
+}
+
+vs_out vert_direction(ia_out v)
+{
+    float3 pos = _BrushPos.xyz;
+    float3 dir = _Direction.xyz;
+    float z = abs(mul(UNITY_MATRIX_V, float4(_BrushPos.xyz, 1.0)).z);
+    float4 vertex = float4(pos + dir * (v.uv.x * 0.25 * z), 1.0);
+
+    vs_out o;
+    o.vertex = mul(UNITY_MATRIX_VP, vertex);
+    o.color = float4(1, 0, 0, 1-v.uv.x);
+    return o;
+}
+
 
 float4 frag(vs_out v) : SV_Target
 {
@@ -320,6 +345,30 @@ ENDCG
             CGPROGRAM
             #pragma vertex vert_brush_range
             #pragma fragment frag_brush_range
+            #pragma target 4.5
+            ENDCG
+        }
+
+        // pass 9: ray position
+        Pass
+        {
+            ZTest LEqual
+
+            CGPROGRAM
+            #pragma vertex vert_ray_position
+            #pragma fragment frag
+            #pragma target 4.5
+            ENDCG
+        }
+
+        // pass 10: direction
+        Pass
+        {
+            ZTest LEqual
+
+            CGPROGRAM
+            #pragma vertex vert_direction
+            #pragma fragment frag
             #pragma target 4.5
             ENDCG
         }

@@ -192,11 +192,11 @@ namespace UTJ.NormalPainter
             UpdateNormals();
         }
 
-        public bool ApplyPaintBrush(bool useSelection, Vector3 pos, float radius, float strength, float[] bsamples, Vector3 baseDir)
+        public bool ApplyPaintBrush(bool useSelection, Vector3 pos, float radius, float strength, float[] bsamples, Vector3 baseDir, int blendMode)
         {
             Matrix4x4 trans = GetComponent<Transform>().localToWorldMatrix;
             var selection = useSelection && m_numSelected > 0 ? m_selection : null;
-            if (npBrushPaint(m_points, selection, m_points.Length, ref trans, pos, radius, strength, bsamples, bsamples.Length, baseDir, m_normals) > 0)
+            if (npBrushPaint(m_points, selection, m_points.Length, ref trans, pos, radius, strength, bsamples, bsamples.Length, baseDir, blendMode, m_normals) > 0)
             {
                 ApplyMirroring();
                 UpdateNormals();
@@ -845,7 +845,7 @@ namespace UTJ.NormalPainter
 
         [DllImport("NormalPainterCore")] static extern int npBrushPaint(
             Vector3[] vertices, float[] seletion, int num_vertices, ref Matrix4x4 trans,
-            Vector3 pos, float radius, float strength, float[] bsamples, int num_bsamples, Vector3 baseNormal, Vector3[] normals);
+            Vector3 pos, float radius, float strength, float[] bsamples, int num_bsamples, Vector3 baseNormal, int blend_mode, Vector3[] normals);
 
         [DllImport("NormalPainterCore")] static extern int npBrushSmooth(
             Vector3[] vertices, float[] seletion, int num_vertices, ref Matrix4x4 trans,

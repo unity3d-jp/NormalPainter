@@ -87,6 +87,7 @@ namespace UTJ.NormalPainter
         public bool rotatePivot = false;
         public float brushMaxRadius = 5.0f;
         public bool brushUseSelection = false;
+        public int brushBlendMode = 0;
 
         public BrushData[] brushData = new BrushData[5] {
             new BrushData(),

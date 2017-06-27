@@ -48,7 +48,7 @@ namespace UTJ.NormalPainter
             {
                 Tools.current = Tool.None;
 
-                if (HandleShortcutKeys())
+                if (HandleShortcutKeys() || HandleMouseAction())
                 {
                     Event.current.Use();
                     RepaintAllViews();
@@ -75,13 +75,14 @@ namespace UTJ.NormalPainter
                     var tooltipHeight = 24;
                     var windowHeight = position.height;
                     var settings = m_target.settings;
+                    bool repaint = false;
 
                     if (settings.editing)
                     {
-                        if (HandleShortcutKeys())
+                        if (HandleMouseAction())
                         {
                             Event.current.Use();
-                            RepaintAllViews();
+                            repaint = true;
                         }
                     }
 
@@ -114,7 +115,16 @@ namespace UTJ.NormalPainter
 
                         EditorGUILayout.LabelField(tips);
                         EditorGUILayout.EndVertical();
+
+                        if (HandleShortcutKeys())
+                        {
+                            Event.current.Use();
+                            repaint = true;
+                        }
                     }
+
+                    if(repaint)
+                        RepaintAllViews();
                 }
             }
             else if (m_active != null)
@@ -892,10 +902,20 @@ namespace UTJ.NormalPainter
                 {
                     handled = true;
                     tips = "Pick Normal";
-                    settings.pickNormal = true;
+                    settings.pickNormal = !settings.pickNormal;
                 }
             }
-            else if (e.type == EventType.ScrollWheel)
+
+            return handled;
+        }
+
+        bool HandleMouseAction()
+        {
+            bool handled = false;
+            var settings = m_target.settings;
+            var e = Event.current;
+
+            if (e.type == EventType.ScrollWheel)
             {
                 if (settings.editMode == EditMode.Brush ||
                     (settings.editMode == EditMode.Select && settings.selectMode == SelectMode.Brush))
@@ -913,7 +933,6 @@ namespace UTJ.NormalPainter
                     }
                 }
             }
-
             return handled;
         }
     }
