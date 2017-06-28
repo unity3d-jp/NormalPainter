@@ -215,6 +215,12 @@ npAPI int npSelectEdge(
             targets.push_back(vi);
         }
     }
+    if (targets.size() == 0) {
+        targets.resize(num_vertices);
+        for (int vi = 0; vi < num_vertices; ++vi)
+            targets[vi] = vi;
+    }
+
     SelectEdge(indices, 3, vertices, connection, targets, edge);
 
     if (clear) { memset(selection, 0, num_vertices * 4); }
@@ -240,6 +246,12 @@ npAPI int npSelectHole(
             targets.push_back(vi);
         }
     }
+    if (targets.size() == 0) {
+        targets.resize(num_vertices);
+        for (int vi = 0; vi < num_vertices; ++vi)
+            targets[vi] = vi;
+    }
+
     SelectHole(indices, 3, vertices, connection, targets, edge);
 
     if (clear) { memset(selection, 0, num_vertices * 4); }

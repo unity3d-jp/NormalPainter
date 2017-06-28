@@ -432,7 +432,10 @@ namespace UTJ.NormalPainter
 
         public bool SelectConnected(float strength = 1.0f, bool clear = true)
         {
-            return npSelectConnected(m_points, m_triangles, m_points.Length, m_triangles.Length / 3, m_selection, strength, clear) > 0;
+            if (m_numSelected == 0)
+                return SelectAll();
+            else
+                return npSelectConnected(m_points, m_triangles, m_points.Length, m_triangles.Length / 3, m_selection, strength, clear) > 0;
         }
 
         public bool SelectAll()
