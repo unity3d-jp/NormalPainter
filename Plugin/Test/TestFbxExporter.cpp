@@ -172,8 +172,8 @@ void GenerateCylinderMeshWithSkinning(
 void TestFBXExportMesh()
 {
     fbxe::ExportOptions opt;
-    auto ctx = fbxeCreateContext(&opt);
 
+    auto ctx = fbxeCreateContext(&opt);
     fbxeCreateScene(ctx, "MeshExportTest");
     auto root = fbxeGetRootNode(ctx);
     auto parent = fbxeCreateNode(ctx, root, "Parent");
@@ -187,8 +187,8 @@ void TestFBXExportMesh()
         GenerateWaveMesh(counts, indices, points, uv, 1.0f, 0.25f, 128, 0.0f, false);
 
         auto mesh = fbxeCreateNode(ctx, root, "Mesh");
-        fbxeAddMesh(ctx, mesh, fbxe::Topology::Quads, indices.size(),
-            points.size(), indices.data(), points.data(), nullptr, nullptr, uv.data(), nullptr);
+        fbxeAddMesh(ctx, mesh, points.size(), points.data(), nullptr, nullptr, uv.data(), nullptr);
+        fbxeAddMeshSubmesh(ctx, mesh, fbxe::Topology::Quads, indices.size(), indices.data(), -1);
     }
 
     fbxeWrite(ctx, "mesh_binary.fbx", fbxe::Format::FBXBinary);
@@ -203,8 +203,8 @@ void TestFBXExportSkinnedMesh()
 {
     fbxe::ExportOptions opt;
     opt.scale_factor = 2.0f;
-    auto ctx = fbxeCreateContext(&opt);
 
+    auto ctx = fbxeCreateContext(&opt);
     fbxeCreateScene(ctx, "SkinnedMeshExportTest");
     auto root = fbxeGetRootNode(ctx);
 
@@ -230,9 +230,9 @@ void TestFBXExportSkinnedMesh()
     GenerateCylinderMeshWithSkinning(counts, indices, points, uv, weights, 0.2f, 5.0f, 32, 128, false);
 
     auto mesh = fbxeCreateNode(ctx, root, "SkinnedMesh");
-    fbxeAddMesh(ctx, mesh,
-        fbxe::Topology::Quads, indices.size(), points.size(), indices.data(), points.data(), nullptr, nullptr, uv.data(), nullptr);
-    fbxeAddSkin(ctx, mesh, weights.data(), bones, bindposes, num_bones);
+    fbxeAddMesh(ctx, mesh, points.size(), points.data(), nullptr, nullptr, uv.data(), nullptr);
+    fbxeAddMeshSubmesh(ctx, mesh, fbxe::Topology::Quads, indices.size(), indices.data(), -1);
+    fbxeAddMeshSkin(ctx, mesh, weights.data(), num_bones, bones, bindposes);
 
     fbxeWrite(ctx, "skinnedmesh_binary.fbx", fbxe::Format::FBXBinary);
     fbxeWrite(ctx, "skinnedmesh_ascii.fbx", fbxe::Format::FBXAscii);

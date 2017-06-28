@@ -2,6 +2,8 @@
 #include "FbxExporter.h"
 #include "fbxeContext.h"
 
+using namespace fbxe;
+
 fbxeAPI fbxe::IContext* fbxeCreateContext(const fbxe::ExportOptions *opt)
 {
     return fbxe::CreateContext(opt);
@@ -48,15 +50,21 @@ fbxeAPI void fbxeSetTRS(fbxe::IContext *ctx, fbxe::Node *node, float3 t, quatf r
     return ctx->setTRS(node, t, r, s);
 }
 
-fbxeAPI void fbxeAddMesh(fbxe::IContext *ctx, fbxe::Node *node, fbxe::Topology topology, int num_indices, int num_vertices,
-    const int indices[], const float3 points[], const float3 normals[], const float4 tangents[], const float2 uv[], const float4 colors[])
+fbxeAPI void fbxeAddMesh(fbxe::IContext *ctx, fbxe::Node *node, int num_vertices,
+    const float3 points[], const float3 normals[], const float4 tangents[], const float2 uv[], const float4 colors[])
 {
     if (!ctx) { return; }
-    return ctx->addMesh(node, topology, num_indices, num_vertices, indices, points, normals, tangents, uv, colors);
+    return ctx->addMesh(node, num_vertices, points, normals, tangents, uv, colors);
 }
 
-fbxeAPI void fbxeAddSkin(fbxe::IContext *ctx, fbxe::Node *node, Weights4 weights[], fbxe::Node *bones[], float4x4 bindposes[], int num_bones)
+fbxeAPI void fbxeAddMeshSubmesh(fbxe::IContext *ctx, fbxe::Node *node, fbxe::Topology topology, int num_indices, const int indices[], int material)
 {
     if (!ctx) { return; }
-    return ctx->addSkin(node, weights, bones, bindposes, num_bones);
+    return ctx->addMeshSubmesh(node, topology, num_indices, indices, material);
+}
+
+fbxeAPI void fbxeAddMeshSkin(fbxe::IContext *ctx, fbxe::Node *node, Weights4 weights[], int num_bones, fbxe::Node *bones[], float4x4 bindposes[])
+{
+    if (!ctx) { return; }
+    return ctx->addMeshSkin(node, weights, num_bones, bones, bindposes);
 }

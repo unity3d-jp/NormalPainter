@@ -18,6 +18,9 @@
     <ClInclude Include="FbxExporter\fbxeContext.h">
       <Filter>FbxExporter</Filter>
     </ClInclude>
+    <ClInclude Include="FbxExporter\fbxeUtils.h">
+      <Filter>FbxExporter</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="FbxExporter\pch.cpp">

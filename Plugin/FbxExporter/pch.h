@@ -14,4 +14,5 @@
 #include <sstream>
 #include <atomic>
 
+#include <fbxsdk.h>
 #include "MeshUtils/MeshUtils.h"

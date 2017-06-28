@@ -1,8 +1,8 @@
 #include "pch.h"
 #include "FbxExporter.h"
 #include "fbxeContext.h"
+#include "fbxeUtils.h"
 
-#include <fbxsdk.h>
 #ifdef _WIN32
     #pragma comment(lib, "libfbxsdk-md.lib")
 #endif
@@ -25,9 +25,10 @@ public:
 
     Node* createNode(Node *parent, const char *name) override;
     void setTRS(Node *node, float3 t, quatf r, float3 s) override;
-    void addMesh(Node *node, Topology topology, int num_indices, int num_vertices,
-        const int indices[], const float3 points[], const float3 normals[], const float4 tangents[], const float2 uv[], const float4 colors[]) override;
-    void addSkin(Node *node, Weights4 weights[], Node *bones[], float4x4 bindposes[], int num_bones) override;
+    void addMesh(Node *node, int num_vertices,
+        const float3 points[], const float3 normals[], const float4 tangents[], const float2 uv[], const float4 colors[]) override;
+    void addMeshSubmesh(Node *node, Topology topology, int num_indices, const int indices[], int material) override;
+    void addMeshSkin(Node *node, Weights4 weights[], int num_bones, Node *bones[], float4x4 bindposes[]) override;
 
 private:
     ExportOptions m_opt;
@@ -38,34 +39,6 @@ private:
 fbxeAPI IContext* CreateContext(const ExportOptions *opt)
 {
     return new Context(opt);
-}
-
-
-static inline FbxVector2 ToV2(float2 v) { return { v.x, v.y }; }
-static inline FbxDouble3 ToP3(float3 v) { return { v.x, v.y, v.z }; }
-static inline FbxDouble4 ToP4(float3 v) { return { v.x, v.y, v.z, 1.0f }; }
-static inline FbxVector4 ToV4(float3 v) { return { v.x, v.y, v.z, 0.0f }; }
-static inline FbxDouble4 ToP4(float4 v) { return { v.x, v.y, v.z, v.w }; }
-static inline FbxVector4 ToV4(float4 v) { return { v.x, v.y, v.z, v.w }; }
-static inline FbxColor   ToC4(float4 v) { return { v.x, v.y, v.z, v.w }; }
-static inline FbxAMatrix ToAM(float4x4 v)
-{
-    FbxAMatrix ret;
-    auto src = &v[0][0];
-    auto dst = (double*)ret;
-    for (int i = 0; i < 16; ++i) {
-        dst[i] = src[i];
-    }
-    return ret;
-}
-
-static inline void FlipHandedness(FbxDouble4 *v, int n)
-{
-    for (int i = 0; i < n; ++i) { v[i].mData[0] *= -1.0; }
-}
-static inline void FlipHandedness(FbxVector4 *v, int n)
-{
-    for (int i = 0; i < n; ++i) { v[i].mData[0] *= -1.0; }
 }
 
 
@@ -197,8 +170,8 @@ void Context::setTRS(Node *node_, float3 t, quatf r, float3 s)
 }
 
 
-void Context::addMesh(Node *node_, Topology topology, int num_indices, int num_vertices,
-    const int indices[], const float3 points[], const float3 normals[], const float4 tangents[], const float2 uv[], const float4 colors[])
+void Context::addMesh(Node *node_, int num_vertices,
+    const float3 points[], const float3 normals[], const float4 tangents[], const float2 uv[], const float4 colors[])
 {
     if (!node_) { return; }
     if (!points) { return; } // points must not be null
@@ -267,81 +240,54 @@ void Context::addMesh(Node *node_, Topology topology, int num_indices, int num_v
         }
     }
 
-    {
-        // set primitives
-
-        int vertices_in_primitive = 1;
-        switch (topology)
-        {
-        case Topology::Points:    vertices_in_primitive = 1; break;
-        case Topology::Lines:     vertices_in_primitive = 2; break;
-        case Topology::Triangles: vertices_in_primitive = 3; break;
-        case Topology::Quads:     vertices_in_primitive = 4; break;
-        default: break;
-        }
-
-        int pi = 0;
-        if (m_opt.flip_faces) {
-            while (pi < num_indices) {
-                mesh->BeginPolygon();
-                for (int vi = vertices_in_primitive - 1; vi >= 0; --vi) {
-                    mesh->AddPolygon(indices[pi + vi]);
-                }
-                pi += vertices_in_primitive;
-                mesh->EndPolygon();
-            }
-        }
-        else {
-            while (pi < num_indices) {
-                mesh->BeginPolygon();
-                for (int vi = 0; vi < vertices_in_primitive; ++vi) {
-                    mesh->AddPolygon(indices[pi + vi]);
-                }
-                pi += vertices_in_primitive;
-                mesh->EndPolygon();
-            }
-        }
-    }
-
     node->SetNodeAttribute(mesh);
     node->SetShadingMode(FbxNode::eTextureShading);
 }
 
-template<int N>
-static int GetInfluence(Weights<N> weights[], int num_vertices, int bone_index, RawVector<int>& dindices, RawVector<double>& dweights)
+void Context::addMeshSubmesh(Node *node_, Topology topology, int num_indices, const int indices[], int material)
 {
-    dindices.clear();
-    dweights.clear();
+    if (!node_) { return; }
 
-    for (int vi = 0; vi < num_vertices; ++vi) {
-        for (int i = 0; i < N; ++i) {
-            if (weights[vi].indices[i] == bone_index) {
-                float w = weights[vi].weights[i];
-                if (w > 0.0f) {
-                    dindices.push_back(vi);
-                    dweights.push_back(w);
-                }
-                break;
+    auto node = reinterpret_cast<FbxNode*>(node_);
+    auto mesh = FindMesh(node);
+    if (!mesh) { return; }
+
+    int vertices_in_primitive = 1;
+    switch (topology)
+    {
+    case Topology::Points:    vertices_in_primitive = 1; break;
+    case Topology::Lines:     vertices_in_primitive = 2; break;
+    case Topology::Triangles: vertices_in_primitive = 3; break;
+    case Topology::Quads:     vertices_in_primitive = 4; break;
+    default: break;
+    }
+
+    int pi = 0;
+    if (m_opt.flip_faces) {
+        while (pi < num_indices) {
+            mesh->BeginPolygon(material);
+            for (int vi = vertices_in_primitive - 1; vi >= 0; --vi) {
+                mesh->AddPolygon(indices[pi + vi]);
             }
+            pi += vertices_in_primitive;
+            mesh->EndPolygon();
         }
     }
-    return (int)dindices.size();
-}
-
-static FbxMesh* FindMesh(FbxNode *node)
-{
-    int n = node->GetNodeAttributeCount();
-    for (int i = 0; i < n; ++i) {
-        auto attr = node->GetNodeAttributeByIndex(i);
-        auto name = attr->GetTypeName();
-        if (std::strcmp(name, "Mesh") == 0) {
-            return static_cast<FbxMesh*>(attr);
+    else {
+        while (pi < num_indices) {
+            mesh->BeginPolygon(material);
+            for (int vi = 0; vi < vertices_in_primitive; ++vi) {
+                mesh->AddPolygon(indices[pi + vi]);
+            }
+            pi += vertices_in_primitive;
+            mesh->EndPolygon();
         }
     }
-    return nullptr;
+
 }
 
-void Context::addSkin(Node *node_, Weights4 weights[], Node *bones[], float4x4 bindposes[], int num_bones)
+
+void Context::addMeshSkin(Node *node_, Weights4 weights[], int num_bones, Node *bones[], float4x4 bindposes[])
 {
     if (!node_) { return; }
 
@@ -364,7 +310,7 @@ void Context::addSkin(Node *node_, Weights4 weights[], Node *bones[], float4x4 b
         if (m_opt.flip_handedness) {
             bindpose = swap_handedness(bindpose);
         }
-        cluster->SetTransformMatrix(ToAM(invert(bindpose)));
+        cluster->SetTransformMatrix(ToAM44(invert(bindpose)));
 
         GetInfluence(weights, num_vertices, bi, dindices, dweights);
         cluster->SetControlPointIWCount((int)dindices.size());

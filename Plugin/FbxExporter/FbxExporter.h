@@ -49,6 +49,7 @@ fbxeAPI fbxe::Node* fbxeFindNodeByName(fbxe::IContext *ctx, const char *name);
 
 fbxeAPI fbxe::Node* fbxeCreateNode(fbxe::IContext *ctx, fbxe::Node *parent, const char *name);
 fbxeAPI void        fbxeSetTRS(fbxe::IContext *ctx, fbxe::Node *node, float3 t, quatf r, float3 s);
-fbxeAPI void        fbxeAddMesh(fbxe::IContext *ctx, fbxe::Node *node, fbxe::Topology topology, int num_indices, int num_vertices,
-    const int indices[], const float3 points[], const float3 normals[], const float4 tangents[], const float2 uv[], const float4 colors[]);
-fbxeAPI void        fbxeAddSkin(fbxe::IContext *ctx, fbxe::Node *node, Weights4 weights[], fbxe::Node *bones[], float4x4 bindposes[], int num_bones);
+fbxeAPI void        fbxeAddMesh(fbxe::IContext *ctx, fbxe::Node *node, int num_vertices,
+    const float3 points[], const float3 normals[], const float4 tangents[], const float2 uv[], const float4 colors[]);
+fbxeAPI void        fbxeAddMeshSubmesh(fbxe::IContext *ctx, fbxe::Node *node, fbxe::Topology topology, int num_indices, const int indices[], int material);
+fbxeAPI void        fbxeAddMeshSkin(fbxe::IContext *ctx, fbxe::Node *node, Weights4 weights[], int num_bones, fbxe::Node *bones[], float4x4 bindposes[]);

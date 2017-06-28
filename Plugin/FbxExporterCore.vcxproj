@@ -23,6 +23,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="FbxExporter\fbxeContext.h" />
+    <ClInclude Include="FbxExporter\fbxeUtils.h" />
     <ClInclude Include="FbxExporter\FbxExporter.h" />
     <ClInclude Include="FbxExporter\pch.h" />
   </ItemGroup>
@@ -53,15 +54,9 @@
   <ImportGroup Label="ExtensionSettings">
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+  <PropertyGroup>
     <IncludePath>C:\Program Files\Autodesk\FBX\FBX SDK\2018.1.1\include;$(SolutionDir);$(IncludePath)</IncludePath>
-    <OutDir>$(SolutionDir)_out\$(ProjectName)_$(Platform)_$(Configuration)\</OutDir>
-    <IntDir>$(SolutionDir)_tmp\$(ProjectName)_$(Platform)_$(Configuration)\</IntDir>
-    <LibraryPath>C:\Program Files\Autodesk\FBX\FBX SDK\2018.1.1\lib\vs2015\x64\release;$(LibraryPath)</LibraryPath>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Master|x64'">
-    <IncludePath>C:\Program Files\Autodesk\FBX\FBX SDK\2018.1.1\include;$(SolutionDir);$(IncludePath)</IncludePath>
-    <OutDir>$(SolutionDir)_out\$(ProjectName)_$(Platform)_$(Configuration)\</OutDir>
+    <OutDir>$(SolutionDir)_out\$(Platform)_$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)_tmp\$(ProjectName)_$(Platform)_$(Configuration)\</IntDir>
     <LibraryPath>C:\Program Files\Autodesk\FBX\FBX SDK\2018.1.1\lib\vs2015\x64\release;$(LibraryPath)</LibraryPath>
   </PropertyGroup>

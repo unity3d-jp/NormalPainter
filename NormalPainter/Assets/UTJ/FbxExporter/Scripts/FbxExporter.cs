@@ -6,12 +6,12 @@ namespace UTJ.FbxExporter
 {
     public partial class FbxExporter
     {
+        feExportOptions m_opt;
         feContext m_ctx;
         List<feNode> m_nodes;
 
         public FbxExporter()
         {
-            m_ctx = fbxeCreateContext();
         }
 
         ~FbxExporter()
@@ -21,6 +21,8 @@ namespace UTJ.FbxExporter
 
         public bool CreateScene(string name)
         {
+            if(!m_ctx)
+                m_ctx = fbxeCreateContext(ref m_opt);
             return fbxeCreateScene(m_ctx, name);
         }
 
