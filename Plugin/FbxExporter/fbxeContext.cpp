@@ -165,7 +165,7 @@ void Context::setTRS(Node *node_, float3 t, quatf r, float3 s)
     auto node = (FbxNode*)node_;
     node->LclTranslation.Set(ToP3(t));
     node->RotationOrder.Set(FbxEuler::eOrderZXY);
-    node->LclRotation.Set(ToP3(eularZXY(r)));
+    node->LclRotation.Set(ToP3(eularZXY(r) * Rad2Deg));
     node->LclScaling.Set(ToP3(s));
 }
 
@@ -291,9 +291,7 @@ void Context::addMeshSubmesh(Node *node_, Topology topology, int num_indices, co
             mesh->EndPolygon();
         }
     }
-
 }
-
 
 void Context::addMeshSkin(Node *node_, Weights4 weights[], int num_bones, Node *bones[], float4x4 bindposes[])
 {
