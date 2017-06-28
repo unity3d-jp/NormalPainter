@@ -35,7 +35,6 @@ namespace UTJ.NormalPainter
         [SerializeField] Material m_matBake;
         [SerializeField] ComputeShader m_csBakeFromMap;
 
-        Mesh m_meshSkinBaked;
         ComputeBuffer m_cbArg;
         ComputeBuffer m_cbPoints;
         ComputeBuffer m_cbNormals;
@@ -693,6 +692,7 @@ namespace UTJ.NormalPainter
 
             var trans = GetComponent<Transform>();
             var matrix = trans.localToWorldMatrix;
+            var renderer = GetComponent<Renderer>();
 
             m_matVisualize.SetMatrix("_Transform", matrix);
             m_matVisualize.SetFloat("_VertexSize", m_settings.vertexSize);
@@ -746,34 +746,26 @@ namespace UTJ.NormalPainter
             }
             m_cmdDraw.Clear();
 
+            // overlay
             switch (m_settings.modelOverlay)
             {
                 case ModelOverlay.LocalSpaceNormals:
                     for (int si = 0; si < m_meshTarget.subMeshCount; ++si)
-                        m_cmdDraw.DrawMesh(m_meshTarget, matrix, m_matVisualize, si, 4);
+                        m_cmdDraw.DrawRenderer(renderer, m_matVisualize, si, 4);
                     break;
                 case ModelOverlay.TangentSpaceNormals:
                     for (int si = 0; si < m_meshTarget.subMeshCount; ++si)
-                        m_cmdDraw.DrawMesh(m_meshTarget, matrix, m_matVisualize, si, 5);
+                        m_cmdDraw.DrawRenderer(renderer, m_matVisualize, si, 5);
                     break;
                 case ModelOverlay.VertexColor:
                     for (int si = 0; si < m_meshTarget.subMeshCount; ++si)
-                        m_cmdDraw.DrawMesh(m_meshTarget, matrix, m_matVisualize, si, 6);
+                        m_cmdDraw.DrawRenderer(renderer, m_matVisualize, si, 6);
                     break;
             }
 
             // visualize brush range
             if (m_settings.showBrushRange && m_rayHit && brushMode)
-            {
-                if (m_skinned)
-                {
-                    if (!m_meshSkinBaked)
-                        m_meshSkinBaked = new Mesh();
-                    if(m_meshSkinBaked.vertexCount != m_meshTarget.vertexCount)
-                        GetComponent<SkinnedMeshRenderer>().BakeMesh(m_meshSkinBaked);
-                }
-                m_cmdDraw.DrawMesh(m_skinned ? m_meshSkinBaked : m_meshTarget, matrix, m_matVisualize, 0, 8);
-            }
+                m_cmdDraw.DrawRenderer(renderer, m_matVisualize, 0, 8);
 
             // visualize vertices
             if (m_settings.showVertices && m_points != null)
