@@ -425,6 +425,10 @@ namespace UTJ.NormalPainter
         {
             return npSelectEdge(m_points, m_triangles, m_points.Length, m_triangles.Length / 3, m_selection, strength, clear) > 0;
         }
+        public bool SelectHole(float strength = 1.0f, bool clear = true)
+        {
+            return npSelectHole(m_points, m_triangles, m_points.Length, m_triangles.Length / 3, m_selection, strength, clear) > 0;
+        }
 
         public bool SelectConnected(float strength = 1.0f, bool clear = true)
         {
@@ -817,6 +821,9 @@ namespace UTJ.NormalPainter
             ref Matrix4x4 trans, Vector3 pos, Vector3 dir);
         
         [DllImport("NormalPainterCore")] static extern int npSelectEdge(
+            Vector3[] vertices, int[] indices, int num_vertices, int num_triangles, float[] seletion, float strength, bool clear);
+
+        [DllImport("NormalPainterCore")] static extern int npSelectHole(
             Vector3[] vertices, int[] indices, int num_vertices, int num_triangles, float[] seletion, float strength, bool clear);
 
         [DllImport("NormalPainterCore")] static extern int npSelectConnected(

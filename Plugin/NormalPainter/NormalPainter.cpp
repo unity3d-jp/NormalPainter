@@ -206,7 +206,7 @@ npAPI int npSelectEdge(
     auto vertices = IArray<float3>(vertices_, num_vertices);
 
     ConnectionData connection;
-    BuildConnectionData(indices, 3, vertices, connection);
+    connection.buildConnection(indices, 3, vertices);
 
     RawVector<int> targets, edge;
     targets.reserve(num_vertices);
@@ -224,6 +224,31 @@ npAPI int npSelectEdge(
     return (int)edge.size();
 }
 
+npAPI int npSelectHole(
+    const float3 vertices_[], const int indices_[], int num_vertices, int num_triangles, float selection[], float strength, int clear)
+{
+    auto indices = IArray<int>(indices_, num_triangles * 3);
+    auto vertices = IArray<float3>(vertices_, num_vertices);
+
+    ConnectionData connection;
+    connection.buildConnection(indices, 3, vertices, true);
+
+    RawVector<int> targets, edge;
+    targets.reserve(num_vertices);
+    for (int vi = 0; vi < num_vertices; ++vi) {
+        if (selection[vi] > 0.0f) {
+            targets.push_back(vi);
+        }
+    }
+    SelectHole(indices, 3, vertices, connection, targets, edge);
+
+    if (clear) { memset(selection, 0, num_vertices * 4); }
+    for (int vi : edge) {
+        selection[vi] = clamp01(selection[vi] + strength);
+    }
+    return (int)edge.size();
+}
+
 npAPI int npSelectConnected(
     const float3 vertices_[], const int indices_[], int num_vertices, int num_triangles, float selection[], float strength, int clear)
 {
@@ -231,7 +256,7 @@ npAPI int npSelectConnected(
     auto vertices = IArray<float3>(vertices_, num_vertices);
 
     ConnectionData connection;
-    BuildConnectionData(indices, 3, vertices, connection);
+    connection.buildConnection(indices, 3, vertices);
 
     std::vector<bool> checked;
     checked.resize(num_vertices);

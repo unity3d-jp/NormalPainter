@@ -32,14 +32,17 @@ struct ConnectionData
     RawVector<int> offsets;
     RawVector<int> faces;
     RawVector<int> indices;
+    RawVector<int> identical_map;
 
     void clear();
-};
+    void buildConnection(
+        const IArray<int>& indices, int ngon, const IArray<float3>& vertices, bool welding = false);
+    void buildConnection(
+        const IArray<int>& indices, const IArray<int>& counts, const IArray<int>& offsets, const IArray<float3>& vertices, bool welding = false);
 
-void BuildConnectionData(
-    const IArray<int>& indices, int ngon, const IArray<float3>& vertices, ConnectionData& connection);
-void BuildConnectionData(
-    const IArray<int>& indices, const IArray<int>& counts, const IArray<int>& offsets, const IArray<float3>& vertices, ConnectionData& connection);
+private:
+    void buildIdenticalPositionMap(const IArray<float3>& vertices);
+};
 
 bool OnEdge(const IArray<int>& indices, int ngon, const IArray<float3>& vertices, const ConnectionData& connection, int vertex_index);
 bool OnEdge(const IArray<int>& indices, const IArray<int>& counts, const IArray<int>& offsets, const IArray<float3>& vertices, const ConnectionData& connection, int vertex_index);
@@ -47,10 +50,14 @@ bool OnEdge(const IArray<int>& indices, const IArray<int>& counts, const IArray<
 bool IsEdgeOpened(const IArray<int>& indices, int ngon, const ConnectionData& connection, int i0, int i1);
 bool IsEdgeOpened(const IArray<int>& indices, const IArray<int>& counts, const IArray<int>& offsets, const ConnectionData& connection, int i0, int i1);
 
-// assume all faces are triangle
 void SelectEdge(const IArray<int>& indices, int ngon, const IArray<float3>& vertices, const ConnectionData& connection,
     const IArray<int>& vertex_indices, RawVector<int>& edge_indices);
 void SelectEdge(const IArray<int>& indices, const IArray<int>& counts, const IArray<int>& offsets, const IArray<float3>& vertices, const ConnectionData& connection,
+    const IArray<int>& vertex_indices, RawVector<int>& edge_indices);
+
+void SelectHole(const IArray<int>& indices, int ngon, const IArray<float3>& vertices, const ConnectionData& connection,
+    const IArray<int>& vertex_indices, RawVector<int>& edge_indices);
+void SelectHole(const IArray<int>& indices, const IArray<int>& counts, const IArray<int>& offsets, const IArray<float3>& vertices, const ConnectionData& connection,
     const IArray<int>& vertex_indices, RawVector<int>& edge_indices);
 
 

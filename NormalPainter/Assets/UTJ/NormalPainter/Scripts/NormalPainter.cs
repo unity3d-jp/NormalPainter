@@ -60,7 +60,6 @@ namespace UTJ.NormalPainter
         bool        m_rayHit;
         int         m_rayHitTriangle;
         Vector3     m_rayPos;
-        Vector3     m_rayNormal;
         Vector3     m_selectionPos;
         Vector3     m_selectionNormal;
         Quaternion  m_selectionRot;

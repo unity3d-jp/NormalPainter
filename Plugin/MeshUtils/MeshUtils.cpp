@@ -211,7 +211,16 @@ void ConnectionData::clear()
 
 namespace {
 
-struct OffsetsCounts_Constant
+struct VertexIndicesIM
+{
+    IArray<int> indices;
+    IArray<int> identical_map;
+
+    size_t size() const { return indices.size(); }
+    int operator[](int i) const { return identical_map[indices[i]]; }
+};
+
+struct OffsetsCountsC
 {
     int ngon;
 
@@ -219,8 +228,7 @@ struct OffsetsCounts_Constant
     int getCount(size_t /*fi*/) const { return ngon; }
     int getOffset(size_t fi) const { return ngon * (int)fi; }
 };
-
-struct OffsetsCounts_Indexed
+struct OffsetsCountsI
 {
     const IArray<int>& counts;
     const IArray<int>& offsets;
@@ -232,9 +240,9 @@ struct OffsetsCounts_Indexed
 
 } // namespace
 
-template<class TOC>
+template<class Index, class TOC>
 static void BuildConnectionDataImpl(
-    const IArray<int>& indices, const TOC& oc, const IArray<float3>& vertices, ConnectionData& connection)
+    ConnectionData& connection, const Index& indices, const TOC& oc, const IArray<float3>& vertices)
 {
     size_t num_points = vertices.size();
     size_t num_faces = oc.getNumFaces(indices.size());
@@ -247,13 +255,13 @@ static void BuildConnectionDataImpl(
     connection.counts.resize(num_points);
     connection.counts.zeroclear();
     {
-        const int *idx = indices.data();
+        int ii = 0;
         for (size_t fi = 0; fi < num_faces; ++fi) {
             int c = oc.getCount(fi);
             for (int ci = 0; ci < c; ++ci) {
-                connection.counts[idx[ci]]++;
+                connection.counts[indices[ii + ci]]++;
             }
-            idx += c;
+            ii += c;
         }
 
         int offset = 0;
@@ -279,22 +287,58 @@ static void BuildConnectionDataImpl(
     }
 }
 
-void BuildConnectionData(
-    const IArray<int>& indices, int ngon, const IArray<float3>& vertices, ConnectionData& connection)
+void ConnectionData::buildConnection(
+    const IArray<int>& indices_, int ngon_, const IArray<float3>& vertices_, bool welding)
 {
-    OffsetsCounts_Constant oc{ngon};
-    BuildConnectionDataImpl(indices, oc, vertices, connection);
+    if (welding) {
+        buildIdenticalPositionMap(vertices_);
+
+        VertexIndicesIM vi{ indices_, identical_map };
+        OffsetsCountsC oc{ ngon_ };
+        BuildConnectionDataImpl(*this, vi, oc, vertices_);
+    }
+    else {
+        OffsetsCountsC oc{ ngon_ };
+        BuildConnectionDataImpl(*this, indices_, oc, vertices_);
+    }
 }
 
-void BuildConnectionData(
-    const IArray<int>& indices, const IArray<int>& counts, const IArray<int>& offsets, const IArray<float3>& vertices, ConnectionData& connection)
+void ConnectionData::buildConnection(
+    const IArray<int>& indices_, const IArray<int>& counts_, const IArray<int>& offsets_, const IArray<float3>& vertices_, bool welding)
 {
-    OffsetsCounts_Indexed oc{ counts, offsets };
-    BuildConnectionDataImpl(indices, oc, vertices, connection);
+    if (welding) {
+        buildIdenticalPositionMap(vertices_);
+
+        VertexIndicesIM vi{ indices_, identical_map };
+        OffsetsCountsI oc{ counts_, offsets_ };
+        BuildConnectionDataImpl(*this, vi, oc, vertices_);
+    }
+    else {
+        OffsetsCountsI oc{ counts_, offsets_ };
+        BuildConnectionDataImpl(*this, indices_, oc, vertices_);
+    }
 }
 
-template<class TOC>
-bool OnEdgeImpl(const IArray<int>& indices, const TOC& oc, const IArray<float3>& vertices, const ConnectionData& connection, int vertex_index)
+void ConnectionData::buildIdenticalPositionMap(const IArray<float3>& vertices)
+{
+    int n = (int)vertices.size();
+    identical_map.resize(n);
+    parallel_for(0, n, [&](int vi) {
+        int r = vi;
+        float3 p = vertices[vi];
+        for (int i = 0; i < vi; ++i) {
+            if (near_equal(length_sq(vertices[i] - p), 0.0f)) {
+                r = i;
+                break;
+            }
+        }
+        identical_map[vi] = r;
+    });
+}
+
+
+template<class Index, class TOC>
+bool OnEdgeImpl(const Index& indices, const TOC& oc, const IArray<float3>& vertices, const ConnectionData& connection, int vertex_index)
 {
     int num_shared = connection.counts[vertex_index];
     int offset = connection.offsets[vertex_index];
@@ -321,19 +365,19 @@ bool OnEdgeImpl(const IArray<int>& indices, const TOC& oc, const IArray<float3>&
 
 bool OnEdge(const IArray<int>& indices, int ngon, const IArray<float3>& vertices, const ConnectionData& connection, int vertex_index)
 {
-    OffsetsCounts_Constant oc{ ngon };
+    OffsetsCountsC oc{ ngon };
     return OnEdgeImpl(indices, oc, vertices, connection, vertex_index);
 }
 
 bool OnEdge(const IArray<int>& indices, const IArray<int>& counts, const IArray<int>& offsets, const IArray<float3>& vertices, const ConnectionData& connection, int vertex_index)
 {
-    OffsetsCounts_Indexed oc{ counts, offsets };
+    OffsetsCountsI oc{ counts, offsets };
     return OnEdgeImpl(indices, oc, vertices, connection, vertex_index);
 }
 
 
-template<class TOC>
-bool IsEdgeOpenedImpl(const IArray<int>& indices, const TOC& oc, const ConnectionData& connection, int i0, int i1)
+template<class Index, class TOC>
+bool IsEdgeOpenedImpl(const Index& indices, const TOC& oc, const ConnectionData& connection, int i0, int i1)
 {
     if (i1 < i0) { std::swap(i0, i1); }
     int edge[2]{ i0, i1 };
@@ -361,22 +405,22 @@ bool IsEdgeOpenedImpl(const IArray<int>& indices, const TOC& oc, const Connectio
 
 bool IsEdgeOpened(const IArray<int>& indices, int ngon, const ConnectionData& connection, int i0, int i1)
 {
-    OffsetsCounts_Constant oc{ ngon };
+    OffsetsCountsC oc{ ngon };
     return IsEdgeOpenedImpl(indices, oc, connection, i0, i1);
 }
 
 bool IsEdgeOpened(const IArray<int>& indices, const IArray<int>& counts, const IArray<int>& offsets, const ConnectionData& connection, int i0, int i1)
 {
-    OffsetsCounts_Indexed oc{ counts, offsets };
+    OffsetsCountsI oc{ counts, offsets };
     return IsEdgeOpenedImpl(indices, oc, connection, i0, i1);
 }
 
 
 
-template<class TOC>
-struct SelectEdgeImpl
+template<class Index, class TOC>
+struct SelectImpl
 {
-    const IArray<int>& indices;
+    const Index& indices;
     const TOC& oc;
     const IArray<float3>& vertices;
     const ConnectionData& connection;
@@ -385,7 +429,7 @@ struct SelectEdgeImpl
     std::vector<bool> checked;
     std::vector<std::pair<int, int>> opened;
 
-    SelectEdgeImpl(const IArray<int>& indices_, const TOC& oc_, const IArray<float3>& vertices_, const ConnectionData& connection_, RawVector<int>& dst_)
+    SelectImpl(const Index& indices_, const TOC& oc_, const IArray<float3>& vertices_, const ConnectionData& connection_, RawVector<int>& dst_)
         : indices(indices_)
         , oc(oc_)
         , vertices(vertices_)
@@ -395,7 +439,7 @@ struct SelectEdgeImpl
         checked.resize(vertices.size());
     }
 
-    void selectEdge(int vertex_index)
+    void selectEdgeImpl(int vertex_index)
     {
         if (checked[vertex_index]) { return; }
 
@@ -446,25 +490,57 @@ struct SelectEdgeImpl
             }
         }
     }
+
+    void selectEdge(int vertex_index)
+    {
+        selectEdgeImpl(vertex_index);
+    }
+
+    void selectHole(int vertex_index)
+    {
+        selectEdgeImpl(vertex_index);
+    }
 };
 
 void SelectEdge(const IArray<int>& indices, int ngon, const IArray<float3>& vertices, const ConnectionData& connection,
     const IArray<int>& vertex_indices, RawVector<int>& edge_indices)
 {
-    OffsetsCounts_Constant oc{ ngon };
-    SelectEdgeImpl<OffsetsCounts_Constant> impl(indices, oc, vertices, connection, edge_indices);
-    for (int vi : vertex_indices) {
-        impl.selectEdge(vi);
+    OffsetsCountsC oc{ ngon };
+    SelectImpl<decltype(indices), decltype(oc)> impl(indices, oc, vertices, connection, edge_indices);
+    for (int i : vertex_indices) {
+        impl.selectEdge(i);
     }
 }
 
 void SelectEdge(const IArray<int>& indices, const IArray<int>& counts, const IArray<int>& offsets, const IArray<float3>& vertices, const ConnectionData& connection,
     const IArray<int>& vertex_indices, RawVector<int>& edge_indices)
 {
-    OffsetsCounts_Indexed oc{ counts, offsets };
-    SelectEdgeImpl<OffsetsCounts_Indexed> impl(indices, oc, vertices, connection, edge_indices);
-    for (int vi : vertex_indices) {
-        impl.selectEdge(vi);
+    OffsetsCountsI oc{ counts, offsets };
+    SelectImpl<decltype(indices), decltype(oc)> impl(indices, oc, vertices, connection, edge_indices);
+    for (int i : vertex_indices) {
+        impl.selectEdge(i);
+    }
+}
+
+void SelectHole(const IArray<int>& indices, int ngon, const IArray<float3>& vertices, const ConnectionData& connection,
+    const IArray<int>& vertex_indices, RawVector<int>& edge_indices)
+{
+    VertexIndicesIM vi{ indices, connection.identical_map };
+    OffsetsCountsC oc{ ngon };
+    SelectImpl<decltype(vi), decltype(oc)> impl(vi, oc, vertices, connection, edge_indices);
+    for (int i : vertex_indices) {
+        impl.selectHole(i);
+    }
+}
+
+void SelectHole(const IArray<int>& indices, const IArray<int>& counts, const IArray<int>& offsets, const IArray<float3>& vertices, const ConnectionData& connection,
+    const IArray<int>& vertex_indices, RawVector<int>& edge_indices)
+{
+    VertexIndicesIM vi{ indices, connection.identical_map };
+    OffsetsCountsI oc{ counts, offsets };
+    SelectImpl<decltype(vi), decltype(oc)> impl(vi, oc, vertices, connection, edge_indices);
+    for (int i : vertex_indices) {
+        impl.selectHole(i);
     }
 }
 

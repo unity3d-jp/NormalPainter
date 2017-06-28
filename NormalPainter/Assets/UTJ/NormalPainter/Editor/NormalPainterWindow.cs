@@ -300,6 +300,11 @@ namespace UTJ.NormalPainter
                     m_target.SelectEdge(m_ctrl ? -1.0f : 1.0f, !m_shift && !m_ctrl);
                     m_target.UpdateSelection();
                 }
+                if (GUILayout.Button("Select Hole [H]"))
+                {
+                    m_target.SelectHole(m_ctrl ? -1.0f : 1.0f, !m_shift && !m_ctrl);
+                    m_target.UpdateSelection();
+                }
                 if (GUILayout.Button("Select Connected [C]"))
                 {
                     m_target.SelectConnected(m_ctrl ? -1.0f : 1.0f, !m_shift && !m_ctrl);
@@ -877,6 +882,13 @@ namespace UTJ.NormalPainter
                     handled = true;
                     tips = "Select Edge";
                     m_target.SelectEdge(m_ctrl ? -1.0f : 1.0f, !m_shift && !m_ctrl);
+                    m_target.UpdateSelection();
+                }
+                else if(e.keyCode == KeyCode.H)
+                {
+                    handled = true;
+                    tips = "Select Hole";
+                    m_target.SelectHole(m_ctrl ? -1.0f : 1.0f, !m_shift && !m_ctrl);
                     m_target.UpdateSelection();
                 }
                 else if (e.keyCode == KeyCode.C)

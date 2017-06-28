@@ -666,7 +666,7 @@ inline quatf rotate(const float3& axis, float angle)
 template<class T> inline float clamp(T v, T vmin, T vmax) { return std::min<T>(std::max<T>(v, vmin), vmax); }
 inline float saturate(float v) { return clamp(v, -1.0f, 1.0f); }
 
-inline float3 eularZXY(const quatf& q)
+inline float3 to_eularZXY(const quatf& q)
 {
     float d[] = {
         q.x*q.x, q.x*q.y, q.x*q.z, q.x*q.w,
@@ -1008,7 +1008,7 @@ inline quatf to_quat(const float4x4& m)
 // aperture and focal_length must be millimeter. return fov in degree
 inline float compute_fov(float aperture, float focal_length)
 {
-    return 2.0f * atanf(aperture / (2.0f * focal_length)) * Rad2Deg;
+    return 2.0f * std::atan(aperture / (2.0f * focal_length)) * Rad2Deg;
 }
 
 // aperture: millimeter

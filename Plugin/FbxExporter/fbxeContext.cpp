@@ -165,7 +165,7 @@ void Context::setTRS(Node *node_, float3 t, quatf r, float3 s)
     auto node = (FbxNode*)node_;
     node->LclTranslation.Set(ToP3(t));
     node->RotationOrder.Set(FbxEuler::eOrderZXY);
-    node->LclRotation.Set(ToP3(eularZXY(r) * Rad2Deg));
+    node->LclRotation.Set(ToP3(to_eularZXY(r) * Rad2Deg));
     node->LclScaling.Set(ToP3(s));
 }
 
