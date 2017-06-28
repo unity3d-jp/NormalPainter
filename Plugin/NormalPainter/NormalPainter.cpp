@@ -560,7 +560,7 @@ npAPI void npSmooth(
     });
 }
 
-npAPI int npWeld(const float3 vertices[], const float selection[], int num_vertices, float3 normals[])
+npAPI int npWeld(const float3 vertices[], const float selection[], int num_vertices, float3 normals[], int smoothing)
 {
     std::vector<bool> checked;
     checked.resize(num_vertices);
@@ -576,7 +576,7 @@ npAPI int npWeld(const float3 vertices[], const float selection[], int num_verti
         float3 n = normals[vi];
         for (int i = 0; i < num_vertices; ++i) {
             if (vi != i && !checked[i] && near_equal(length(vertices[i] - p), 0.0f)) {
-                n += normals[i];
+                if (smoothing) n += normals[i];
                 shared.push_back(i);
                 checked[i] = true;
             }

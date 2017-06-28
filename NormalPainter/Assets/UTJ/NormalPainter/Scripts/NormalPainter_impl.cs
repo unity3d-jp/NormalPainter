@@ -701,9 +701,9 @@ namespace UTJ.NormalPainter
             UpdateNormals();
         }
 
-        public bool ApplyWelding()
+        public bool ApplyWelding(bool smoothing)
         {
-            if(npWeld(m_points, m_selection, m_points.Length, m_normals) > 0)
+            if(npWeld(m_points, m_selection, m_points.Length, m_normals, smoothing) > 0)
             {
                 UpdateNormals();
                 return true;
@@ -881,7 +881,7 @@ namespace UTJ.NormalPainter
             float radius, float strength, Vector3[] normals);
 
         [DllImport("NormalPainterCore")] static extern int npWeld(
-            Vector3[] vertices, float[] selection, int num_vertices, Vector3[] normals);
+            Vector3[] vertices, float[] selection, int num_vertices, Vector3[] normals, bool smoothing);
 
         [DllImport("NormalPainterCore")] static extern int npBuildMirroringRelation(
             Vector3[] vertices, Vector3[] base_normals, int num_vertices, Vector3 plane_normal, float epsilon, int[] relation);

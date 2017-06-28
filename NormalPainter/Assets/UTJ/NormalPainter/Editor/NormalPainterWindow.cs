@@ -454,9 +454,10 @@ namespace UTJ.NormalPainter
 
                 EditorGUILayout.Space();
 
+                settings.weldWithSmoothing = EditorGUILayout.Toggle("Weld with Smoothing", settings.weldWithSmoothing);
                 if (GUILayout.Button("Apply Welding [Shift+W]"))
                 {
-                    if(m_target.ApplyWelding())
+                    if(m_target.ApplyWelding(settings.weldWithSmoothing))
                     {
                         m_target.PushUndo();
                     }
@@ -848,7 +849,7 @@ namespace UTJ.NormalPainter
                 {
                     handled = true;
                     tips = "Apply Welding";
-                    if (m_target.ApplyWelding())
+                    if (m_target.ApplyWelding(settings.weldWithSmoothing))
                     {
                         m_target.PushUndo();
                     }
