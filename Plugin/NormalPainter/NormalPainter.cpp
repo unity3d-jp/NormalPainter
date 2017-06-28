@@ -99,7 +99,7 @@ npAPI float3 npTriangleInterpolation(
 }
 
 npAPI int npSelectSingle(
-    const float3 vertices[], const float3 normals[], const int indices[], int num_vertices, int num_triangles, float seletion[], float strength,
+    const float3 vertices[], const float3 normals[], const int indices[], int num_vertices, int num_triangles, float selection[], float strength,
     const float4x4 *mvp_, const float4x4 *trans_, float2 rmin, float2 rmax, float3 campos, int frontface_only)
 {
     float4x4 mvp = *mvp_;
@@ -176,7 +176,7 @@ npAPI int npSelectSingle(
             }
         }
 
-        seletion[nearest_index] = clamp01(seletion[nearest_index] + strength);
+        selection[nearest_index] = clamp01(selection[nearest_index] + strength);
         return 1;
     }
     return 0;
@@ -184,14 +184,14 @@ npAPI int npSelectSingle(
 
 
 npAPI int npSelectTriangle(
-    const float3 vertices[], const int indices[], int num_triangles, float seletion[], float strength,
+    const float3 vertices[], const int indices[], int num_triangles, float selection[], float strength,
     const float4x4 *trans, const float3 pos, const float3 dir)
 {
     int ti;
     float distance;
     if (Raycast(pos, dir, vertices, indices, num_triangles, *trans, ti, distance)) {
         for (int i = 0; i < 3; ++i) {
-            seletion[indices[ti * 3 + i]] = clamp01(seletion[indices[ti * 3 + i]] + strength);
+            selection[indices[ti * 3 + i]] = clamp01(selection[indices[ti * 3 + i]] + strength);
         }
         return 1;
     }
@@ -199,7 +199,7 @@ npAPI int npSelectTriangle(
 }
 
 npAPI int npSelectEdge(
-    const float3 vertices_[], const int indices_[], int num_vertices, int num_triangles, float seletion[], float strength, int clear)
+    const float3 vertices_[], const int indices_[], int num_vertices, int num_triangles, float selection[], float strength, int clear)
 {
     auto indices = IArray<int>(indices_, num_triangles * 3);
     auto vertices = IArray<float3>(vertices_, num_vertices);
@@ -210,21 +210,21 @@ npAPI int npSelectEdge(
     RawVector<int> targets, edge;
     targets.reserve(num_vertices);
     for (int vi = 0; vi < num_vertices; ++vi) {
-        if (seletion[vi] > 0.0f) {
+        if (selection[vi] > 0.0f) {
             targets.push_back(vi);
         }
     }
     SelectEdge(indices, 3, vertices, connection, targets, edge);
 
-    if (clear) { memset(seletion, 0, num_vertices * 4); }
+    if (clear) { memset(selection, 0, num_vertices * 4); }
     for (int vi : edge) {
-        seletion[vi] = clamp01(seletion[vi] + strength);
+        selection[vi] = clamp01(selection[vi] + strength);
     }
     return (int)edge.size();
 }
 
 npAPI int npSelectConnected(
-    const float3 vertices_[], const int indices_[], int num_vertices, int num_triangles, float seletion[], float strength, int clear)
+    const float3 vertices_[], const int indices_[], int num_vertices, int num_triangles, float selection[], float strength, int clear)
 {
     auto indices = IArray<int>(indices_, num_triangles * 3);
     auto vertices = IArray<float3>(vertices_, num_vertices);
@@ -237,10 +237,10 @@ npAPI int npSelectConnected(
 
     RawVector<int> next;
     for (int vi = 0; vi < num_vertices; ++vi) {
-        if (seletion[vi] > 0.0f) { next.push_back(vi); }
+        if (selection[vi] > 0.0f) { next.push_back(vi); }
     }
 
-    if (clear) { memset(seletion, 0, num_vertices * 4); }
+    if (clear) { memset(selection, 0, num_vertices * 4); }
 
     int ret = 0;
     while (!next.empty()) {
@@ -251,7 +251,7 @@ npAPI int npSelectConnected(
 
         ++ret;
         checked[vi] = true;
-        seletion[vi] = clamp01(seletion[vi] + strength);
+        selection[vi] = clamp01(selection[vi] + strength);
 
         int num_shared = connection.counts[vi];
         int offset = connection.offsets[vi];
@@ -273,7 +273,7 @@ npAPI int npSelectConnected(
 }
 
 npAPI int npSelectRect(
-    const float3 vertices[], const int indices[], int num_vertices, int num_triangles, float seletion[], float strength,
+    const float3 vertices[], const int indices[], int num_vertices, int num_triangles, float selection[], float strength,
     const float4x4 *mvp_, const float4x4 *trans_, float2 rmin, float2 rmax, float3 campos, int frontface_only)
 {
     float4x4 mvp = *mvp_;
@@ -305,7 +305,7 @@ npAPI int npSelectRect(
             }
 
             if (hit) {
-                seletion[vi] = clamp01(seletion[vi] + strength);
+                selection[vi] = clamp01(selection[vi] + strength);
                 ++ret;
             }
         }
@@ -314,7 +314,7 @@ npAPI int npSelectRect(
 }
 
 npAPI int npSelectLasso(
-    const float3 vertices[], const int indices[], int num_vertices, int num_triangles, float seletion[], float strength,
+    const float3 vertices[], const int indices[], int num_vertices, int num_triangles, float selection[], float strength,
     const float4x4 *mvp_, const float4x4 *trans_, const float2 poly[], int ngon, float3 campos, int frontface_only)
 {
     if (ngon < 3) { return 0; }
@@ -356,7 +356,7 @@ npAPI int npSelectLasso(
             }
 
             if (hit) {
-                seletion[vi] = clamp01(seletion[vi] + strength);
+                selection[vi] = clamp01(selection[vi] + strength);
                 ++ret;
             }
         }
@@ -375,7 +375,7 @@ npAPI int npSelectBrush(
 }
 
 npAPI int npUpdateSelection(
-    const float3 vertices[], const float3 normals[], const float seletion[], int num_vertices, const float4x4 *trans,
+    const float3 vertices[], const float3 normals[], const float selection[], int num_vertices, const float4x4 *trans,
     float3 *selection_pos, float3 *selection_normal)
 {
     float st = 0.0f;
@@ -385,7 +385,7 @@ npAPI int npUpdateSelection(
     quatf srot = quatf::identity();
 
     for (int vi = 0; vi < num_vertices; ++vi) {
-        float s = seletion[vi];
+        float s = selection[vi];
         if (s > 0.0f) {
             spos += vertices[vi] * s;
             snormal += normals[vi] * s;

@@ -304,7 +304,7 @@ bool OnEdgeImpl(const IArray<int>& indices, const TOC& oc, const IArray<float3>&
         int fi = connection.faces[offset + si];
         int fo = oc.getOffset(fi);
         int c = oc.getCount(fi);
-        //if (c < 3) { continue; }
+        if (c < 3) { continue; }
         int nth = connection.indices[offset + si] - fo;
 
         int f0 = nth;
@@ -315,7 +315,8 @@ bool OnEdgeImpl(const IArray<int>& indices, const TOC& oc, const IArray<float3>&
         float3 v2 = vertices[indices[c * fi + f2]];
         angle += angle_between(v1, v2, v0);
     }
-    return !near_equal(angle, 360.0f * Deg2Rad);
+    // angle_between's precision seems very low on Mac.. it can be like 357.9f on closed edge
+    return angle < 357.0f * Deg2Rad;
 }
 
 bool OnEdge(const IArray<int>& indices, int ngon, const IArray<float3>& vertices, const ConnectionData& connection, int vertex_index)
@@ -345,6 +346,7 @@ bool IsEdgeOpenedImpl(const IArray<int>& indices, const TOC& oc, const Connectio
             int fi = connection.faces[offset + si];
             int fo = oc.getOffset(fi);
             int c = oc.getCount(fi);
+            if (c < 3) { continue; }
             for (int ci = 0; ci < c; ++ci) {
                 int j0 = indices[fo + ci];
                 int j1 = indices[fo + (ci + 1) % c];
