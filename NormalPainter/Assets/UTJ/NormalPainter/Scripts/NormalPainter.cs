@@ -35,6 +35,7 @@ namespace UTJ.NormalPainter
         [SerializeField] Material m_matBake;
         [SerializeField] ComputeShader m_csBakeFromMap;
 
+        Mesh m_meshSkinBaked;
         ComputeBuffer m_cbArg;
         ComputeBuffer m_cbPoints;
         ComputeBuffer m_cbNormals;
@@ -45,7 +46,7 @@ namespace UTJ.NormalPainter
         ComputeBuffer m_cbBrushSamples;
         CommandBuffer m_cmdDraw;
 
-        bool        m_skinned;
+        bool m_skinned;
         Vector3[]   m_points;
         Vector3[]   m_normals, m_normalsBase, m_normalsBasePredeformed, m_normalsTmp;
         Vector4[]   m_tangents, m_tangentsBase, m_tangentsBasePredeformed;
@@ -763,7 +764,16 @@ namespace UTJ.NormalPainter
 
             // visualize brush range
             if (m_settings.showBrushRange && m_rayHit && brushMode)
-                m_cmdDraw.DrawMesh(m_meshTarget, matrix, m_matVisualize, 0, 8);
+            {
+                if (m_skinned)
+                {
+                    if (!m_meshSkinBaked)
+                        m_meshSkinBaked = new Mesh();
+                    if(m_meshSkinBaked.vertexCount != m_meshTarget.vertexCount)
+                        GetComponent<SkinnedMeshRenderer>().BakeMesh(m_meshSkinBaked);
+                }
+                m_cmdDraw.DrawMesh(m_skinned ? m_meshSkinBaked : m_meshTarget, matrix, m_matVisualize, 0, 8);
+            }
 
             // visualize vertices
             if (m_settings.showVertices && m_points != null)

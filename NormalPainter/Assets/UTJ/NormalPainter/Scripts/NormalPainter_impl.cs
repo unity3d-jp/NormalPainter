@@ -324,6 +324,9 @@ namespace UTJ.NormalPainter
                 m_cbBaseNormals.SetData(m_normalsBase);
                 m_cbTangents.SetData(m_tangents);
                 m_cbBaseTangents.SetData(m_tangentsBase);
+
+                if(m_meshSkinBaked)
+                    m_meshSkinBaked.Clear();
             }
         }
 
