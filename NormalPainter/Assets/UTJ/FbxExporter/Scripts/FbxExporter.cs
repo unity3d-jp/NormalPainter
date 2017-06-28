@@ -8,7 +8,7 @@ namespace UTJ.FbxExporter
     {
         feExportOptions m_opt;
         feContext m_ctx;
-        List<feNode> m_nodes;
+        Dictionary<Transform, feNode> m_nodes;
 
         public FbxExporter()
         {
@@ -16,35 +16,68 @@ namespace UTJ.FbxExporter
 
         ~FbxExporter()
         {
+            Release();
+        }
+
+        public void Release()
+        {
             fbxeReleaseContext(m_ctx);
+            m_ctx = feContext.Null;
         }
 
         public bool CreateScene(string name)
         {
-            if(!m_ctx)
+            Release();
+            if (!m_ctx)
                 m_ctx = fbxeCreateContext(ref m_opt);
+            m_nodes = new Dictionary<Transform, feNode>();
             return fbxeCreateScene(m_ctx, name);
         }
 
-        public feNode GetRootNode()
+        public void AddNode(Transform trans)
         {
-            return fbxeGetRootNode(m_ctx);
-        }
-        public feNode CreateNode(feNode parent, string name)
-        {
-            return fbxeCreateNode(m_ctx, parent, name);
+            FindOrCreateNodeTree(trans, ProcessNode);
         }
 
-        public void SetTransform(feNode node, Vector3 t, Quaternion r, Vector3 s)
+        public bool Write(string path, feFormat format)
         {
-            fbxeSetTRS(m_ctx, node, t, r, s);
-        }
-        public void SetTransform(feNode node, Transform trans)
-        {
-            fbxeSetTRS(m_ctx, node, trans.localPosition, trans.localRotation, trans.localScale);
+            return fbxeWrite(m_ctx, path, format);
         }
 
-        public void AddMesh(feNode node, Mesh mesh)
+
+        #region impl
+        void ProcessNode(Transform trans, feNode node)
+        {
+            var mr = trans.GetComponent<MeshRenderer>();
+            var smr = trans.GetComponent<SkinnedMeshRenderer>();
+
+            if(smr)
+                AddSkinnedMesh(node, smr);
+            else if (mr)
+                AddMesh(node, mr);
+        }
+
+        feNode FindOrCreateNodeTree(Transform trans, Action<Transform, feNode> act)
+        {
+            if (!trans) { return feNode.Null; }
+
+            if (m_nodes.ContainsKey(trans))
+            {
+                return m_nodes[trans];
+            }
+            else
+            {
+                var parent = !trans.parent ? fbxeGetRootNode(m_ctx) : FindOrCreateNodeTree(trans.parent, act);
+                var node = fbxeCreateNode(m_ctx, parent, trans.name);
+                fbxeSetTRS(m_ctx, node, trans.localPosition, trans.localRotation, trans.localScale);
+                m_nodes.Add(trans, node);
+
+                if (act != null) { act.Invoke(trans, node); }
+                return node;
+            }
+        }
+
+        void AddMesh(feNode node, Mesh mesh)
         {
             feTopology topology = feTopology.Triangles;
 
@@ -53,6 +86,35 @@ namespace UTJ.FbxExporter
             fbxeAddMesh(m_ctx, node, points.Length, points, mesh.normals, mesh.tangents, mesh.uv, mesh.colors);
             fbxeAddMeshSubmesh(m_ctx, node, topology, indices.Length, indices, -1);
         }
+
+        void AddMesh(feNode node, MeshRenderer mr)
+        {
+            var mf = mr.gameObject.GetComponent<MeshFilter>();
+            if (mf)
+            {
+                var mesh = mf.sharedMesh;
+                if (mesh)
+                {
+                    AddMesh(node, mesh);
+                }
+            }
+        }
+
+        void AddSkinnedMesh(feNode node, SkinnedMeshRenderer smr)
+        {
+            var mesh = smr.sharedMesh;
+            if (mesh)
+            {
+                AddMesh(node, mesh);
+
+                var bones = smr.bones;
+                var bindposes = mesh.bindposes;
+                var boneNodes = new feNode[bones.Length];
+
+                fbxeAddSkin(m_ctx, node, mesh.boneWeights, boneNodes.Length, boneNodes, bindposes);
+            }
+        }
+        #endregion
     }
 
 }

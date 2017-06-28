@@ -9,11 +9,13 @@ namespace UTJ.FbxExporter
         public struct feContext
         {
             public IntPtr ptr;
+            public static feContext Null { get { feContext r; r.ptr = IntPtr.Zero; return r;  } }
             public static implicit operator bool(feContext v) { return v.ptr != IntPtr.Zero; }
         }
         public struct feNode
         {
             public IntPtr ptr;
+            public static feNode Null { get { feNode r; r.ptr = IntPtr.Zero; return r; } }
             public static implicit operator bool(feNode v) { return v.ptr != IntPtr.Zero; }
         }
 
