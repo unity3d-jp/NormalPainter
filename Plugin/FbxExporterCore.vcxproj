@@ -67,7 +67,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <PostBuildEvent>
-      <Command>xcopy /Yq $(TargetPath) $(SolutionDir)..\NormalPainter\Assets\UTJ\NormalPainter\Plugins\x86_64\</Command>
+      <Command>xcopy /Yq $(TargetPath) $(SolutionDir)..\NormalPainter\Assets\UTJ\FbxExporter\Plugins\x86_64\</Command>
     </PostBuildEvent>
     <ClCompile>
       <PrecompiledHeader>Use</PrecompiledHeader>
@@ -84,7 +84,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Master|x64'">
     <PostBuildEvent>
-      <Command>xcopy /Yq $(TargetPath) $(SolutionDir)..\NormalPainter\Assets\UTJ\NormalPainter\Plugins\x86_64\</Command>
+      <Command>xcopy /Yq $(TargetPath) $(SolutionDir)..\NormalPainter\Assets\UTJ\FbxExporter\Plugins\x86_64\</Command>
     </PostBuildEvent>
     <ClCompile>
       <PrecompiledHeader>Use</PrecompiledHeader>
