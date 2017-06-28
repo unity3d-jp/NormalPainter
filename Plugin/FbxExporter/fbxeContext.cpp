@@ -108,7 +108,7 @@ bool Context::write(const char *path, Format format)
 
     // create exporter
     auto exporter = FbxExporter::Create(m_manager, "");
-    if (!exporter->Initialize(path, file_format, m_manager->GetIOSettings())) {
+    if (!exporter->Initialize(path, file_format)) {
         return false;
     }
 
@@ -195,12 +195,14 @@ void Context::addMesh(Node *node_, int num_vertices,
         element->SetMappingMode(FbxGeometryElement::eByControlPoint);
         element->SetReferenceMode(FbxGeometryElement::eDirect);
 
-        element->GetDirectArray().Resize(num_vertices);
-        auto dst = (FbxVector4*)element->GetDirectArray().GetLocked();
+        auto& da = element->GetDirectArray();
+        da.Resize(num_vertices);
+        auto dst = (FbxVector4*)da.GetLocked();
         for (int i = 0; i < num_vertices; ++i) {
             dst[i] = ToV4(normals[i]);
         }
         if (m_opt.flip_handedness) { FlipHandedness(dst, num_vertices); }
+        da.Release((void**)&dst);
     }
     if (tangents) {
         // set tangents
@@ -208,12 +210,14 @@ void Context::addMesh(Node *node_, int num_vertices,
         element->SetMappingMode(FbxGeometryElement::eByControlPoint);
         element->SetReferenceMode(FbxGeometryElement::eDirect);
 
-        element->GetDirectArray().Resize(num_vertices);
-        auto dst = (FbxVector4*)element->GetDirectArray().GetLocked();
+        auto& da = element->GetDirectArray();
+        da.Resize(num_vertices);
+        auto dst = (FbxVector4*)da.GetLocked();
         for (int i = 0; i < num_vertices; ++i) {
             dst[i] = ToV4(tangents[i]);
         }
         if (m_opt.flip_handedness) { FlipHandedness(dst, num_vertices); }
+        da.Release((void**)&dst);
     }
     if (uv) {
         // set uv
@@ -221,11 +225,13 @@ void Context::addMesh(Node *node_, int num_vertices,
         element->SetMappingMode(FbxGeometryElement::eByControlPoint);
         element->SetReferenceMode(FbxGeometryElement::eDirect);
 
-        element->GetDirectArray().Resize(num_vertices);
-        auto dst = (FbxVector2*)element->GetDirectArray().GetLocked();
+        auto& da = element->GetDirectArray();
+        da.Resize(num_vertices);
+        auto dst = (FbxVector2*)da.GetLocked();
         for (int i = 0; i < num_vertices; ++i) {
             dst[i] = ToV2(uv[i]);
         }
+        da.Release((void**)&dst);
     }
     if (colors) {
         // set colors
@@ -233,11 +239,13 @@ void Context::addMesh(Node *node_, int num_vertices,
         element->SetMappingMode(FbxGeometryElement::eByControlPoint);
         element->SetReferenceMode(FbxGeometryElement::eDirect);
 
-        element->GetDirectArray().Resize(num_vertices);
-        auto dst = (FbxColor*)element->GetDirectArray().GetLocked();
+        auto& da = element->GetDirectArray();
+        da.Resize(num_vertices);
+        auto dst = (FbxColor*)da.GetLocked();
         for (int i = 0; i < num_vertices; ++i) {
             dst[i] = ToC4(colors[i]);
         }
+        da.Release((void**)&dst);
     }
 
     node->SetNodeAttribute(mesh);
