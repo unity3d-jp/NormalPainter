@@ -50,8 +50,8 @@ namespace UTJ.FbxExporter
 
             var indices = mesh.triangles;
             var points = mesh.vertices;
-            fbxeAddMesh(m_ctx, node, topology, indices.Length, points.Length, indices, points,
-                mesh.normals, mesh.tangents, mesh.uv, mesh.colors);
+            fbxeAddMesh(m_ctx, node, points.Length, points, mesh.normals, mesh.tangents, mesh.uv, mesh.colors);
+            fbxeAddMeshSubmesh(m_ctx, node, topology, indices.Length, indices, -1);
         }
     }
 

@@ -52,17 +52,4 @@ inline int GetInfluence(Weights<N> weights[], int num_vertices, int bone_index, 
     return (int)dindices.size();
 }
 
-inline FbxMesh* FindMesh(FbxNode *node)
-{
-    int n = node->GetNodeAttributeCount();
-    for (int i = 0; i < n; ++i) {
-        auto attr = node->GetNodeAttributeByIndex(i);
-        auto name = attr->GetTypeName();
-        if (std::strcmp(name, "Mesh") == 0) {
-            return static_cast<FbxMesh*>(attr);
-        }
-    }
-    return nullptr;
-}
-
 } // namespace fbxe

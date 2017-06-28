@@ -249,7 +249,7 @@ void Context::addMeshSubmesh(Node *node_, Topology topology, int num_indices, co
     if (!node_) { return; }
 
     auto node = reinterpret_cast<FbxNode*>(node_);
-    auto mesh = FindMesh(node);
+    auto mesh = node->GetMesh();
     if (!mesh) { return; }
 
     int vertices_in_primitive = 1;
@@ -292,7 +292,7 @@ void Context::addMeshSkin(Node *node_, Weights4 weights[], int num_bones, Node *
     if (!node_) { return; }
 
     auto node = reinterpret_cast<FbxNode*>(node_);
-    auto mesh = FindMesh(node);
+    auto mesh = node->GetMesh();
     if (!mesh) { return; }
 
     auto skin = FbxSkin::Create(m_scene, "");
@@ -302,15 +302,19 @@ void Context::addMeshSkin(Node *node_, Weights4 weights[], int num_bones, Node *
     RawVector<double> dweights;
     int num_vertices = mesh->GetControlPointsCount();
     for (int bi = 0; bi < num_bones; ++bi) {
+        if (!bones[bi]) { continue; }
+
+        auto bone = reinterpret_cast<FbxNode*>(bones[bi]);
         auto cluster = FbxCluster::Create(m_scene, "");
-        cluster->SetLink((FbxNode*)bones[bi]);
+        cluster->SetLink(bone);
+        cluster->SetLinkMode(FbxCluster::eNormalize);
 
         auto bindpose = bindposes[bi];
         (float3&)bindpose[3] *= m_opt.scale_factor;
         if (m_opt.flip_handedness) {
             bindpose = swap_handedness(bindpose);
         }
-        cluster->SetTransformMatrix(ToAM44(invert(bindpose)));
+        cluster->SetTransformMatrix(ToAM44(bindpose));
 
         GetInfluence(weights, num_vertices, bi, dindices, dweights);
         cluster->SetControlPointIWCount((int)dindices.size());
