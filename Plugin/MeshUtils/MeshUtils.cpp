@@ -399,10 +399,7 @@ struct SelectEdgeImpl
     {
         if (checked[vertex_index]) { return; }
 
-        checked[vertex_index] = true;
-        if (OnEdgeImpl(indices, oc, vertices, connection, vertex_index)) {
-            dst.push_back(vertex_index);
-
+        {
             int num_shared = connection.counts[vertex_index];
             int offset = connection.offsets[vertex_index];
             for (int si = 0; si < num_shared; ++si) {
@@ -425,11 +422,11 @@ struct SelectEdgeImpl
             int i1 = opened.back().second;
             opened.pop_back();
 
-            if (checked[i1]) { continue; }
+            if (checked[i0] && checked[i1]) { continue; }
 
             if (IsEdgeOpenedImpl(indices, oc, connection, i0, i1)) {
-                checked[i1] = true;
-                dst.push_back(i1);
+                if (!checked[i0]) { checked[i0] = true; dst.push_back(i0); }
+                if (!checked[i1]) { checked[i1] = true; dst.push_back(i1); }
 
                 int num_shared = connection.counts[i1];
                 int offset = connection.offsets[i1];

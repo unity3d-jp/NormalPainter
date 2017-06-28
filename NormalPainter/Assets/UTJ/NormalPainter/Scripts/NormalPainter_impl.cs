@@ -414,13 +414,13 @@ namespace UTJ.NormalPainter
         public Vector3 PickNormal(Vector3 pos, int ti)
         {
             Matrix4x4 trans = GetComponent<Transform>().localToWorldMatrix;
-            return npTriangleInterpolation(m_points, m_triangles, m_normals, ref trans, pos, ti);
+            return npPickNormal(m_points, m_triangles, m_normals, ref trans, pos, ti);
         }
 
         public Vector3 PickBaseNormal(Vector3 pos, int ti)
         {
             Matrix4x4 trans = GetComponent<Transform>().localToWorldMatrix;
-            return npTriangleInterpolation(m_points, m_triangles, m_normalsBase, ref trans, pos, ti);
+            return npPickNormal(m_points, m_triangles, m_normalsBase, ref trans, pos, ti);
         }
 
 
@@ -807,7 +807,7 @@ namespace UTJ.NormalPainter
             Vector3 pos, Vector3 dir, Vector3[] vertices, int[] indices, int num_triangles,
             ref int tindex, ref float distance, ref Matrix4x4 trans);
 
-        [DllImport("NormalPainterCore")] static extern Vector3 npTriangleInterpolation(
+        [DllImport("NormalPainterCore")] static extern Vector3 npPickNormal(
             Vector3[] vertices, int[] indices, Vector3[] normals, ref Matrix4x4 trans,
             Vector3 pos, int ti);
 

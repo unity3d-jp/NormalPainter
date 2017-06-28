@@ -88,14 +88,15 @@ npAPI int npRaycast(
     return Raycast(pos, dir, vertices, indices, num_triangles, *trans, *tindex, *distance);
 }
 
-npAPI float3 npTriangleInterpolation(
+npAPI float3 npPickNormal(
     const float3 vertices[], const int indices[], const float3 normals[], const float4x4 *trans,
     const float3 pos, int ti)
 {
     float3 p[3]{ vertices[indices[ti * 3 + 0]], vertices[indices[ti * 3 + 1]], vertices[indices[ti * 3 + 2]] };
     float3 n[3]{ normals[indices[ti * 3 + 0]], normals[indices[ti * 3 + 1]], normals[indices[ti * 3 + 2]] };
     float3 lpos = mul_p(invert(*trans), pos);
-    return triangle_interpolation(lpos, p[0], p[1], p[2], n[0], n[1], n[2]);
+    float3 r = triangle_interpolation(lpos, p[0], p[1], p[2], n[0], n[1], n[2]);
+    return normalize(mul_v(*trans, r));
 }
 
 npAPI int npSelectSingle(

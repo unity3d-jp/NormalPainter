@@ -791,14 +791,14 @@ namespace UTJ.NormalPainter
             if (m_settings.showNormals && m_normals != null)
                 m_cmdDraw.DrawMeshInstancedIndirect(m_meshLine, 0, m_matVisualize, 1, m_cbArg);
 
-            if (m_settings.showBrushRange)
+            if (m_settings.showBrushRange && m_rayHit)
             {
-                // pick mark
-                if (m_rayHit && pickMode)
+                // ray pos
+                if (pickMode || brushMode)
                     m_cmdDraw.DrawMesh(m_meshCube, Matrix4x4.identity, m_matVisualize, 0, 9);
 
                 // visualize direction
-                if (m_rayHit && (pickMode || brushReplace))
+                if (pickMode || brushReplace)
                     m_cmdDraw.DrawMesh(m_meshLine, Matrix4x4.identity, m_matVisualize, 0, 10);
             }
 
