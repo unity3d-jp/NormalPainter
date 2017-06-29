@@ -323,6 +323,11 @@ namespace UTJ.NormalPainter
                     m_target.ClearSelection();
                     m_target.UpdateSelection();
                 }
+                if (GUILayout.Button("Invert Selection [I]"))
+                {
+                    m_target.InvertSelection();
+                    m_target.UpdateSelection();
+                }
                 GUILayout.EndHorizontal();
 
                 EditorGUILayout.Space();
@@ -875,6 +880,13 @@ namespace UTJ.NormalPainter
                     handled = true;
                     tips = "Select All";
                     m_target.SelectAll();
+                    m_target.UpdateSelection();
+                }
+                else if (e.keyCode == KeyCode.I)
+                {
+                    handled = true;
+                    tips = "Invert Selection";
+                    m_target.InvertSelection();
                     m_target.UpdateSelection();
                 }
                 else if (e.keyCode == KeyCode.E)

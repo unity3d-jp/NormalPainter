@@ -445,6 +445,13 @@ namespace UTJ.NormalPainter
             return m_selection.Length > 0;
         }
 
+        public bool InvertSelection()
+        {
+            for (int i = 0; i < m_selection.Length; ++i)
+                m_selection[i] = 1.0f - m_selection[i];
+            return m_selection.Length > 0;
+        }
+
         public bool ClearSelection()
         {
             System.Array.Clear(m_selection, 0, m_selection.Length);
