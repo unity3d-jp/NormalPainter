@@ -32,7 +32,7 @@ struct ConnectionData
     RawVector<int> offsets;
     RawVector<int> faces;
     RawVector<int> indices;
-    RawVector<int> identical_map;
+    RawVector<int> weld_map;
 
     void clear();
     void buildConnection(
