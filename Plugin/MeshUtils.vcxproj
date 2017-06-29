@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="MeshUtils\MeshUtils_impl.h" />
     <ClInclude Include="MeshUtils\muAllocator.h" />
     <ClInclude Include="MeshUtils\ampmath.h" />
     <ClInclude Include="MeshUtils\ampmath_impl.h" />

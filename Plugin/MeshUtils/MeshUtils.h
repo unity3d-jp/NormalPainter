@@ -47,20 +47,26 @@ bool OnEdge(const IArray<int>& indices, const IArray<int>& counts, const IArray<
 bool IsEdgeOpened(const IArray<int>& indices, int ngon, const ConnectionData& connection, int i0, int i1);
 bool IsEdgeOpened(const IArray<int>& indices, const IArray<int>& counts, const IArray<int>& offsets, const ConnectionData& connection, int i0, int i1);
 
+template<class Handler>
 void SelectEdge(const IArray<int>& indices, int ngon, const IArray<float3>& vertices,
-    const IArray<int>& vertex_indices, RawVector<int>& edge_indices);
+    const IArray<int>& vertex_indices, const Handler& handler);
+template<class Handler>
 void SelectEdge(const IArray<int>& indices, const IArray<int>& counts, const IArray<int>& offsets, const IArray<float3>& vertices,
-    const IArray<int>& vertex_indices, RawVector<int>& edge_indices);
+    const IArray<int>& vertex_indices, const Handler& handler);
 
+template<class Handler>
 void SelectHole(const IArray<int>& indices, int ngon, const IArray<float3>& vertices,
-    const IArray<int>& vertex_indices, RawVector<int>& edge_indices);
+    const IArray<int>& vertex_indices, const Handler& handler);
+template<class Handler>
 void SelectHole(const IArray<int>& indices, const IArray<int>& counts, const IArray<int>& offsets, const IArray<float3>& vertices,
-    const IArray<int>& vertex_indices, RawVector<int>& edge_indices);
+    const IArray<int>& vertex_indices, const Handler& handler);
 
+template<class Handler>
 void SelectConnected(const IArray<int>& indices, int ngon, const IArray<float3>& vertices,
-    const IArray<int>& vertex_indices, RawVector<int>& edge_indices);
+    const IArray<int>& vertex_indices, const Handler& handler);
+template<class Handler>
 void SelectConnected(const IArray<int>& indices, const IArray<int>& counts, const IArray<int>& offsets, const IArray<float3>& vertices,
-    const IArray<int>& vertex_indices, RawVector<int>& edge_indices);
+    const IArray<int>& vertex_indices, const Handler& handler);
 
 
 // ------------------------------------------------------------
@@ -292,4 +298,5 @@ inline uint32_t Float4ToColor32(const float4& c)
 
 } // namespace mu
 
+#include "MeshUtils_impl.h"
 #include "muMeshRefiner.h"
