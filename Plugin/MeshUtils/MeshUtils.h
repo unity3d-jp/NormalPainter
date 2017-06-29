@@ -39,9 +39,6 @@ struct ConnectionData
         const IArray<int>& indices, int ngon, const IArray<float3>& vertices, bool welding = false);
     void buildConnection(
         const IArray<int>& indices, const IArray<int>& counts, const IArray<int>& offsets, const IArray<float3>& vertices, bool welding = false);
-
-private:
-    void buildIdenticalPositionMap(const IArray<float3>& vertices);
 };
 
 bool OnEdge(const IArray<int>& indices, int ngon, const IArray<float3>& vertices, const ConnectionData& connection, int vertex_index);
@@ -50,14 +47,19 @@ bool OnEdge(const IArray<int>& indices, const IArray<int>& counts, const IArray<
 bool IsEdgeOpened(const IArray<int>& indices, int ngon, const ConnectionData& connection, int i0, int i1);
 bool IsEdgeOpened(const IArray<int>& indices, const IArray<int>& counts, const IArray<int>& offsets, const ConnectionData& connection, int i0, int i1);
 
-void SelectEdge(const IArray<int>& indices, int ngon, const IArray<float3>& vertices, const ConnectionData& connection,
+void SelectEdge(const IArray<int>& indices, int ngon, const IArray<float3>& vertices,
     const IArray<int>& vertex_indices, RawVector<int>& edge_indices);
-void SelectEdge(const IArray<int>& indices, const IArray<int>& counts, const IArray<int>& offsets, const IArray<float3>& vertices, const ConnectionData& connection,
+void SelectEdge(const IArray<int>& indices, const IArray<int>& counts, const IArray<int>& offsets, const IArray<float3>& vertices,
     const IArray<int>& vertex_indices, RawVector<int>& edge_indices);
 
-void SelectHole(const IArray<int>& indices, int ngon, const IArray<float3>& vertices, const ConnectionData& connection,
+void SelectHole(const IArray<int>& indices, int ngon, const IArray<float3>& vertices,
     const IArray<int>& vertex_indices, RawVector<int>& edge_indices);
-void SelectHole(const IArray<int>& indices, const IArray<int>& counts, const IArray<int>& offsets, const IArray<float3>& vertices, const ConnectionData& connection,
+void SelectHole(const IArray<int>& indices, const IArray<int>& counts, const IArray<int>& offsets, const IArray<float3>& vertices,
+    const IArray<int>& vertex_indices, RawVector<int>& edge_indices);
+
+void SelectConnected(const IArray<int>& indices, int ngon, const IArray<float3>& vertices,
+    const IArray<int>& vertex_indices, RawVector<int>& edge_indices);
+void SelectConnected(const IArray<int>& indices, const IArray<int>& counts, const IArray<int>& offsets, const IArray<float3>& vertices,
     const IArray<int>& vertex_indices, RawVector<int>& edge_indices);
 
 

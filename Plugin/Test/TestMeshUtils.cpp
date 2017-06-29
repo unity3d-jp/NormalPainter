@@ -397,7 +397,7 @@ void TestEdge()
 
         RawVector<int> edges;
         int vi[] = { 1 };
-        SelectEdge(indices, 3, points, connection, vi, edges);
+        SelectEdge(indices, 3, points, vi, edges);
 
         printf("    SelectEdge (triangles):");
         for (int e : edges) {
@@ -445,7 +445,7 @@ void TestEdge()
         RawVector<int> edges;
         int vi[] = { 1 };
 
-        SelectEdge(indices, counts, offsets, points, connection, vi, edges);
+        SelectEdge(indices, counts, offsets, points, vi, edges);
         printf("    SelectEdge (quads):");
         for (int e : edges) {
             printf(" %d", e);
@@ -454,7 +454,7 @@ void TestEdge()
 
         edges.clear();
         vi[0] = 5;
-        SelectEdge(indices, counts, offsets, points, connection, vi, edges);
+        SelectEdge(indices, counts, offsets, points, vi, edges);
         printf("    SelectEdge (quads):");
         for (int e : edges) {
             printf(" %d", e);

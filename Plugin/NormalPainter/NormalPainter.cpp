@@ -205,10 +205,7 @@ npAPI int npSelectEdge(
     auto indices = IArray<int>(indices_, num_triangles * 3);
     auto vertices = IArray<float3>(vertices_, num_vertices);
 
-    ConnectionData connection;
-    connection.buildConnection(indices, 3, vertices);
-
-    RawVector<int> targets, edge;
+    RawVector<int> targets, selected;
     targets.reserve(num_vertices);
     for (int vi = 0; vi < num_vertices; ++vi) {
         if (selection[vi] > 0.0f) {
@@ -221,13 +218,13 @@ npAPI int npSelectEdge(
             targets[vi] = vi;
     }
 
-    SelectEdge(indices, 3, vertices, connection, targets, edge);
+    SelectEdge(indices, 3, vertices, targets, selected);
 
     if (clear) { memset(selection, 0, num_vertices * 4); }
-    for (int vi : edge) {
+    for (int vi : selected) {
         selection[vi] = clamp01(selection[vi] + strength);
     }
-    return (int)edge.size();
+    return (int)selected.size();
 }
 
 npAPI int npSelectHole(
@@ -236,10 +233,7 @@ npAPI int npSelectHole(
     auto indices = IArray<int>(indices_, num_triangles * 3);
     auto vertices = IArray<float3>(vertices_, num_vertices);
 
-    ConnectionData connection;
-    connection.buildConnection(indices, 3, vertices, true);
-
-    RawVector<int> targets, edge;
+    RawVector<int> targets, selected;
     targets.reserve(num_vertices);
     for (int vi = 0; vi < num_vertices; ++vi) {
         if (selection[vi] > 0.0f) {
@@ -252,13 +246,13 @@ npAPI int npSelectHole(
             targets[vi] = vi;
     }
 
-    SelectHole(indices, 3, vertices, connection, targets, edge);
+    SelectHole(indices, 3, vertices, targets, selected);
 
     if (clear) { memset(selection, 0, num_vertices * 4); }
-    for (int vi : edge) {
+    for (int vi : selected) {
         selection[vi] = clamp01(selection[vi] + strength);
     }
-    return (int)edge.size();
+    return (int)selected.size();
 }
 
 npAPI int npSelectConnected(
@@ -267,47 +261,26 @@ npAPI int npSelectConnected(
     auto indices = IArray<int>(indices_, num_triangles * 3);
     auto vertices = IArray<float3>(vertices_, num_vertices);
 
-    ConnectionData connection;
-    connection.buildConnection(indices, 3, vertices);
-
-    std::vector<bool> checked;
-    checked.resize(num_vertices);
-
-    RawVector<int> next;
+    RawVector<int> targets, selected;
+    targets.reserve(num_vertices);
     for (int vi = 0; vi < num_vertices; ++vi) {
-        if (selection[vi] > 0.0f) { next.push_back(vi); }
-    }
-
-    if (clear) { memset(selection, 0, num_vertices * 4); }
-
-    int ret = 0;
-    while (!next.empty()) {
-        int vi = next.back();
-        next.pop_back();
-
-        if (checked[vi]) { continue; }
-
-        ++ret;
-        checked[vi] = true;
-        selection[vi] = clamp01(selection[vi] + strength);
-
-        int num_shared = connection.counts[vi];
-        int offset = connection.offsets[vi];
-        for (int si = 0; si < num_shared; ++si) {
-            int fi = connection.faces[offset + si];
-            int fo = fi * 3;
-            int c = 3;
-            int nth = connection.indices[offset + si] - fo;
-
-            int f0 = nth;
-            int f1 = f0 - 1; if (f1 < 0) { f1 = c - 1; }
-            int f2 = f0 + 1; if (f2 == c) { f2 = 0; }
-
-            next.push_back(indices[fo + f1]);
-            next.push_back(indices[fo + f2]);
+        if (selection[vi] > 0.0f) {
+            targets.push_back(vi);
         }
     }
-    return ret;
+    if (targets.size() == 0) {
+        targets.resize(num_vertices);
+        for (int vi = 0; vi < num_vertices; ++vi)
+            targets[vi] = vi;
+    }
+
+    SelectConnected(indices, 3, vertices, targets, selected);
+
+    if (clear) { memset(selection, 0, num_vertices * 4); }
+    for (int vi : selected) {
+        selection[vi] = clamp01(selection[vi] + strength);
+    }
+    return (int)selected.size();
 }
 
 npAPI int npSelectRect(
