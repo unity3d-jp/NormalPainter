@@ -295,17 +295,17 @@ namespace UTJ.NormalPainter
                 EditorGUILayout.Space();
 
                 GUILayout.BeginHorizontal();
-                if (GUILayout.Button("Select Edge [E]"))
+                if (GUILayout.Button("Edge [E]", GUILayout.Width(100)))
                 {
                     m_target.SelectEdge(m_ctrl ? -1.0f : 1.0f, !m_shift && !m_ctrl);
                     m_target.UpdateSelection();
                 }
-                if (GUILayout.Button("Select Hole [H]"))
+                if (GUILayout.Button("Hole [H]", GUILayout.Width(100)))
                 {
                     m_target.SelectHole(m_ctrl ? -1.0f : 1.0f, !m_shift && !m_ctrl);
                     m_target.UpdateSelection();
                 }
-                if (GUILayout.Button("Select Connected [C]"))
+                if (GUILayout.Button("Connected [C]", GUILayout.Width(100)))
                 {
                     m_target.SelectConnected(m_ctrl ? -1.0f : 1.0f, !m_shift && !m_ctrl);
                     m_target.UpdateSelection();
@@ -313,17 +313,17 @@ namespace UTJ.NormalPainter
                 GUILayout.EndHorizontal();
 
                 GUILayout.BeginHorizontal();
-                if (GUILayout.Button("Select All [A]"))
+                if (GUILayout.Button("All [A]", GUILayout.Width(100)))
                 {
                     m_target.SelectAll();
                     m_target.UpdateSelection();
                 }
-                if (GUILayout.Button("Clear Selection [D]"))
+                if (GUILayout.Button("Clear [D]", GUILayout.Width(100)))
                 {
                     m_target.ClearSelection();
                     m_target.UpdateSelection();
                 }
-                if (GUILayout.Button("Invert Selection [I]"))
+                if (GUILayout.Button("Invert [I]", GUILayout.Width(100)))
                 {
                     m_target.InvertSelection();
                     m_target.UpdateSelection();

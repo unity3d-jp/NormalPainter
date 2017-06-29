@@ -10,8 +10,9 @@ namespace UTJ.FbxExporter
         Context m_ctx;
         Dictionary<Transform, Node> m_nodes;
 
-        public FbxExporter()
+        public FbxExporter(ExportOptions opt)
         {
+            m_opt = opt;
         }
 
         ~FbxExporter()
