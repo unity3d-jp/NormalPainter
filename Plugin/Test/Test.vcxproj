@@ -16,13 +16,9 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Master|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="Test.cpp" />
-    <ClCompile Include="TestFbxExporter.cpp" />
     <ClCompile Include="TestMeshUtils.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\FbxExporterCore.vcxproj">
-      <Project>{40308791-cac5-46b9-981a-2376d1bd493a}</Project>
-    </ProjectReference>
     <ProjectReference Include="..\MeshUtils.vcxproj">
       <Project>{fd3fe1ff-abe5-40db-b867-144e9dd9b23c}</Project>
     </ProjectReference>
