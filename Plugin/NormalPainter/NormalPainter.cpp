@@ -611,9 +611,44 @@ npAPI int npWeld(int num_vertices, const float3 vertices[], const float selectio
 }
 
 
-npAPI int npWeld2(int num_vertices, const float3 vertices[], const float selection[], float3 normals[], const float4x4 *trans,
-    int num_targets, const int num_tvertices[], const float3 *tvertices[], float3 *tnormals[], const float4x4 ttrans[], int mode)
+npAPI int npWeld2(int num_vertices, const float3 vertices[], const float selection[], float3 normals[], const float4x4 *trans_,
+    int num_targets, const int tnum_vertices[], const float3 *tvertices[], float3 *tnormals[], const float4x4 ttrans[], int weld_mode)
 {
+    float4x4 trans = *trans_;
+    float4x4 itrans = invert(trans);
+
+    RawVector<float4x4> titrans;
+    RawVector<float3> wvertices, wnormals;
+    std::vector<RawVector<float3>> twvertices, twnormals;
+
+    // generate world space vertices
+    wvertices.resize(num_vertices);
+    wnormals.resize(num_vertices);
+    for (int vi = 0; vi < num_vertices; ++vi) {
+        wvertices[vi] = mul_p(trans, vertices[vi]);
+        wnormals[vi] = mul_v(trans, normals[vi]);
+    }
+
+    titrans.resize(num_targets);
+    twvertices.resize(num_targets);
+    twnormals.resize(num_targets);
+    for (int ti = 0; ti < num_targets; ++ti) {
+        auto tt = ttrans[ti];
+        titrans[ti] = invert(tt);
+
+        auto tva = tvertices[ti];
+        auto tna = tnormals[ti];
+        auto& twva = twvertices[ti];
+        auto& twna = twnormals[ti];
+        int num_tv = tnum_vertices[ti];
+        twva.resize(num_tv);
+        twna.resize(num_tv);
+        for (int tvi = 0; tvi < num_tv; ++tvi) {
+            twva[tvi] = mul_p(tt, tva[tvi]);
+            twna[tvi] = mul_v(tt, tna[tvi]);
+        }
+    }
+
     std::vector<RawVector<std::pair<int, int>>> weld_maps;
     weld_maps.resize(num_targets);
 
@@ -622,9 +657,12 @@ npAPI int npWeld2(int num_vertices, const float3 vertices[], const float selecti
         auto& weld_map = weld_maps[ti];
 
         for (int vi = 0; vi < num_vertices; ++vi) {
-            auto tva = tvertices[ti];
-            auto p = vertices[vi];
-            for (int tvi = 0; tvi < num_tvertices[ti]; ++tvi) {
+            if (selection && selection[vi] == 0.0f) { continue; }
+
+            auto p = wvertices[vi];
+            auto tva = twvertices[ti];
+            int num_tv = tnum_vertices[ti];
+            for (int tvi = 0; tvi < num_tv; ++tvi) {
                 if (near_equal(tva[tvi], p, 0.0f)) {
                     weld_map.push_back({ vi, tvi });
                 }
@@ -634,51 +672,52 @@ npAPI int npWeld2(int num_vertices, const float3 vertices[], const float selecti
 
     int ret = 0;
     for (auto& map : weld_maps) { ret += (int)map.size(); }
-    if (ret == 0) { return 0; } // nothing to do any more
+    if (ret == 0) { return 0; } // no vertices to weld
 
-    if (mode == 0) {
+
+    if (weld_mode == 0) {
         // copy to targets
         for (int ti = 0; ti < num_targets; ++ti) {
             auto& weld_map = weld_maps[ti];
+            auto it = titrans[ti];
             auto tna = tnormals[ti];
             for (auto& rel : weld_map) {
-                tna[rel.second] = normals[rel.first];
+                tna[rel.second] = mul_v(it, wnormals[rel.first]);
             }
         }
     }
-    else if (mode == 1) {
+    else if (weld_mode == 1) {
         // copy from targets
         for (int ti = 0; ti < num_targets; ++ti) {
             auto& weld_map = weld_maps[ti];
-            auto tna = tnormals[ti];
+            auto twna = twnormals[ti];
             for (auto& rel : weld_map) {
-                normals[rel.first] = tna[rel.second];
+                normals[rel.first] = mul_v(itrans, twna[rel.second]);
             }
         }
     }
-    else if (mode == 2) {
+    else if (weld_mode == 2) {
         // smooth
-        RawVector<float3> tmp_normals;
-        tmp_normals.resize(num_vertices);
-        tmp_normals.assign(normals, normals + num_vertices);
+        RawVector<float3> tmp_wnormals = wnormals;
 
         for (int ti = 0; ti < num_targets; ++ti) {
             auto& weld_map = weld_maps[ti];
-            auto tna = tnormals[ti];
+            auto tna = twnormals[ti];
             for (auto& rel : weld_map) {
-                tmp_normals[rel.first] += tna[rel.second];
+                tmp_wnormals[rel.first] += tna[rel.second];
             }
         }
-        for (auto& n : tmp_normals) {
+        for (auto& n : tmp_wnormals) {
             n = normalize(n);
         }
 
         for (int ti = 0; ti < num_targets; ++ti) {
             auto& weld_map = weld_maps[ti];
+            auto it = titrans[ti];
             auto tna = tnormals[ti];
             for (auto& rel : weld_map) {
-                normals[rel.first] = tmp_normals[rel.first];
-                tna[rel.second] = tmp_normals[rel.first];
+                normals[rel.first] = mul_v(itrans, tmp_wnormals[rel.first]);
+                tna[rel.second] = mul_v(it, tmp_wnormals[rel.first]);
             }
         }
     }
