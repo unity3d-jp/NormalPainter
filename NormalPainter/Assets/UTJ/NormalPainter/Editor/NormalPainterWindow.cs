@@ -479,9 +479,11 @@ namespace UTJ.NormalPainter
                         new string[3] {"Copy To Targets", "Copy From Targets", "Smoothing"},
                         new int[3] { 0, 1, 2});
 
+                    settings.weldAngle = EditorGUILayout.FloatField("Weld Angle", settings.weldAngle);
+
                     if (GUILayout.Button("Apply Welding"))
                     {
-                        if (m_target.ApplyWelding2(settings.weldTargets, settings.weldTargetsMode))
+                        if (m_target.ApplyWelding2(settings.weldTargets, settings.weldTargetsMode, settings.weldAngle))
                         {
                             m_target.PushUndo();
                         }
@@ -489,10 +491,12 @@ namespace UTJ.NormalPainter
                 }
                 else
                 {
-                    settings.weldWithSmoothing = EditorGUILayout.Toggle("Weld with Smoothing", settings.weldWithSmoothing);
+                    settings.weldWithSmoothing = EditorGUILayout.Toggle("Weld With Smoothing", settings.weldWithSmoothing);
+                    settings.weldAngle = EditorGUILayout.FloatField("Weld Angle", settings.weldAngle);
+
                     if (GUILayout.Button("Apply Welding [Shift+W]"))
                     {
-                        if (m_target.ApplyWelding(settings.weldWithSmoothing))
+                        if (m_target.ApplyWelding(settings.weldWithSmoothing, settings.weldAngle))
                         {
                             m_target.PushUndo();
                         }
@@ -885,7 +889,7 @@ namespace UTJ.NormalPainter
                 {
                     handled = true;
                     tips = "Apply Welding";
-                    if (m_target.ApplyWelding(settings.weldWithSmoothing))
+                    if (m_target.ApplyWelding(settings.weldWithSmoothing, settings.weldAngle))
                     {
                         m_target.PushUndo();
                     }

@@ -712,16 +712,16 @@ namespace UTJ.NormalPainter
             UpdateNormals();
         }
 
-        public bool ApplyWelding(bool smoothing)
+        public bool ApplyWelding(bool smoothing, float weldAngle)
         {
-            if(npWeld(m_points.Length, m_points, m_selection, m_normals, smoothing) > 0)
+            var selection = m_numSelected > 0 ? m_selection : null;
+            if (npWeld(m_points.Length, m_points, selection, m_normals, smoothing, weldAngle) > 0)
             {
                 UpdateNormals();
                 return true;
             }
             return false;
         }
-
 
 
         class WeldData
@@ -739,7 +739,7 @@ namespace UTJ.NormalPainter
             public GCHandle hnormals;
         }
 
-        public bool ApplyWelding2(GameObject[] targets, int weldMode)
+        public bool ApplyWelding2(GameObject[] targets, int weldMode, float weldAngle)
         {
             var data = new List<WeldData>();
 
@@ -812,7 +812,7 @@ namespace UTJ.NormalPainter
 
             var selection = m_numSelected == 0 ? null : m_selection;
             if (npWeld2(m_points.Length, m_points, selection, m_normals, ref trans,
-                data.Count, tnumVertices, tvertices, tnormals, ttrans, weldMode) > 0)
+                data.Count, tnumVertices, tvertices, tnormals, ttrans, weldMode, weldAngle) > 0)
             {
                 if (weldMode == 1 || weldMode == 2)
                 {
@@ -1015,10 +1015,10 @@ namespace UTJ.NormalPainter
             float radius, float strength, Vector3[] normals);
 
         [DllImport("NormalPainterCore")] static extern int npWeld(
-            int num_vertices, Vector3[] vertices, float[] selection, Vector3[] normals, bool smoothing);
+            int num_vertices, Vector3[] vertices, float[] selection, Vector3[] normals, bool smoothing, float weldAngle);
         [DllImport("NormalPainterCore")] static extern int npWeld2(
             int num_vertices, Vector3[] vertices, float[] selection, Vector3[] normals, ref Matrix4x4 trans,
-            int num_targets, int[] num_tvertices, IntPtr[] tvertices, IntPtr[] tnormals, Matrix4x4[] ttrans, int mode);
+            int num_targets, int[] num_tvertices, IntPtr[] tvertices, IntPtr[] tnormals, Matrix4x4[] ttrans, int weldMode, float weldAngle);
 
         [DllImport("NormalPainterCore")] static extern int npBuildMirroringRelation(
             int num_vertices, Vector3[] vertices, Vector3[] base_normals, Vector3 plane_normal, float epsilon, int[] relation);

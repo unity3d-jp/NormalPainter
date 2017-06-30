@@ -573,7 +573,8 @@ npAPI void npSmooth(
     });
 }
 
-npAPI int npWeld(int num_vertices, const float3 vertices[], const float selection[], float3 normals[], int smoothing)
+npAPI int npWeld(int num_vertices, const float3 vertices[], const float selection[], float3 normals[]
+    , int smoothing, float weld_angle)
 {
     RawVector<bool> checked;
     checked.resize(num_vertices);
@@ -589,7 +590,10 @@ npAPI int npWeld(int num_vertices, const float3 vertices[], const float selectio
         float3 p = vertices[vi];
         float3 n = normals[vi];
         for (int i = 0; i < num_vertices; ++i) {
-            if (vi != i && !checked[i] && near_equal(length(vertices[i] - p), 0.0f)) {
+            if (vi != i && !checked[i] &&
+                near_equal(length(vertices[i] - p), 0.0f) &&
+                angle_between(n, normals[i]) * Rad2Deg <= weld_angle)
+            {
                 if (smoothing) n += normals[i];
                 shared.push_back(i);
                 checked[i] = true;
@@ -612,7 +616,8 @@ npAPI int npWeld(int num_vertices, const float3 vertices[], const float selectio
 
 
 npAPI int npWeld2(int num_vertices, const float3 vertices[], const float selection[], float3 normals[], const float4x4 *trans_,
-    int num_targets, const int tnum_vertices[], const float3 *tvertices[], float3 *tnormals[], const float4x4 ttrans[], int weld_mode)
+    int num_targets, const int tnum_vertices[], const float3 *tvertices[], float3 *tnormals[], const float4x4 ttrans[],
+    int weld_mode, float weld_angle)
 {
     float4x4 trans = *trans_;
     float4x4 itrans = invert(trans);
@@ -660,10 +665,12 @@ npAPI int npWeld2(int num_vertices, const float3 vertices[], const float selecti
             if (selection && selection[vi] == 0.0f) { continue; }
 
             auto p = wvertices[vi];
-            auto tva = twvertices[ti];
+            auto n = wnormals[vi];
+            auto& twva = twvertices[ti];
+            auto& twna = twnormals[ti];
             int num_tv = tnum_vertices[ti];
             for (int tvi = 0; tvi < num_tv; ++tvi) {
-                if (near_equal(length_sq(tva[tvi] - p), 0.0f)) {
+                if (near_equal(length_sq(twva[tvi] - p), 0.0f) && angle_between(n, twna[tvi]) * Rad2Deg <= weld_angle) {
                     weld_map.push_back({ vi, tvi });
                 }
             }
@@ -690,7 +697,7 @@ npAPI int npWeld2(int num_vertices, const float3 vertices[], const float selecti
         // copy from targets
         for (int ti = 0; ti < num_targets; ++ti) {
             auto& weld_map = weld_maps[ti];
-            auto twna = twnormals[ti];
+            auto& twna = twnormals[ti];
             for (auto& rel : weld_map) {
                 normals[rel.first] = mul_v(itrans, twna[rel.second]);
             }
@@ -702,9 +709,9 @@ npAPI int npWeld2(int num_vertices, const float3 vertices[], const float selecti
 
         for (int ti = 0; ti < num_targets; ++ti) {
             auto& weld_map = weld_maps[ti];
-            auto tna = twnormals[ti];
+            auto& twna = twnormals[ti];
             for (auto& rel : weld_map) {
-                tmp_wnormals[rel.first] += tna[rel.second];
+                tmp_wnormals[rel.first] += twna[rel.second];
             }
         }
         for (auto& n : tmp_wnormals) {
