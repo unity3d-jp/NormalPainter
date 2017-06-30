@@ -203,14 +203,16 @@ template bool GenerateWeightsN(RawVector<Weights<8>>& dst, IArray<int> bone_indi
 
 void ConnectionData::clear()
 {
-    counts.clear();
-    offsets.clear();
-    faces.clear();
-    indices.clear();
+    v2f_counts.clear();
+    v2f_offsets.clear();
+    v2f_faces.clear();
+    v2f_indices.clear();
+
     weld_map.clear();
+    weld_counts.clear();
+    weld_offsets.clear();
+    weld_indices.clear();
 }
-
-
 
 void ConnectionData::buildConnection(
     const IArray<int>& indices_, int ngon_, const IArray<float3>& vertices_, bool welding)

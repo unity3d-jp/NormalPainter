@@ -40,39 +40,39 @@ inline void BuildConnection(
     size_t num_faces = counts.size();
     size_t num_indices = indices.size();
 
-    connection.offsets.resize(num_points);
-    connection.faces.resize(num_indices);
-    connection.indices.resize(num_indices);
+    connection.v2f_offsets.resize(num_points);
+    connection.v2f_faces.resize(num_indices);
+    connection.v2f_indices.resize(num_indices);
 
-    connection.counts.resize(num_points);
-    connection.counts.zeroclear();
+    connection.v2f_counts.resize(num_points);
+    connection.v2f_counts.zeroclear();
     {
         int ii = 0;
         for (size_t fi = 0; fi < num_faces; ++fi) {
             int c = counts[fi];
             for (int ci = 0; ci < c; ++ci) {
-                connection.counts[indices[ii + ci]]++;
+                connection.v2f_counts[indices[ii + ci]]++;
             }
             ii += c;
         }
 
         int offset = 0;
         for (size_t i = 0; i < num_points; ++i) {
-            connection.offsets[i] = offset;
-            offset += connection.counts[i];
+            connection.v2f_offsets[i] = offset;
+            offset += connection.v2f_counts[i];
         }
     }
 
-    connection.counts.zeroclear();
+    connection.v2f_counts.zeroclear();
     {
         int i = 0;
         for (int fi = 0; fi < (int)num_faces; ++fi) {
             int c = counts[fi];
             for (int ci = 0; ci < c; ++ci) {
                 int vi = indices[i + ci];
-                int ti = connection.offsets[vi] + connection.counts[vi]++;
-                connection.faces[ti] = fi;
-                connection.indices[ti] = i + ci;
+                int ti = connection.v2f_offsets[vi] + connection.v2f_counts[vi]++;
+                connection.v2f_faces[ti] = fi;
+                connection.v2f_indices[ti] = i + ci;
             }
             i += c;
         }
@@ -83,8 +83,16 @@ inline void BuildWeldMap(
     ConnectionData& connection, const IArray<float3>& vertices)
 {
     auto& weld_map = connection.weld_map;
+    auto& weld_counts = connection.weld_counts;
+    auto& weld_offsets = connection.weld_offsets;
+    auto& weld_indices = connection.weld_indices;
+
     int n = (int)vertices.size();
     weld_map.resize(n);
+    weld_counts.resize(n);
+    weld_offsets.resize(n);
+    weld_indices.resize(n);
+
     parallel_for(0, n, [&](int vi) {
         int r = vi;
         float3 p = vertices[vi];
@@ -96,21 +104,43 @@ inline void BuildWeldMap(
         }
         weld_map[vi] = r;
     });
+
+    weld_counts.zeroclear();
+    for (int vi : weld_map) {
+        weld_counts[vi]++;
+    }
+
+    int offset = 0;
+    for (int vi = 0; vi < n; ++vi) {
+        weld_offsets[vi] = offset;
+        offset += weld_counts[vi];
+    }
+
+    weld_counts.zeroclear();
+    int ti = 0;
+    for (int vi = 0; vi < n; ++vi) {
+        int c = weld_counts[vi];
+        for (int ci = 0; ci < c; ++ci) {
+            int i = weld_offsets[vi] + ci;
+            weld_indices[i] = ti + ci;
+        }
+        ti += c;
+    }
 }
 
 template<class Indices, class Counts, class Offsets>
 inline bool OnEdgeImpl(const Indices& indices, const Counts& counts, const Offsets& offsets, const IArray<float3>& vertices, const ConnectionData& connection, int vertex_index)
 {
-    int num_shared = connection.counts[vertex_index];
-    int offset = connection.offsets[vertex_index];
+    int num_shared = connection.v2f_counts[vertex_index];
+    int offset = connection.v2f_offsets[vertex_index];
 
     float angle = 0.0f;
     for (int si = 0; si < num_shared; ++si) {
-        int fi = connection.faces[offset + si];
+        int fi = connection.v2f_faces[offset + si];
         int fo = offsets[fi];
         int c = counts[fi];
         if (c < 3) { continue; }
-        int nth = connection.indices[offset + si] - fo;
+        int nth = connection.v2f_indices[offset + si] - fo;
 
         int f0 = nth;
         int f1 = f0 - 1; if (f1 < 0) { f1 = c - 1; }
@@ -133,10 +163,10 @@ inline bool IsEdgeOpenedImpl(
 
     int num_connection = 0;
     for (int e : edge) {
-        int num_shared = connection.counts[e];
-        int offset = connection.offsets[e];
+        int num_shared = connection.v2f_counts[e];
+        int offset = connection.v2f_offsets[e];
         for (int si = 0; si < num_shared; ++si) {
-            int fi = connection.faces[offset + si];
+            int fi = connection.v2f_faces[offset + si];
             int fo = offsets[fi];
             int c = counts[fi];
             if (c < 3) { continue; }
@@ -180,23 +210,22 @@ struct SelectEdgeImpl
     {
         if (checked[vertex_index]) { return; }
 
-        {
-            int num_shared = connection.counts[vertex_index];
-            int offset = connection.offsets[vertex_index];
-            for (int si = 0; si < num_shared; ++si) {
-                int fi = connection.faces[offset + si];
+        auto check_vertex = [&](int vi) {
+            connection.eachConnectedFaces(vi, [&](int fi, int ii) {
                 int fo = offsets[fi];
                 int c = counts[fi];
-                int nth = connection.indices[offset + si] - fo;
+                int nth = ii - fo;
 
                 int f0 = nth;
                 int f1 = f0 - 1; if (f1 < 0) { f1 = c - 1; }
                 int f2 = f0 + 1; if (f2 == c) { f2 = 0; }
 
-                next_edges.push_back(std::make_pair(indices[fo + f0], indices[fo + f1]));
-                next_edges.push_back(std::make_pair(indices[fo + f0], indices[fo + f2]));
-            }
-        }
+                next_edges.push_back({ indices[fo + f0], indices[fo + f1] });
+                next_edges.push_back({ indices[fo + f0], indices[fo + f2] });
+            });
+        };
+
+        check_vertex(vertex_index);
 
         while (!next_edges.empty()) {
             int i0 = next_edges.back().first;
@@ -208,22 +237,7 @@ struct SelectEdgeImpl
             if (IsEdgeOpenedImpl(indices, counts, offsets, connection, i0, i1)) {
                 if (!checked[i0]) { checked[i0] = true; handler(i0); }
                 if (!checked[i1]) { checked[i1] = true; handler(i1); }
-
-                int num_shared = connection.counts[i1];
-                int offset = connection.offsets[i1];
-                for (int si = 0; si < num_shared; ++si) {
-                    int fi = connection.faces[offset + si];
-                    int fo = offsets[fi];
-                    int c = counts[fi];
-                    int nth = connection.indices[offset + si] - fo;
-
-                    int f0 = nth;
-                    int f1 = f0 - 1; if (f1 < 0) { f1 = c - 1; }
-                    int f2 = f0 + 1; if (f2 == c) { f2 = 0; }
-
-                    next_edges.push_back(std::make_pair(indices[fo + f0], indices[fo + f1]));
-                    next_edges.push_back(std::make_pair(indices[fo + f0], indices[fo + f2]));
-                }
+                check_vertex(i1);
             }
         }
     }
@@ -242,13 +256,10 @@ struct SelectEdgeImpl
             checked[vi] = true;
             handler(vi);
 
-            int num_shared = connection.counts[vi];
-            int offset = connection.offsets[vi];
-            for (int si = 0; si < num_shared; ++si) {
-                int fi = connection.faces[offset + si];
+            connection.eachConnectedFaces(vi, [&](int fi, int ii) {
                 int fo = offsets[fi];
                 int c = counts[fi];
-                int nth = connection.indices[offset + si] - fo;
+                int nth = ii - fo;
 
                 int f0 = nth;
                 int f1 = f0 - 1; if (f1 < 0) { f1 = c - 1; }
@@ -256,7 +267,7 @@ struct SelectEdgeImpl
 
                 next_points.push_back(indices[fo + f1]);
                 next_points.push_back(indices[fo + f2]);
-            }
+            });
         }
     }
 };
@@ -304,6 +315,7 @@ inline void SelectHole(const IArray<int>& indices_, int ngon, const IArray<float
 {
     impl::CountsC counts{ ngon, indices_.size() / ngon };
     impl::OffsetsC offsets{ ngon, indices_.size() / ngon };
+
     ConnectionData connection;
     impl::BuildWeldMap(connection, vertices);
 

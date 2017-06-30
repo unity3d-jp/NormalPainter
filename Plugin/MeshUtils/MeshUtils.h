@@ -28,17 +28,43 @@ bool GenerateWeightsN(RawVector<Weights<N>>& dst, IArray<int> bone_indices, IArr
 
 struct ConnectionData
 {
-    RawVector<int> counts;
-    RawVector<int> offsets;
-    RawVector<int> faces;
-    RawVector<int> indices;
+    RawVector<int> v2f_counts;
+    RawVector<int> v2f_offsets;
+    RawVector<int> v2f_faces;
+    RawVector<int> v2f_indices;
+
     RawVector<int> weld_map;
+    RawVector<int> weld_counts;
+    RawVector<int> weld_offsets;
+    RawVector<int> weld_indices;
 
     void clear();
     void buildConnection(
         const IArray<int>& indices, int ngon, const IArray<float3>& vertices, bool welding = false);
     void buildConnection(
         const IArray<int>& indices, const IArray<int>& counts, const IArray<int>& offsets, const IArray<float3>& vertices, bool welding = false);
+
+    // Body: [](int face_index, int index_index) -> void
+    template<class Body>
+    void eachConnectedFaces(int vi, const Body& body) const
+    {
+        int count = v2f_counts[vi];
+        int offset = v2f_offsets[vi];
+        for (int i = 0; i < count; ++i) {
+            body(v2f_faces[offset + i], v2f_indices[offset + i]);
+        }
+    }
+
+    // Body: [](int vertex_index) -> void
+    template<class Body>
+    void eachWeldedVertices(int vi, const Body& body) const
+    {
+        int count = weld_counts[vi];
+        int offset = weld_offsets[vi];
+        for (int i = 0; i < count; ++i) {
+            body(weld_indices[offset + i]);
+        }
+    }
 };
 
 bool OnEdge(const IArray<int>& indices, int ngon, const IArray<float3>& vertices, const ConnectionData& connection, int vertex_index);
