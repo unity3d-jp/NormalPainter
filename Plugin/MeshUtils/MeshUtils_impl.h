@@ -117,14 +117,10 @@ inline void BuildWeldMap(
     }
 
     weld_counts.zeroclear();
-    int ti = 0;
     for (int vi = 0; vi < n; ++vi) {
-        int c = weld_counts[vi];
-        for (int ci = 0; ci < c; ++ci) {
-            int i = weld_offsets[vi] + ci;
-            weld_indices[i] = ti + ci;
-        }
-        ti += c;
+        int mvi = weld_map[vi];
+        int i = weld_offsets[mvi] + weld_counts[mvi]++;
+        weld_indices[i] = vi;
     }
 }
 
@@ -243,6 +239,49 @@ struct SelectEdgeImpl
     }
 
     template<class Handler>
+    void selectHole(int vertex_index, const Handler& handler)
+    {
+        if (checked[vertex_index]) { return; }
+
+        auto check_vertex = [&](int vi) {
+            connection.eachConnectedFaces(vi, [&](int fi, int ii) {
+                int fo = offsets[fi];
+                int c = counts[fi];
+                int nth = ii - fo;
+
+                int f0 = nth;
+                int f1 = f0 - 1; if (f1 < 0) { f1 = c - 1; }
+                int f2 = f0 + 1; if (f2 == c) { f2 = 0; }
+
+                next_edges.push_back({ indices[fo + f0], indices[fo + f1] });
+                next_edges.push_back({ indices[fo + f0], indices[fo + f2] });
+            });
+        };
+
+        auto handle_welded_vertices = [&](int vi) {
+            connection.eachWeldedVertices(vi, [&](int i) {
+                handler(i);
+            });
+        };
+
+        check_vertex(vertex_index);
+
+        while (!next_edges.empty()) {
+            int i0 = next_edges.back().first;
+            int i1 = next_edges.back().second;
+            next_edges.pop_back();
+
+            if (checked[i0] && checked[i1]) { continue; }
+
+            if (IsEdgeOpenedImpl(indices, counts, offsets, connection, i0, i1)) {
+                if (!checked[i0]) { checked[i0] = true; handle_welded_vertices(i0); }
+                if (!checked[i1]) { checked[i1] = true; handle_welded_vertices(i1); }
+                check_vertex(i1);
+            }
+        }
+    }
+
+    template<class Handler>
     void selectConnected(int vertex_index, const Handler& handler)
     {
         next_points.push_back(vertex_index);
@@ -326,7 +365,7 @@ inline void SelectHole(const IArray<int>& indices_, int ngon, const IArray<float
         impl(indices, counts, offsets, vertices, connection);
 
     for (int i : vertex_indices) {
-        impl.selectEdge(i, handler);
+        impl.selectHole(i, handler);
     }
 }
 
@@ -344,7 +383,7 @@ inline void SelectHole(const IArray<int>& indices_, const IArray<int>& counts, c
         impl(indices, counts, offsets, vertices, connection);
 
     for (int i : vertex_indices) {
-        impl.selectEdge(i, handler);
+        impl.selectHole(i, handler);
     }
 }
 
