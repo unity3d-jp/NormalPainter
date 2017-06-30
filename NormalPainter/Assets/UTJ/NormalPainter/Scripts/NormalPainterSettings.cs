@@ -140,7 +140,7 @@ namespace UTJ.NormalPainter
 
         [NonSerialized] public float smoothRadius = 0.5f;
         [NonSerialized] public float smoothAmount = 1.0f;
-        [NonSerialized] public float weldAngle = 180.0f;
+        [NonSerialized] public float weldAngle = 60.0f;
         [NonSerialized] public bool weldWithSmoothing = true;
         [NonSerialized] public bool weldWithOtherObjects;
         [NonSerialized] public int weldTargetsMode;

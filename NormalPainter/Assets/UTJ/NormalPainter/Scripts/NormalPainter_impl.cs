@@ -739,18 +739,31 @@ namespace UTJ.NormalPainter
             public GCHandle hnormals;
         }
 
+        bool IsValidMesh(Mesh mesh)
+        {
+            if (!mesh || mesh.vertexCount == 0) return false;
+            if (!mesh.isReadable)
+            {
+                Debug.LogWarning("Mesh " + mesh.name + " is not readable.");
+                return false;
+            }
+            return true;
+        }
+
         public bool ApplyWelding2(GameObject[] targets, int weldMode, float weldAngle)
         {
             var data = new List<WeldData>();
 
+            // build weld data
             foreach (var t in targets)
             {
-                if (!t) { continue; }
+                if (!t || t == this.gameObject) { continue; }
 
                 var smr = t.GetComponent<SkinnedMeshRenderer>();
                 if (smr)
                 {
                     var mesh = smr.sharedMesh;
+                    if (!IsValidMesh(mesh)) continue;
 
                     var d = new WeldData();
                     d.skinned = true;
@@ -778,6 +791,7 @@ namespace UTJ.NormalPainter
                 if (mr)
                 {
                     var mesh = t.GetComponent<MeshFilter>().sharedMesh;
+                    if (!IsValidMesh(mesh)) continue;
 
                     var d = new WeldData();
                     d.mesh = mesh;
@@ -794,6 +808,7 @@ namespace UTJ.NormalPainter
                 return false;
             }
 
+            // create data to pass to C++
             Matrix4x4 trans = GetComponent<Transform>().localToWorldMatrix;
             int[] tnumVertices = new int[data.Count];
             IntPtr[] tvertices = new IntPtr[data.Count];
@@ -810,10 +825,13 @@ namespace UTJ.NormalPainter
                 ttrans[i] = d.trans;
             }
 
+            // do weld
+            bool ret = false;
             var selection = m_numSelected == 0 ? null : m_selection;
             if (npWeld2(m_points.Length, m_points, selection, m_normals, ref trans,
                 data.Count, tnumVertices, tvertices, tnormals, ttrans, weldMode, weldAngle) > 0)
             {
+                // update normals
                 if (weldMode == 1 || weldMode == 2)
                 {
                     UpdateNormals();
@@ -830,16 +848,20 @@ namespace UTJ.NormalPainter
                         }
                         d.mesh.normals = d.normals;
                         d.mesh.UploadMeshData(false);
-
-                        d.hvertices.Free();
-                        d.hnormals.Free();
                     }
                 }
-
-                return true;
+                ret = true;
             }
 
-            return false;
+            // cleanup
+            foreach (var d in data)
+            {
+                d.hvertices.Free();
+                d.hnormals.Free();
+            }
+
+
+            return ret;
         }
 
         public void ApplyProjection(GameObject go, bool baseNormalsAsRayDirection)
