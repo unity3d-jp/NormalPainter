@@ -160,8 +160,8 @@ struct SelectEdgeImpl
     const Offsets& offsets;
     const ConnectionData& connection;
 
-    std::vector<bool> checked;
-    std::vector<std::pair<int, int>> next_edges;
+    RawVector<bool> checked;
+    RawVector<std::pair<int, int>> next_edges;
     RawVector<int> next_points;
 
     SelectEdgeImpl(const Indices& indices_, const Counts& counts_, const Offsets& offsets_, const IArray<float3>& vertices_,
@@ -172,6 +172,7 @@ struct SelectEdgeImpl
         , connection(connection_)
     {
         checked.resize(vertices_.size());
+        checked.zeroclear();
     }
 
     template<class Handler>

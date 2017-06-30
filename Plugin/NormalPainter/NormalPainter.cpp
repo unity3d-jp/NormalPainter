@@ -82,7 +82,7 @@ static inline float GetBrushSample(float distance, float bradius, float bsamples
 
 
 npAPI int npRaycast(
-    const float3 pos, const float3 dir, const float3 vertices[], const int indices[], int num_triangles,
+    int num_triangles, const float3 pos, const float3 dir, const float3 vertices[], const int indices[],
     int *tindex, float *distance, const float4x4 *trans)
 {
     return Raycast(pos, dir, vertices, indices, num_triangles, *trans, *tindex, *distance);
@@ -100,7 +100,7 @@ npAPI float3 npPickNormal(
 }
 
 npAPI int npSelectSingle(
-    const float3 vertices[], const float3 normals[], const int indices[], int num_vertices, int num_triangles, float selection[], float strength,
+    int num_vertices, int num_triangles, const float3 vertices[], const float3 normals[], const int indices[], float selection[], float strength,
     const float4x4 *mvp_, const float4x4 *trans_, float2 rmin, float2 rmax, float3 campos, int frontface_only)
 {
     float4x4 mvp = *mvp_;
@@ -185,7 +185,7 @@ npAPI int npSelectSingle(
 
 
 npAPI int npSelectTriangle(
-    const float3 vertices[], const int indices[], int num_triangles, float selection[], float strength,
+    int num_triangles, const float3 vertices[], const int indices[], float selection[], float strength,
     const float4x4 *trans, const float3 pos, const float3 dir)
 {
     int ti;
@@ -200,7 +200,7 @@ npAPI int npSelectTriangle(
 }
 
 npAPI int npSelectEdge(
-    const float3 vertices_[], const int indices_[], int num_vertices, int num_triangles, float selection[], float strength, int clear)
+    int num_vertices, int num_triangles, const float3 vertices_[], const int indices_[], float selection[], float strength, int clear)
 {
     auto indices = IArray<int>(indices_, num_triangles * 3);
     auto vertices = IArray<float3>(vertices_, num_vertices);
@@ -217,6 +217,8 @@ npAPI int npSelectEdge(
         for (int vi = 0; vi < num_vertices; ++vi)
             targets[vi] = vi;
     }
+
+    if (clear) { memset(selection, 0, num_vertices * 4); }
 
     int ret = 0;
     SelectEdge(indices, 3, vertices, targets, [&](int vi) {
@@ -227,7 +229,7 @@ npAPI int npSelectEdge(
 }
 
 npAPI int npSelectHole(
-    const float3 vertices_[], const int indices_[], int num_vertices, int num_triangles, float selection[], float strength, int clear)
+    int num_vertices, int num_triangles, const float3 vertices_[], const int indices_[], float selection[], float strength, int clear)
 {
     auto indices = IArray<int>(indices_, num_triangles * 3);
     auto vertices = IArray<float3>(vertices_, num_vertices);
@@ -245,6 +247,7 @@ npAPI int npSelectHole(
             targets[vi] = vi;
     }
 
+    if (clear) { memset(selection, 0, num_vertices * 4); }
 
     int ret = 0;
     SelectHole(indices, 3, vertices, targets, [&](int vi) {
@@ -255,7 +258,7 @@ npAPI int npSelectHole(
 }
 
 npAPI int npSelectConnected(
-    const float3 vertices_[], const int indices_[], int num_vertices, int num_triangles, float selection[], float strength, int clear)
+    int num_vertices, int num_triangles, const float3 vertices_[], const int indices_[], float selection[], float strength, int clear)
 {
     auto indices = IArray<int>(indices_, num_triangles * 3);
     auto vertices = IArray<float3>(vertices_, num_vertices);
@@ -284,7 +287,7 @@ npAPI int npSelectConnected(
 }
 
 npAPI int npSelectRect(
-    const float3 vertices[], const int indices[], int num_vertices, int num_triangles, float selection[], float strength,
+    int num_vertices, int num_triangles, const float3 vertices[], const int indices[], float selection[], float strength,
     const float4x4 *mvp_, const float4x4 *trans_, float2 rmin, float2 rmax, float3 campos, int frontface_only)
 {
     float4x4 mvp = *mvp_;
@@ -325,7 +328,7 @@ npAPI int npSelectRect(
 }
 
 npAPI int npSelectLasso(
-    const float3 vertices[], const int indices[], int num_vertices, int num_triangles, float selection[], float strength,
+    int num_vertices, int num_triangles, const float3 vertices[], const int indices[], float selection[], float strength,
     const float4x4 *mvp_, const float4x4 *trans_, const float2 poly[], int ngon, float3 campos, int frontface_only)
 {
     if (ngon < 3) { return 0; }
@@ -376,7 +379,7 @@ npAPI int npSelectLasso(
 }
 
 npAPI int npSelectBrush(
-    const float3 vertices[], int num_vertices, const float4x4 *trans,
+    int num_vertices, const float3 vertices[], const float4x4 *trans,
     const float3 pos, float radius, float strength, float bsamples[], int num_bsamples, float selection[])
 {
     return SelectInside(pos, radius, vertices, num_vertices, *trans, [&](int vi, float d, float3 p) {
@@ -386,7 +389,7 @@ npAPI int npSelectBrush(
 }
 
 npAPI int npUpdateSelection(
-    const float3 vertices[], const float3 normals[], const float selection[], int num_vertices, const float4x4 *trans,
+    int num_vertices, const float3 vertices[], const float3 normals[], const float selection[], const float4x4 *trans,
     float3 *selection_pos, float3 *selection_normal)
 {
     float st = 0.0f;
@@ -419,7 +422,7 @@ npAPI int npUpdateSelection(
 
 
 npAPI void npAssign(
-    const float selection[], int num_vertices, const float4x4 *trans_,
+    int num_vertices, const float selection[], const float4x4 *trans_,
     float3 v, float3 normals[])
 {
     v = mul_v(invert(*trans_), v);
@@ -432,7 +435,7 @@ npAPI void npAssign(
 }
 
 npAPI void npMove(
-    const float selection[], int num_vertices, const float4x4 *trans_,
+    int num_vertices, const float selection[], const float4x4 *trans_,
     float3 amount, float3 normals[])
 {
     amount = mul_v(invert(*trans_), amount);
@@ -445,7 +448,7 @@ npAPI void npMove(
 }
 
 npAPI void npRotate(
-    const float3 vertices[], const float selection[], int num_vertices, const float4x4 *trans_,
+    int num_vertices, const float3 vertices[], const float selection[], const float4x4 *trans_,
     quatf amount, quatf pivot_rot, float3 normals[])
 {
     float3 axis;
@@ -474,7 +477,7 @@ npAPI void npRotate(
 }
 
 npAPI void npRotatePivot(
-    const float3 vertices[], const float selection[], int num_vertices, const float4x4 *trans_,
+    int num_vertices, const float3 vertices[], const float selection[], const float4x4 *trans_,
     quatf amount, float3 pivot_pos, quatf pivot_rot, float3 normals[])
 {
     float3 axis;
@@ -513,7 +516,7 @@ npAPI void npRotatePivot(
 }
 
 npAPI void npScale(
-    const float3 vertices[], const float selection[], int num_vertices, const float4x4 *trans_,
+    int num_vertices, const float3 vertices[], const float selection[], const float4x4 *trans_,
     float3 amount, float3 pivot_pos, quatf pivot_rot, float3 normals[])
 {
     float furthest;
@@ -542,7 +545,7 @@ npAPI void npScale(
 }
 
 npAPI void npSmooth(
-    const float3 vertices[], const float selection[], int num_vertices, const float4x4 *trans,
+    int num_vertices, const float3 vertices[], const float selection[], const float4x4 *trans,
     float radius, float strength, float3 normals[])
 {
     RawVector<float3> tvertices;
@@ -570,10 +573,11 @@ npAPI void npSmooth(
     });
 }
 
-npAPI int npWeld(const float3 vertices[], const float selection[], int num_vertices, float3 normals[], int smoothing)
+npAPI int npWeld(int num_vertices, const float3 vertices[], const float selection[], float3 normals[], int smoothing)
 {
-    std::vector<bool> checked;
+    RawVector<bool> checked;
     checked.resize(num_vertices);
+    checked.zeroclear();
 
     int ret = 0;
     RawVector<int> shared;
@@ -607,8 +611,83 @@ npAPI int npWeld(const float3 vertices[], const float selection[], int num_verti
 }
 
 
+npAPI int npWeld2(int num_vertices, const float3 vertices[], const float selection[], float3 normals[], const float4x4 *trans,
+    int num_targets, const int num_tvertices[], const float3 *tvertices[], float3 *tnormals[], const float4x4 ttrans[], int mode)
+{
+    std::vector<RawVector<std::pair<int, int>>> weld_maps;
+    weld_maps.resize(num_targets);
+
+    // generate weld maps
+    for (int ti = 0; ti < num_targets; ++ti) {
+        auto& weld_map = weld_maps[ti];
+
+        for (int vi = 0; vi < num_vertices; ++vi) {
+            auto tva = tvertices[ti];
+            auto p = vertices[vi];
+            for (int tvi = 0; tvi < num_tvertices[ti]; ++tvi) {
+                if (near_equal(tva[tvi], p, 0.0f)) {
+                    weld_map.push_back({ vi, tvi });
+                }
+            }
+        }
+    }
+
+    int ret = 0;
+    for (auto& map : weld_maps) { ret += (int)map.size(); }
+    if (ret == 0) { return 0; } // nothing to do any more
+
+    if (mode == 0) {
+        // copy to targets
+        for (int ti = 0; ti < num_targets; ++ti) {
+            auto& weld_map = weld_maps[ti];
+            auto tna = tnormals[ti];
+            for (auto& rel : weld_map) {
+                tna[rel.second] = normals[rel.first];
+            }
+        }
+    }
+    else if (mode == 1) {
+        // copy from targets
+        for (int ti = 0; ti < num_targets; ++ti) {
+            auto& weld_map = weld_maps[ti];
+            auto tna = tnormals[ti];
+            for (auto& rel : weld_map) {
+                normals[rel.first] = tna[rel.second];
+            }
+        }
+    }
+    else if (mode == 2) {
+        // smooth
+        RawVector<float3> tmp_normals;
+        tmp_normals.resize(num_vertices);
+        tmp_normals.assign(normals, normals + num_vertices);
+
+        for (int ti = 0; ti < num_targets; ++ti) {
+            auto& weld_map = weld_maps[ti];
+            auto tna = tnormals[ti];
+            for (auto& rel : weld_map) {
+                tmp_normals[rel.first] += tna[rel.second];
+            }
+        }
+        for (auto& n : tmp_normals) {
+            n = normalize(n);
+        }
+
+        for (int ti = 0; ti < num_targets; ++ti) {
+            auto& weld_map = weld_maps[ti];
+            auto tna = tnormals[ti];
+            for (auto& rel : weld_map) {
+                normals[rel.first] = tmp_normals[rel.first];
+                tna[rel.second] = tmp_normals[rel.first];
+            }
+        }
+    }
+    return ret;
+}
+
+
 npAPI int npBrushReplace(
-    const float3 vertices[], const float selection[], int num_vertices, const float4x4 *trans,
+    int num_vertices, const float3 vertices[], const float selection[], const float4x4 *trans,
     const float3 pos, float radius, float strength, float bsamples[], int num_bsamples, float3 amount, float3 normals[])
 {
     return SelectInside(pos, radius, vertices, num_vertices, *trans, [&](int vi, float d, float3 p) {
@@ -621,7 +700,7 @@ npAPI int npBrushReplace(
 }
 
 npAPI int npBrushPaint(
-    const float3 vertices[], const float selection[], int num_vertices, const float4x4 *trans,
+    int num_vertices, const float3 vertices[], const float selection[], const float4x4 *trans,
     const float3 pos, float radius, float strength, float bsamples[], int num_bsamples, float3 n, int blend_mode, float3 normals[])
 {
     float3 ln = n;
@@ -672,7 +751,7 @@ npAPI int npBrushPaint(
 }
 
 npAPI int npBrushLerp(
-    const float3 vertices[], const float selection[], int num_vertices, const float4x4 *trans,
+    int num_vertices, const float3 vertices[], const float selection[], const float4x4 *trans,
     const float3 pos, float radius, float strength, float bsamples[], int num_bsamples, const float3 base[], float3 normals[])
 {
     return SelectInside(pos, radius, vertices, num_vertices, *trans, [&](int vi, float d, float3 p) {
@@ -685,7 +764,7 @@ npAPI int npBrushLerp(
 }
 
 npAPI int npBrushSmooth(
-    const float3 vertices[], const float selection[], int num_vertices, const float4x4 *trans,
+    int num_vertices, const float3 vertices[], const float selection[], const float4x4 *trans,
     const float3 pos, float radius, float strength, float bsamples[], int num_bsamples, float3 normals[])
 {
     RawVector<std::pair<int, float>> inside;
@@ -709,7 +788,7 @@ npAPI int npBrushSmooth(
 
 
 npAPI int npBuildMirroringRelation(
-    const float3 vertices[], const float3 normals[], int num_vertices,
+    int num_vertices, const float3 vertices[], const float3 normals[], 
     float3 plane_normal, float epsilon, int relation[])
 {
     RawVector<float> distances;
@@ -741,7 +820,7 @@ npAPI int npBuildMirroringRelation(
     return ret;
 }
 
-npAPI void npApplyMirroring(const int relation[], int num_vertices, float3 plane_normal, float3 normals[])
+npAPI void npApplyMirroring(int num_vertices, const int relation[], float3 plane_normal, float3 normals[])
 {
     parallel_for(0, num_vertices, [&](int vi) {
         if (relation[vi] != -1) {
@@ -752,8 +831,8 @@ npAPI void npApplyMirroring(const int relation[], int num_vertices, float3 plane
 
 
 npAPI void npProjectNormals(
-    const float3 vertices[], const float3 normals[], float selection[], int num_vertices, const float4x4 *trans,
-    const float3 pvertices[], const float3 pnormals[], const int pindices[], int num_triangles, const float4x4 *ptrans,
+    int num_vertices, int num_triangles, const float3 vertices[], const float3 normals[], float selection[], const float4x4 *trans,
+    const float3 pvertices[], const float3 pnormals[], const int pindices[], const float4x4 *ptrans,
     float3 dst[])
 {
     auto mat = *ptrans * invert(*trans);
@@ -805,7 +884,7 @@ npAPI void npProjectNormals(
 
 template<int NumInfluence>
 static void SkinningImpl(
-    const RawVector<float4x4>& poses, const Weights<NumInfluence> weights[], int num_vertices,
+    int num_vertices, const RawVector<float4x4>& poses, const Weights<NumInfluence> weights[],
     const float3 ipoints[], const float3 inormals[], const float4 itangents[],
     float3 opoints[], float3 onormals[], float4 otangents[])
 {
@@ -852,7 +931,7 @@ static void SkinningImpl(
 }
 
 npAPI void npApplySkinning(
-    const Weights4 weights[], const float4x4 *root, const float4x4 bones[], const float4x4 bindposes[], int num_vertices, int num_bones,
+    int num_vertices, const Weights4 weights[], int num_bones, const float4x4 bones[], const float4x4 bindposes[], const float4x4 *root,
     const float3 ipoints[], const float3 inormals[], const float4 itangents[],
     float3 opoints[], float3 onormals[], float4 otangents[])
 {
@@ -863,11 +942,11 @@ npAPI void npApplySkinning(
     for (int bi = 0; bi < num_bones; ++bi) {
         poses[bi] = bindposes[bi] * bones[bi] * iroot;
     }
-    SkinningImpl(poses, weights, num_vertices, ipoints, inormals, itangents, opoints, onormals, otangents);
+    SkinningImpl(num_vertices, poses, weights, ipoints, inormals, itangents, opoints, onormals, otangents);
 }
 
 npAPI void npApplyReverseSkinning(
-    const Weights4 weights[], const float4x4 *root, const float4x4 bones[], const float4x4 bindposes[], int num_vertices, int num_bones,
+    int num_vertices, const Weights4 weights[], int num_bones, const float4x4 bones[], const float4x4 bindposes[], const float4x4 *root,
     const float3 ipoints[], const float3 inormals[], const float4 itangents[],
     float3 opoints[], float3 onormals[], float4 otangents[])
 {
@@ -878,7 +957,7 @@ npAPI void npApplyReverseSkinning(
     for (int bi = 0; bi < num_bones; ++bi) {
         poses[bi] = invert(bindposes[bi] * bones[bi] * iroot);
     }
-    SkinningImpl(poses, weights, num_vertices, ipoints, inormals, itangents, opoints, onormals, otangents);
+    SkinningImpl(num_vertices, poses, weights, ipoints, inormals, itangents, opoints, onormals, otangents);
 }
 
 

@@ -137,9 +137,13 @@ namespace UTJ.NormalPainter
         [NonSerialized] public Vector3  moveAmount;
         [NonSerialized] public Vector3  rotateAmount;
         [NonSerialized] public Vector3  scaleAmount;
+
         [NonSerialized] public float smoothRadius = 0.5f;
         [NonSerialized] public float smoothAmount = 1.0f;
         [NonSerialized] public bool weldWithSmoothing = true;
+        [NonSerialized] public bool weldWithOtherObjects;
+        [NonSerialized] public int weldTargetsMode;
+        [NonSerialized] public GameObject[] weldTargets = new GameObject[1];
 
         [NonSerialized] public GameObject projectionNormalSource;
         [NonSerialized] public int projectionRayDirection;

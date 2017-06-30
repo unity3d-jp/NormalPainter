@@ -464,12 +464,38 @@ namespace UTJ.NormalPainter
 
                 EditorGUILayout.Space();
 
-                settings.weldWithSmoothing = EditorGUILayout.Toggle("Weld with Smoothing", settings.weldWithSmoothing);
-                if (GUILayout.Button("Apply Welding [Shift+W]"))
+                settings.weldWithOtherObjects = EditorGUILayout.Toggle("Weld With Other Objects", settings.weldWithOtherObjects);
+                if (settings.weldWithOtherObjects)
                 {
-                    if(m_target.ApplyWelding(settings.weldWithSmoothing))
+                    EditorGUI.indentLevel++;
+                    int n = EditorGUILayout.IntField("Targets Count", settings.weldTargets.Length);
+                    if (n != settings.weldTargets.Length)
+                        System.Array.Resize(ref settings.weldTargets, n);
+
+                    for (int i = 0; i < settings.weldTargets.Length; ++i)
+                        settings.weldTargets[i] = (GameObject)EditorGUILayout.ObjectField(settings.weldTargets[i], typeof(GameObject), true);
+                    EditorGUI.indentLevel--;
+                    settings.weldTargetsMode = EditorGUILayout.IntPopup("Weld Mode", settings.weldTargetsMode,
+                        new string[3] {"Copy To Targets", "Copy From Targets", "Smoothing"},
+                        new int[3] { 0, 1, 2});
+
+                    if (GUILayout.Button("Apply Welding"))
                     {
-                        m_target.PushUndo();
+                        if (m_target.ApplyWelding2(settings.weldTargets, settings.weldTargetsMode))
+                        {
+                            m_target.PushUndo();
+                        }
+                    }
+                }
+                else
+                {
+                    settings.weldWithSmoothing = EditorGUILayout.Toggle("Weld with Smoothing", settings.weldWithSmoothing);
+                    if (GUILayout.Button("Apply Welding [Shift+W]"))
+                    {
+                        if (m_target.ApplyWelding(settings.weldWithSmoothing))
+                        {
+                            m_target.PushUndo();
+                        }
                     }
                 }
             }
