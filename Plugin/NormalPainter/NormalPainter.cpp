@@ -663,7 +663,7 @@ npAPI int npWeld2(int num_vertices, const float3 vertices[], const float selecti
             auto tva = twvertices[ti];
             int num_tv = tnum_vertices[ti];
             for (int tvi = 0; tvi < num_tv; ++tvi) {
-                if (near_equal(tva[tvi], p, 0.0f)) {
+                if (near_equal(length_sq(tva[tvi] - p), 0.0f)) {
                     weld_map.push_back({ vi, tvi });
                 }
             }

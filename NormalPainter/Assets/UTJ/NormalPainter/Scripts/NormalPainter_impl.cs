@@ -724,14 +724,121 @@ namespace UTJ.NormalPainter
 
 
 
-        public bool ApplyWelding2(GameObject[] targets_, int mode)
+        class WeldData
         {
-            // todo
-            //if (npWeld2(m_points.Length, m_points, m_selection, m_normals, smoothing) > 0)
-            //{
-            //    UpdateNormals();
-            //    return true;
-            //}
+            public bool skinned;
+            public Mesh mesh;
+            public Matrix4x4 trans;
+            public Vector3[] vertices;
+            public Vector3[] normals;
+            public BoneWeight[] weights;
+            public Matrix4x4[] bones;
+            public Matrix4x4[] bindposes;
+
+            public GCHandle hvertices;
+            public GCHandle hnormals;
+        }
+
+        public bool ApplyWelding2(GameObject[] targets, int weldMode)
+        {
+            var data = new List<WeldData>();
+
+            foreach (var t in targets)
+            {
+                if (!t) { continue; }
+
+                var smr = t.GetComponent<SkinnedMeshRenderer>();
+                if (smr)
+                {
+                    var mesh = smr.sharedMesh;
+
+                    var d = new WeldData();
+                    d.skinned = true;
+                    d.mesh = mesh;
+                    d.trans = t.GetComponent<Transform>().localToWorldMatrix;
+                    d.vertices = mesh.vertices;
+                    d.normals = mesh.normals;
+                    d.weights = mesh.boneWeights;
+                    d.bindposes = mesh.bindposes;
+                    d.bones = new Matrix4x4[d.bindposes.Length];
+
+                    var bones = smr.bones;
+                    int n = System.Math.Min(d.bindposes.Length, smr.bones.Length);
+                    for (int bi = 0; bi < n; ++bi)
+                        d.bones[bi] = smr.bones[bi].localToWorldMatrix;
+
+                    npApplySkinning(d.vertices.Length, d.weights, d.bones.Length, d.bones, d.bindposes, ref d.trans,
+                        d.vertices, d.normals, null,
+                        d.vertices, d.normals, null);
+
+                    data.Add(d);
+                }
+
+                var mr = t.GetComponent<MeshRenderer>();
+                if (mr)
+                {
+                    var mesh = t.GetComponent<MeshFilter>().sharedMesh;
+
+                    var d = new WeldData();
+                    d.mesh = mesh;
+                    d.trans = t.GetComponent<Transform>().localToWorldMatrix;
+                    d.vertices = mesh.vertices;
+                    d.normals = mesh.normals;
+                    data.Add(d);
+                }
+            }
+
+            if(data.Count == 0)
+            {
+                Debug.LogWarning("Nothing to weld.");
+                return false;
+            }
+
+            Matrix4x4 trans = GetComponent<Transform>().localToWorldMatrix;
+            int[] tnumVertices = new int[data.Count];
+            IntPtr[] tvertices = new IntPtr[data.Count];
+            IntPtr[] tnormals = new IntPtr[data.Count];
+            Matrix4x4[] ttrans = new Matrix4x4[data.Count];
+            for (int i = 0; i < data.Count; ++i)
+            {
+                var d = data[i];
+                tnumVertices[i] = d.vertices.Length;
+                d.hvertices = GCHandle.Alloc(d.vertices);
+                d.hnormals = GCHandle.Alloc(d.normals);
+                tvertices[i] = Marshal.UnsafeAddrOfPinnedArrayElement(d.vertices, 0);
+                tnormals[i] = Marshal.UnsafeAddrOfPinnedArrayElement(d.normals, 0);
+                ttrans[i] = d.trans;
+            }
+
+            var selection = m_numSelected == 0 ? null : m_selection;
+            if (npWeld2(m_points.Length, m_points, selection, m_normals, ref trans,
+                data.Count, tnumVertices, tvertices, tnormals, ttrans, weldMode) > 0)
+            {
+                if (weldMode == 1 || weldMode == 2)
+                {
+                    UpdateNormals();
+                }
+                if (weldMode == 0 || weldMode == 2)
+                {
+                    foreach (var d in data)
+                    {
+                        if (d.skinned)
+                        {
+                            npApplyReverseSkinning(d.vertices.Length, d.weights, d.bones.Length, d.bones, d.bindposes, ref d.trans,
+                                null, d.normals, null,
+                                null, d.normals, null);
+                        }
+                        d.mesh.normals = d.normals;
+                        d.mesh.UploadMeshData(false);
+
+                        d.hvertices.Free();
+                        d.hnormals.Free();
+                    }
+                }
+
+                return true;
+            }
+
             return false;
         }
 
@@ -911,7 +1018,7 @@ namespace UTJ.NormalPainter
             int num_vertices, Vector3[] vertices, float[] selection, Vector3[] normals, bool smoothing);
         [DllImport("NormalPainterCore")] static extern int npWeld2(
             int num_vertices, Vector3[] vertices, float[] selection, Vector3[] normals, ref Matrix4x4 trans,
-            int num_targets, int[] num_tvertices, Vector3[][] tvertices, Vector3[][] tnormals, Matrix4x4[] ttrans, int mode);
+            int num_targets, int[] num_tvertices, IntPtr[] tvertices, IntPtr[] tnormals, Matrix4x4[] ttrans, int mode);
 
         [DllImport("NormalPainterCore")] static extern int npBuildMirroringRelation(
             int num_vertices, Vector3[] vertices, Vector3[] base_normals, Vector3 plane_normal, float epsilon, int[] relation);
