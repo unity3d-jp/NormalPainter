@@ -100,7 +100,7 @@ namespace UTJ.NormalPainter
             var trans = GetComponent<Transform>().localToWorldMatrix;
             v = ToWorldVector(v, c).normalized;
 
-            npAssign(m_points.Length, m_selection, ref trans, v, m_normals);
+            npAssign(ref m_npModelData, v);
             ApplyMirroring();
             UpdateNormals();
         }
@@ -110,7 +110,7 @@ namespace UTJ.NormalPainter
             var trans = GetComponent<Transform>().localToWorldMatrix;
             v = ToWorldVector(v, c);
 
-            npMove(m_points.Length, m_selection, ref trans, v, m_normals);
+            npMove(ref m_npModelData, v);
             ApplyMirroring();
             UpdateNormals();
         }
@@ -135,7 +135,7 @@ namespace UTJ.NormalPainter
                 default: return;
             }
 
-            npRotate(m_points.Length, m_points, m_selection, ref trans, amount, pivotRot, m_normals);
+            npRotate(ref m_npModelData, amount, pivotRot);
             ApplyMirroring();
             UpdateNormals();
         }
@@ -161,7 +161,7 @@ namespace UTJ.NormalPainter
                 default: return;
             }
 
-            npRotatePivot(m_points.Length, m_points, m_selection, ref trans, amount, pivotPos, pivotRot, m_normals);
+            npRotatePivot(ref m_npModelData, amount, pivotPos, pivotRot);
             ApplyMirroring();
             UpdateNormals();
         }
@@ -187,7 +187,7 @@ namespace UTJ.NormalPainter
                 default: return;
             }
 
-            npScale(m_points.Length, m_points, m_selection, ref trans, amount, pivotPos, pivotRot, m_normals);
+            npScale(ref m_npModelData, amount, pivotPos, pivotRot);
             ApplyMirroring();
             UpdateNormals();
         }
@@ -196,7 +196,7 @@ namespace UTJ.NormalPainter
         {
             Matrix4x4 trans = GetComponent<Transform>().localToWorldMatrix;
             var selection = useSelection && m_numSelected > 0 ? m_selection : null;
-            if (npBrushPaint(m_points.Length, m_points, selection, ref trans, pos, radius, strength, bsamples, bsamples.Length, baseDir, blendMode, m_normals) > 0)
+            if (npBrushPaint(ref m_npModelData, pos, radius, strength, bsamples, bsamples.Length, baseDir, blendMode) > 0)
             {
                 ApplyMirroring();
                 UpdateNormals();
@@ -211,7 +211,7 @@ namespace UTJ.NormalPainter
 
             Matrix4x4 trans = GetComponent<Transform>().localToWorldMatrix;
             var selection = useSelection && m_numSelected > 0 ? m_selection : null;
-            if (npBrushReplace(m_points.Length, m_points, selection, ref trans, pos, radius, strength, bsamples, bsamples.Length, amount, m_normals) > 0)
+            if (npBrushReplace(ref m_npModelData, pos, radius, strength, bsamples, bsamples.Length, amount) > 0)
             {
                 ApplyMirroring();
                 UpdateNormals();
@@ -224,7 +224,7 @@ namespace UTJ.NormalPainter
         {
             Matrix4x4 trans = GetComponent<Transform>().localToWorldMatrix;
             var selection = useSelection && m_numSelected > 0 ? m_selection : null;
-            if (npBrushSmooth(m_points.Length, m_points, selection, ref trans, pos, radius, strength, bsamples, bsamples.Length, m_normals) > 0)
+            if (npBrushSmooth(ref m_npModelData, pos, radius, strength, bsamples, bsamples.Length) > 0)
             {
                 ApplyMirroring();
                 UpdateNormals();
@@ -237,7 +237,7 @@ namespace UTJ.NormalPainter
         {
             Matrix4x4 trans = GetComponent<Transform>().localToWorldMatrix;
             var selection = useSelection && m_numSelected > 0 ? m_selection : null;
-            if (npBrushLerp(m_points.Length, m_points, selection, ref trans, pos, radius, strength, bsamples, bsamples.Length, m_normalsBase, m_normals) > 0)
+            if (npBrushLerp(ref m_npModelData, pos, radius, strength, bsamples, bsamples.Length, m_normalsBase, m_normals) > 0)
             {
                 ApplyMirroring();
                 UpdateNormals();
@@ -275,7 +275,7 @@ namespace UTJ.NormalPainter
         public void OnUndoRedo()
         {
             //Debug.Log("OnUndoRedo(): " + m_history.count);
-            UpdateSkinning();
+            UpdateTransform();
             if (m_history.normals != null && m_normals != null && m_history.normals.Length == m_normals.Length)
             {
                 Array.Copy(m_history.normals, m_normals, m_normals.Length);
@@ -308,8 +308,10 @@ namespace UTJ.NormalPainter
             return ret;
         }
 
-        void UpdateSkinning()
+        void UpdateTransform()
         {
+            m_npModelData.transform = GetComponent<Transform>().localToWorldMatrix;
+
             if (UpdateBoneMatrices())
             {
                 npApplySkinning(
@@ -357,8 +359,7 @@ namespace UTJ.NormalPainter
             int prevSelected = m_numSelected;
 
             Matrix4x4 trans = GetComponent<Transform>().localToWorldMatrix;
-            m_numSelected = npUpdateSelection(m_points.Length, m_points, m_normals, m_selection, ref trans,
-                ref m_selectionPos, ref m_selectionNormal);
+            m_numSelected = npUpdateSelection(ref m_npModelData, ref m_selectionPos, ref m_selectionNormal);
 
             m_selectionRot = Quaternion.identity;
             if (m_numSelected > 0)
@@ -381,7 +382,7 @@ namespace UTJ.NormalPainter
         public void RecalculateTangents()
         {
             m_meshTarget.RecalculateTangents();
-            m_tangents = m_meshTarget.tangents;
+            m_tangents = new PinnedArray<Vector4>(m_meshTarget.tangents, false);
             if(m_cbTangents == null)
                 m_cbTangents = new ComputeBuffer(m_tangents.Length, 16);
             m_cbTangents.SetData(m_tangents);
@@ -402,32 +403,31 @@ namespace UTJ.NormalPainter
 
         public bool Raycast(Ray ray, ref int ti, ref float distance)
         {
-            Matrix4x4 trans = GetComponent<Transform>().localToWorldMatrix;
-            bool ret = npRaycast(m_indices.Length / 3, ray.origin, ray.direction,
-                m_points, m_indices, ref ti, ref distance, ref trans) > 0;
+            bool ret = npRaycast(ref m_npModelData, ray.origin, ray.direction, ref ti, ref distance) > 0;
             return ret;
         }
 
         public Vector3 PickNormal(Vector3 pos, int ti)
         {
-            Matrix4x4 trans = GetComponent<Transform>().localToWorldMatrix;
-            return npPickNormal(m_points, m_indices, m_normals, ref trans, pos, ti);
+            return npPickNormal(ref m_npModelData, pos, ti);
         }
 
         public Vector3 PickBaseNormal(Vector3 pos, int ti)
         {
-            Matrix4x4 trans = GetComponent<Transform>().localToWorldMatrix;
-            return npPickNormal(m_points, m_indices, m_normalsBase, ref trans, pos, ti);
+            m_npModelData.normals = m_normalsBase;
+            var ret = npPickNormal(ref m_npModelData, pos, ti);
+            m_npModelData.normals = m_normals;
+            return ret;
         }
 
 
         public bool SelectEdge(float strength, bool clear)
         {
-            return npSelectEdge(m_points.Length, m_indices.Length / 3, m_points, m_indices, m_selection, strength, clear) > 0;
+            return npSelectEdge(ref m_npModelData, strength, clear, m_numSelected == 0) > 0;
         }
         public bool SelectHole(float strength, bool clear)
         {
-            return npSelectHole(m_points.Length, m_indices.Length / 3, m_points, m_indices, m_selection, strength, clear) > 0;
+            return npSelectHole(ref m_npModelData, strength, clear, m_numSelected == 0) > 0;
         }
 
         public bool SelectConnected(float strength, bool clear)
@@ -435,7 +435,7 @@ namespace UTJ.NormalPainter
             if (m_numSelected == 0)
                 return SelectAll();
             else
-                return npSelectConnected(m_points.Length, m_indices.Length / 3, m_points, m_indices, m_selection, strength, clear) > 0;
+                return npSelectConnected(ref m_npModelData, strength, clear) > 0;
         }
 
         public bool SelectAll()
@@ -482,15 +482,13 @@ namespace UTJ.NormalPainter
             if (cam == null) { return false; }
 
             var campos = cam.GetComponent<Transform>().position;
-            var trans = GetComponent<Transform>().localToWorldMatrix;
-            var mvp = GL.GetGPUProjectionMatrix(cam.projectionMatrix, false) * cam.worldToCameraMatrix * trans;
+            var viewproj = GL.GetGPUProjectionMatrix(cam.projectionMatrix, false) * cam.worldToCameraMatrix;
             r1 = ScreenCoord11(r1);
             r2 = ScreenCoord11(r2);
             var rmin = new Vector2(Math.Min(r1.x, r2.x), Math.Min(r1.y, r2.y));
             var rmax = new Vector2(Math.Max(r1.x, r2.x), Math.Max(r1.y, r2.y));
 
-            return npSelectSingle(m_points.Length, m_indices.Length / 3, m_points, m_normalsBase, m_indices, m_selection, strength,
-                ref mvp, ref trans, rmin, rmax, campos, frontFaceOnly) > 0;
+            return npSelectSingle(ref m_npModelData, ref viewproj, rmin, rmax, campos, strength, frontFaceOnly) > 0;
         }
 
         public bool SelectTriangle(Event e, float strength)
@@ -501,7 +499,7 @@ namespace UTJ.NormalPainter
         public bool SelectTriangle(Ray ray, float strength)
         {
             Matrix4x4 trans = GetComponent<Transform>().localToWorldMatrix;
-            return npSelectTriangle(m_indices.Length / 3, m_points, m_indices, m_selection, strength, ref trans, ray.origin, ray.direction) > 0;
+            return npSelectTriangle(ref m_npModelData, ray.origin, ray.direction, strength) > 0;
         }
 
 
@@ -512,33 +510,33 @@ namespace UTJ.NormalPainter
 
             var campos = cam.GetComponent<Transform>().position;
             var trans = GetComponent<Transform>().localToWorldMatrix;
-            var mvp = GL.GetGPUProjectionMatrix(cam.projectionMatrix, false) * cam.worldToCameraMatrix * trans;
+            var viewproj = GL.GetGPUProjectionMatrix(cam.projectionMatrix, false) * cam.worldToCameraMatrix;
             r1 = ScreenCoord11(r1);
             r2 = ScreenCoord11(r2);
             var rmin = new Vector2(Math.Min(r1.x, r2.x), Math.Min(r1.y, r2.y));
             var rmax = new Vector2(Math.Max(r1.x, r2.x), Math.Max(r1.y, r2.y));
 
-            return npSelectRect(m_points.Length, m_indices.Length / 3, m_points, m_indices, m_selection, strength,
-                ref mvp, ref trans, rmin, rmax, campos, frontFaceOnly) > 0;
+            return npSelectRect(ref m_npModelData,
+                ref viewproj, rmin, rmax, campos, strength, frontFaceOnly) > 0;
         }
 
-        public bool SelectLasso(Vector2[] points, float strength, bool frontFaceOnly)
+        public bool SelectLasso(Vector2[] lasso, float strength, bool frontFaceOnly)
         {
             var cam = SceneView.lastActiveSceneView.camera;
             if (cam == null) { return false; }
 
             var campos = cam.GetComponent<Transform>().position;
             var trans = GetComponent<Transform>().localToWorldMatrix;
-            var mvp = GL.GetGPUProjectionMatrix(cam.projectionMatrix, false) * cam.worldToCameraMatrix * trans;
+            var viewproj = GL.GetGPUProjectionMatrix(cam.projectionMatrix, false) * cam.worldToCameraMatrix;
 
-            return npSelectLasso(m_points.Length, m_indices.Length / 3, m_points, m_indices, m_selection, strength,
-                ref mvp, ref trans, points, points.Length, campos, frontFaceOnly) > 0;
+            return npSelectLasso(ref m_npModelData,
+                ref viewproj, lasso, lasso.Length, campos, strength, frontFaceOnly) > 0;
         }
 
         public bool SelectBrush(Vector3 pos, float radius, float strength, float[] bsamples)
         {
             Matrix4x4 trans = GetComponent<Transform>().localToWorldMatrix;
-            return npSelectBrush(m_points.Length, m_points, ref trans, pos, radius, strength, bsamples, bsamples.Length, m_selection) > 0;
+            return npSelectBrush(ref m_npModelData, pos, radius, strength, bsamples, bsamples.Length) > 0;
         }
 
         public static Vector3 GetMirrorPlane(MirrorMode mirrorMode)
@@ -564,7 +562,7 @@ namespace UTJ.NormalPainter
             bool needsSetup = false;
             if (m_mirrorRelation == null || m_mirrorRelation.Length != m_points.Length)
             {
-                m_mirrorRelation = new int[m_points.Length];
+                m_mirrorRelation = new PinnedArray<int>(m_points.Length);
                 needsSetup = true;
             }
             else if(m_prevMirrorMode != m_settings.mirrorMode)
@@ -695,9 +693,11 @@ namespace UTJ.NormalPainter
 
             for (int i = 0; i < color.Length; ++i)
             {
-                m_normals[i].x = color[i].r * 2.0f - 1.0f;
-                m_normals[i].y = color[i].g * 2.0f - 1.0f;
-                m_normals[i].z = color[i].b * 2.0f - 1.0f;
+                var c = color[i];
+                m_normals[i] = new Vector3(
+                    c.r * 2.0f - 1.0f,
+                    c.g * 2.0f - 1.0f,
+                    c.b * 2.0f - 1.0f);
             }
             UpdateNormals();
             PushUndo();
@@ -706,16 +706,13 @@ namespace UTJ.NormalPainter
 
         public void ApplySmoothing(float radius, float strength)
         {
-            var selection = m_numSelected > 0 ? m_selection : null;
-            var mat = GetComponent<Transform>().localToWorldMatrix;
-            npSmooth(m_points.Length, m_points, selection, ref mat, radius, strength, m_normals);
+            npSmooth(ref m_npModelData, radius, strength, m_numSelected == 0);
             UpdateNormals();
         }
 
         public bool ApplyWelding(bool smoothing, float weldAngle)
         {
-            var selection = m_numSelected > 0 ? m_selection : null;
-            if (npWeld(m_points.Length, m_points, selection, m_normals, smoothing, weldAngle) > 0)
+            if (npWeld(ref m_npModelData, smoothing, weldAngle, m_numSelected == 0) > 0)
             {
                 UpdateNormals();
                 return true;
@@ -728,15 +725,12 @@ namespace UTJ.NormalPainter
         {
             public bool skinned;
             public Mesh mesh;
-            public Matrix4x4 trans;
-            public Vector3[] vertices;
-            public Vector3[] normals;
+            public Matrix4x4 transform;
+            public PinnedArray<Vector3> vertices;
+            public PinnedArray<Vector3> normals;
             public BoneWeight[] weights;
             public Matrix4x4[] bones;
             public Matrix4x4[] bindposes;
-
-            public GCHandle hvertices;
-            public GCHandle hnormals;
         }
 
         bool IsValidMesh(Mesh mesh)
@@ -768,9 +762,9 @@ namespace UTJ.NormalPainter
                     var d = new WeldData();
                     d.skinned = true;
                     d.mesh = mesh;
-                    d.trans = t.GetComponent<Transform>().localToWorldMatrix;
-                    d.vertices = mesh.vertices;
-                    d.normals = mesh.normals;
+                    d.transform = t.GetComponent<Transform>().localToWorldMatrix;
+                    d.vertices = new PinnedArray<Vector3>(mesh.vertices, false);
+                    d.normals = new PinnedArray<Vector3>(mesh.normals, false);
                     d.weights = mesh.boneWeights;
                     d.bindposes = mesh.bindposes;
                     d.bones = new Matrix4x4[d.bindposes.Length];
@@ -780,7 +774,7 @@ namespace UTJ.NormalPainter
                     for (int bi = 0; bi < n; ++bi)
                         d.bones[bi] = smr.bones[bi].localToWorldMatrix;
 
-                    npApplySkinning(d.vertices.Length, d.weights, d.bones.Length, d.bones, d.bindposes, ref d.trans,
+                    npApplySkinning(d.vertices.Length, d.weights, d.bones.Length, d.bones, d.bindposes, ref d.transform,
                         d.vertices, d.normals, null,
                         d.vertices, d.normals, null);
 
@@ -795,9 +789,9 @@ namespace UTJ.NormalPainter
 
                     var d = new WeldData();
                     d.mesh = mesh;
-                    d.trans = t.GetComponent<Transform>().localToWorldMatrix;
-                    d.vertices = mesh.vertices;
-                    d.normals = mesh.normals;
+                    d.transform = t.GetComponent<Transform>().localToWorldMatrix;
+                    d.vertices = new PinnedArray<Vector3>(mesh.vertices, false);
+                    d.normals = new PinnedArray<Vector3>(mesh.normals, false);
                     data.Add(d);
                 }
             }
@@ -810,24 +804,19 @@ namespace UTJ.NormalPainter
 
             // create data to pass to C++
             Matrix4x4 trans = GetComponent<Transform>().localToWorldMatrix;
-            int[] tnumVertices = new int[data.Count];
-            IntPtr[] tvertices = new IntPtr[data.Count];
-            IntPtr[] tnormals = new IntPtr[data.Count];
-            Matrix4x4[] ttrans = new Matrix4x4[data.Count];
+
+            npModelData[] tdata = new npModelData[data.Count];
             for (int i = 0; i < data.Count; ++i)
             {
-                var d = data[i];
-                tnumVertices[i] = d.vertices.Length;
-                tvertices[i] = PinArray(d.vertices, ref d.hvertices);
-                tnormals[i] = PinArray(d.normals, ref d.hnormals);
-                ttrans[i] = d.trans;
+                tdata[i].num_vertices = data[i].vertices.Length;
+                tdata[i].vertices = data[i].vertices;
+                tdata[i].normals = data[i].normals;
+                tdata[i].transform = data[i].transform;
             }
 
             // do weld
             bool ret = false;
-            var selection = m_numSelected == 0 ? null : m_selection;
-            if (npWeld2(m_points.Length, m_points, selection, m_normals, ref trans,
-                data.Count, tnumVertices, tvertices, tnormals, ttrans, weldMode, weldAngle) > 0)
+            if (npWeld2(ref m_npModelData, tdata.Length, tdata, weldMode, weldAngle, m_numSelected == 0) > 0)
             {
                 // update normals
                 if (weldMode == 1 || weldMode == 2)
@@ -840,7 +829,7 @@ namespace UTJ.NormalPainter
                     {
                         if (d.skinned)
                         {
-                            npApplyReverseSkinning(d.vertices.Length, d.weights, d.bones.Length, d.bones, d.bindposes, ref d.trans,
+                            npApplyReverseSkinning(d.vertices.Length, d.weights, d.bones.Length, d.bones, d.bindposes, ref d.transform,
                                 null, d.normals, null,
                                 null, d.normals, null);
                         }
@@ -850,14 +839,6 @@ namespace UTJ.NormalPainter
                 }
                 ret = true;
             }
-
-            // cleanup
-            foreach (var d in data)
-            {
-                d.hvertices.Free();
-                d.hnormals.Free();
-            }
-
 
             return ret;
         }
@@ -954,113 +935,101 @@ namespace UTJ.NormalPainter
         }
 
 
-        public static IntPtr PinArray(Array v, ref GCHandle gch)
-        {
-            gch = GCHandle.Alloc(v, GCHandleType.Pinned);
-            return gch.AddrOfPinnedObject();
-        }
-        public static IntPtr GetArrayPtr(Array v)
-        {
-            return Marshal.UnsafeAddrOfPinnedArrayElement(v, 0);
-        }
-
-
         struct npModelData
         {
-            public Matrix4x4 transform;
             public IntPtr indices;
-            public IntPtr points;
+            public IntPtr vertices;
             public IntPtr normals;
             public IntPtr selection;
             public int num_vertices;
             public int num_triangles;
+            public Matrix4x4 transform;
+        }
+        struct npSkinData
+        {
+            public IntPtr weights;
+            public IntPtr bones;
+            public IntPtr bindposes;
+            public int num_vertices;
+            public int num_bones;
+            public Matrix4x4 root;
         }
 
         [DllImport("NormalPainterCore")] static extern int npRaycast(
-            int num_triangles, Vector3 pos, Vector3 dir, Vector3[] vertices, int[] indices,
-            ref int tindex, ref float distance, ref Matrix4x4 trans);
+            ref npModelData model, Vector3 pos, Vector3 dir, ref int tindex, ref float distance);
 
         [DllImport("NormalPainterCore")] static extern Vector3 npPickNormal(
-            Vector3[] vertices, int[] indices, Vector3[] normals, ref Matrix4x4 trans,
-            Vector3 pos, int ti);
+            ref npModelData model, Vector3 pos, int ti);
 
         [DllImport("NormalPainterCore")] static extern int npSelectSingle(
-            int num_vertices, int num_triangles, Vector3[] vertices, Vector3[] normals, int[] indices, float[] seletion, float strength,
-            ref Matrix4x4 mvp, ref Matrix4x4 trans, Vector2 rmin, Vector2 rmax, Vector3 campos, bool frontfaceOnly);
+            ref npModelData model, ref Matrix4x4 viewproj, Vector2 rmin, Vector2 rmax, Vector3 campos, float strength, bool frontfaceOnly);
 
         [DllImport("NormalPainterCore")] static extern int npSelectTriangle(
-            int num_triangles, Vector3[] vertices, int[] indices, float[] seletion, float strength,
-            ref Matrix4x4 trans, Vector3 pos, Vector3 dir);
+            ref npModelData model, Vector3 pos, Vector3 dir, float strength);
         
         [DllImport("NormalPainterCore")] static extern int npSelectEdge(
-            int num_vertices, int num_triangles, Vector3[] vertices, int[] indices, float[] seletion, float strength, bool clear);
+            ref npModelData model, float strength, bool clear, bool all);
 
         [DllImport("NormalPainterCore")] static extern int npSelectHole(
-            int num_vertices, int num_triangles, Vector3[] vertices, int[] indices, float[] seletion, float strength, bool clear);
+            ref npModelData model, float strength, bool clear, bool all);
 
         [DllImport("NormalPainterCore")] static extern int npSelectConnected(
-            int num_vertices, int num_triangles, Vector3[] vertices, int[] indices, float[] seletion, float strength, bool clear);
+            ref npModelData model, float strength, bool clear);
 
         [DllImport("NormalPainterCore")] static extern int npSelectRect(
-            int num_vertices, int num_triangles, Vector3[] vertices, int[] indices, float[] seletion, float strength,
-            ref Matrix4x4 mvp, ref Matrix4x4 trans, Vector2 rmin, Vector2 rmax, Vector3 campos, bool frontfaceOnly);
+            ref npModelData model, ref Matrix4x4 viewproj, Vector2 rmin, Vector2 rmax, Vector3 campos, float strength, bool frontfaceOnly);
 
         [DllImport("NormalPainterCore")] static extern int npSelectLasso(
-            int num_vertices, int num_triangles, Vector3[] vertices, int[] indices, float[] seletion, float strength,
-            ref Matrix4x4 mvp, ref Matrix4x4 trans, Vector2[] points, int num_points, Vector3 campos, bool frontfaceOnly);
+            ref npModelData model, ref Matrix4x4 viewproj, Vector2[] lasso, int numLassoPoints, Vector3 campos, float strength, bool frontfaceOnly);
         
         [DllImport("NormalPainterCore")] static extern int npSelectBrush(
-            int num_vertices, Vector3[] vertices, ref Matrix4x4 trans,
-            Vector3 pos, float radius, float strength, float[] bsamples, int num_bsamples, float[] seletion);
+            ref npModelData model,
+            Vector3 pos, float radius, float strength, float[] bsamples, int num_bsamples);
 
         [DllImport("NormalPainterCore")] static extern int npUpdateSelection(
-            int num_vertices, Vector3[] vertices, Vector3[] normals, float[] seletion, ref Matrix4x4 trans,
+            ref npModelData model,
             ref Vector3 selection_pos, ref Vector3 selection_normal);
 
 
         [DllImport("NormalPainterCore")] static extern int npBrushReplace(
-            int num_vertices, Vector3[] vertices, float[] seletion, ref Matrix4x4 trans,
-            Vector3 pos, float radius, float strength, float[] bsamples, int num_bsamples, Vector3 amount, Vector3[] normals);
+            ref npModelData model,
+            Vector3 pos, float radius, float strength, float[] bsamples, int num_bsamples, Vector3 amount);
 
         [DllImport("NormalPainterCore")] static extern int npBrushPaint(
-            int num_vertices, Vector3[] vertices, float[] seletion, ref Matrix4x4 trans,
-            Vector3 pos, float radius, float strength, float[] bsamples, int num_bsamples, Vector3 baseNormal, int blend_mode, Vector3[] normals);
+            ref npModelData model,
+            Vector3 pos, float radius, float strength, float[] bsamples, int num_bsamples, Vector3 baseNormal, int blend_mode);
 
         [DllImport("NormalPainterCore")] static extern int npBrushSmooth(
-            int num_vertices, Vector3[] vertices, float[] seletion, ref Matrix4x4 trans,
-            Vector3 pos, float radius, float strength, float[] bsamples, int num_bsamples, Vector3[] normals);
+            ref npModelData model,
+            Vector3 pos, float radius, float strength, float[] bsamples, int num_bsamples);
 
         [DllImport("NormalPainterCore")] static extern int npBrushLerp(
-            int num_vertices, Vector3[] vertices, float[] seletion, ref Matrix4x4 trans,
+            ref npModelData model,
             Vector3 pos, float radius, float strength, float[] bsamples, int num_bsamples, Vector3[] baseNormals, Vector3[] normals);
 
         [DllImport("NormalPainterCore")] static extern int npAssign(
-            int num_vertices, float[] selection, ref Matrix4x4 trans, Vector3 amount, Vector3[] normals);
+            ref npModelData model, Vector3 value);
         
         [DllImport("NormalPainterCore")] static extern int npMove(
-            int num_vertices, float[] selection, ref Matrix4x4 trans, Vector3 amount, Vector3[] normals);
+            ref npModelData model, Vector3 amount);
         
         [DllImport("NormalPainterCore")] static extern int npRotate(
-            int num_vertices, Vector3[] vertices, float[] selection, ref Matrix4x4 trans,
-            Quaternion amount, Quaternion pivotRot, Vector3[] normals);
+            ref npModelData model, Quaternion amount, Quaternion pivotRot);
 
         [DllImport("NormalPainterCore")] static extern int npRotatePivot(
-            int num_vertices, Vector3[] vertices, float[] selection, ref Matrix4x4 trans,
-            Quaternion amount, Vector3 pivotPos, Quaternion pivotRot, Vector3[] normals);
+            ref npModelData model, Quaternion amount, Vector3 pivotPos, Quaternion pivotRot);
 
         [DllImport("NormalPainterCore")] static extern int npScale(
-            int num_vertices, Vector3[] vertices, float[] selection, ref Matrix4x4 trans,
-            Vector3 amount, Vector3 pivotPos, Quaternion pivotRot, Vector3[] normals);
+            ref npModelData model, Vector3 amount, Vector3 pivotPos, Quaternion pivotRot);
 
         [DllImport("NormalPainterCore")] static extern int npSmooth(
-            int num_vertices, Vector3[] vertices, float[] selection, ref Matrix4x4 trans,
-            float radius, float strength, Vector3[] normals);
+            ref npModelData model, float radius, float strength, bool all);
 
         [DllImport("NormalPainterCore")] static extern int npWeld(
-            int num_vertices, Vector3[] vertices, float[] selection, Vector3[] normals, bool smoothing, float weldAngle);
+            ref npModelData model, bool smoothing, float weldAngle, bool all);
         [DllImport("NormalPainterCore")] static extern int npWeld2(
-            int num_vertices, Vector3[] vertices, float[] selection, Vector3[] normals, ref Matrix4x4 trans,
-            int num_targets, int[] num_tvertices, IntPtr[] tvertices, IntPtr[] tnormals, Matrix4x4[] ttrans, int weldMode, float weldAngle);
+            ref npModelData model, int num_targets, npModelData[] targets,
+            int weldMode, float weldAngle, bool all);
 
         [DllImport("NormalPainterCore")] static extern int npBuildMirroringRelation(
             int num_vertices, Vector3[] vertices, Vector3[] base_normals, Vector3 plane_normal, float epsilon, int[] relation);

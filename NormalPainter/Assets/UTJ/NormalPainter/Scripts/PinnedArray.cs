@@ -29,6 +29,8 @@ namespace UTJ.NormalPainter
         public T[] Array { get { return m_data; } }
         public IntPtr Pointer { get { return m_gch.AddrOfPinnedObject(); } }
 
+        public PinnedArray<T> Clone() { return new PinnedArray<T>((T[])m_data.Clone()); }
+
         public void Dispose()
         {
             Dispose(true);
@@ -54,6 +56,7 @@ namespace UTJ.NormalPainter
         }
 
         public static implicit operator IntPtr(PinnedArray<T> v) { return v.Pointer; }
+        public static implicit operator T[](PinnedArray<T> v) { return v.Array; }
     }
 
 }

@@ -46,15 +46,17 @@ namespace UTJ.NormalPainter
         CommandBuffer m_cmdDraw;
 
         bool m_skinned;
-        Vector3[]   m_points;
-        Vector3[]   m_normals, m_normalsBase, m_normalsBasePredeformed, m_normalsTmp;
-        Vector4[]   m_tangents, m_tangentsBase, m_tangentsBasePredeformed;
-        int[]       m_indices;
-        int[]       m_mirrorRelation;
-        float[]     m_selection;
+        PinnedArray<Vector3>    m_points;
+        PinnedArray<Vector3>    m_normals, m_normalsBase, m_normalsBasePredeformed, m_normalsTmp;
+        PinnedArray<Vector4>    m_tangents, m_tangentsBase, m_tangentsBasePredeformed;
+        PinnedArray<int>        m_indices;
+        PinnedArray<int>        m_mirrorRelation;
+        PinnedArray<float>      m_selection;
 
-        Matrix4x4   m_rootMatrix;
-        Matrix4x4[] m_boneMatrices;
+        PinnedArray<BoneWeight> m_weights;
+        PinnedArray<Matrix4x4>  m_bindposes;
+        PinnedArray<Matrix4x4>  m_boneMatrices;
+        Matrix4x4       m_rootMatrix;
 
         bool        m_editing;
         int         m_numSelected = 0;
@@ -71,8 +73,7 @@ namespace UTJ.NormalPainter
         int         m_brushNumPainted = 0;
 
         [SerializeField] History m_history = new History();
-        GCHandle m_gchIndices, m_gchPoints, m_gchNormals, m_gchSelection;
-        npModelData m_npData = new npModelData();
+        npModelData m_npModelData = new npModelData();
 
         public bool editing
         {
@@ -89,7 +90,7 @@ namespace UTJ.NormalPainter
 
         public float[] selection
         {
-            get { return (float[])m_selection.Clone(); }
+            get { return (float[])m_selection.Array.Clone(); }
             set
             {
                 if (value != null && value.Length == m_selection.Length)
@@ -202,50 +203,49 @@ namespace UTJ.NormalPainter
                 m_selection = null;
 
                 ReleaseComputeBuffers();
-                ReleasePinnedData();
             }
 
             if (m_meshTarget != null)
             {
                 m_skinned = GetComponent<SkinnedMeshRenderer>() != null;
 
-                m_points = m_meshTarget.vertices;
+                m_points = new PinnedArray<Vector3>(m_meshTarget.vertices, false);
 
-                m_normals = m_meshTarget.normals;
+                m_normals = new PinnedArray<Vector3>(m_meshTarget.normals, false);
                 if (m_normals.Length == 0)
                 {
                     m_meshTarget.RecalculateNormals();
-                    m_normalsBase = m_normals = m_meshTarget.normals;
+                    m_normalsBase = m_normals = new PinnedArray<Vector3>(m_meshTarget.normals, false);
                 }
                 else
                 {
                     m_meshTarget.RecalculateNormals();
-                    m_normalsBase = m_meshTarget.normals;
+                    m_normalsBase = new PinnedArray<Vector3>(m_meshTarget.normals, false);
                     m_meshTarget.normals = m_normals;
                 }
 
-                m_tangents = m_meshTarget.tangents;
+                m_tangents = new PinnedArray<Vector4>(m_meshTarget.tangents, false);
                 if (m_tangents.Length == 0)
                 {
                     m_meshTarget.RecalculateTangents();
-                    m_tangentsBase = m_tangents = m_meshTarget.tangents;
+                    m_tangentsBase = m_tangents = new PinnedArray<Vector4>(m_meshTarget.tangents, false);
                 }
                 else
                 {
                     m_meshTarget.RecalculateTangents();
-                    m_tangentsBase = m_meshTarget.tangents;
+                    m_tangentsBase = new PinnedArray<Vector4>(m_meshTarget.tangents, false);
                     m_meshTarget.tangents = m_tangents;
                 }
 
-                m_indices = m_meshTarget.triangles;
-                m_selection = new float[m_points.Length];
-            }
+                m_indices = new PinnedArray<int>(m_meshTarget.triangles, false);
+                m_selection = new PinnedArray<float>(m_points.Length);
 
-            {
-                if (!m_gchPoints.IsAllocated)    m_npData.points = PinArray(m_points, ref m_gchPoints);
-                if (!m_gchNormals.IsAllocated)   m_npData.normals = PinArray(m_normals, ref m_gchNormals);
-                if (!m_gchIndices.IsAllocated)   m_npData.indices = PinArray(m_indices, ref m_gchIndices);
-                if (!m_gchSelection.IsAllocated) m_npData.selection = PinArray(m_selection, ref m_gchSelection);
+                m_npModelData.num_vertices = m_points.Length;
+                m_npModelData.num_triangles = m_indices.Length / 3;
+                m_npModelData.indices = m_indices;
+                m_npModelData.vertices = m_points;
+                m_npModelData.normals = m_normals;
+                m_npModelData.selection = m_selection;
             }
 
             if (m_cbPoints == null && m_points != null && m_points.Length > 0)
@@ -283,15 +283,15 @@ namespace UTJ.NormalPainter
             {
                 if (m_boneMatrices == null || m_boneMatrices.Length != m_meshTarget.bindposes.Length)
                 {
-                    m_boneMatrices = new Matrix4x4[m_meshTarget.bindposes.Length];
+                    m_boneMatrices = new PinnedArray<Matrix4x4>(m_meshTarget.bindposes.Length);
                 }
                 if (m_normalsTmp == null || m_normalsTmp.Length != m_normals.Length)
                 {
-                    m_normalsTmp = new Vector3[m_normals.Length];
-                    m_normalsBasePredeformed = (Vector3[])m_normalsBase.Clone();
-                    m_tangentsBasePredeformed = (Vector4[])m_tangentsBase.Clone();
+                    m_normalsTmp = new PinnedArray<Vector3>(m_normals.Length);
+                    m_normalsBasePredeformed = m_normalsBase.Clone();
+                    m_tangentsBasePredeformed = m_tangentsBase.Clone();
                 }
-                UpdateSkinning();
+                UpdateTransform();
             }
 
             m_settings.InitializeBrushData();
@@ -305,7 +305,6 @@ namespace UTJ.NormalPainter
         void EndEdit()
         {
             ReleaseComputeBuffers();
-            ReleasePinnedData();
 
             m_editing = false;
         }
@@ -321,14 +320,6 @@ namespace UTJ.NormalPainter
             if (m_cbBaseTangents != null) { m_cbBaseTangents.Release(); m_cbBaseTangents = null; }
             if (m_cbBrushSamples!= null) { m_cbBrushSamples.Release(); m_cbBrushSamples = null; }
             if (m_cmdDraw != null) { m_cmdDraw.Release(); m_cmdDraw = null; }
-        }
-
-        void ReleasePinnedData()
-        {
-            if (m_gchIndices.IsAllocated)   m_gchIndices.Free();
-            if (m_gchPoints.IsAllocated)    m_gchPoints.Free();
-            if (m_gchNormals.IsAllocated)   m_gchNormals.Free();
-            if (m_gchSelection.IsAllocated) m_gchSelection.Free();
         }
 
         void Start()
@@ -349,7 +340,7 @@ namespace UTJ.NormalPainter
 
         void LateUpdate()
         {
-            UpdateSkinning();
+            UpdateTransform();
         }
 
         public int OnSceneGUI()

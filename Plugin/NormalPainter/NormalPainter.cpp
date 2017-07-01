@@ -3,41 +3,66 @@
 
 using namespace mu;
 
+struct npModelData
+{
+    int         *indices = nullptr;
+    float3      *vertices = nullptr;
+    float3      *normals = nullptr;
+    float       *selection = nullptr;
+    int         num_vertices = 0;
+    int         num_triangles = 0;
+    float4x4    transform = float4x4::identity();
+};
+
+struct npSkinData
+{
+    Weights4    *weights = nullptr;
+    float4x4    *bones = nullptr;
+    float4x4    *bindposes = nullptr;
+    int         num_vertices = 0;
+    int         num_bones = 0;
+    float4x4    root = float4x4::identity();
+};
+
+
 inline static int Raycast(
-    const float3 pos, const float3 dir, const float3 vertices[], const int indices[], int num_triangles,
-    int& tindex, float& distance)
+    const npModelData& model, const float3 pos, const float3 dir, int& tindex, float& distance)
+{
+    float4x4 itrans = invert(model.transform);
+    float3 rpos = mul_p(itrans, pos);
+    float3 rdir = normalize(mul_v(itrans, dir));
+    float d;
+    int hit = RayTrianglesIntersection(rpos, rdir, model.vertices, model.indices, model.num_triangles, tindex, d);
+    if (hit) {
+        float3 hpos = rpos + rdir * d;
+        distance = length(mul_p(model.transform, hpos) - pos);
+    }
+    return hit;
+}
+
+inline static int RaycastWithoutTransform(
+    const npModelData& model, const float3 pos, const float3 dir, int& tindex, float& distance)
 {
     float d;
-    int hit = RayTrianglesIntersection(pos, dir, vertices, indices, num_triangles, tindex, d);
+    int hit = RayTrianglesIntersection(pos, dir, model.vertices, model.indices, model.num_triangles, tindex, d);
     if (hit) {
         float3 hpos = pos + dir * d;
         distance = length(hpos - pos);
     }
     return hit;
 }
-inline static int Raycast(
-    const float3 pos, const float3 dir, const float3 vertices[], const int indices[], int num_triangles, const float4x4& trans,
-    int& tindex, float& distance)
-{
-    float4x4 itrans = invert(trans);
-    float3 rpos = mul_p(itrans, pos);
-    float3 rdir = normalize(mul_v(itrans, dir));
-    float d;
-    int hit = RayTrianglesIntersection(rpos, rdir, vertices, indices, num_triangles, tindex, d);
-    if (hit) {
-        float3 hpos = rpos + rdir * d;
-        distance = length(mul_p(trans, hpos) - pos);
-    }
-    return hit;
-}
 
 template<class Body>
-inline static int SelectInside(float3 pos, float radius, const float3 vertices[], int num_vertices, const float4x4& trans, const Body& body)
+inline static int SelectInside(const npModelData& model, float3 pos, float radius, const Body& body)
 {
+    auto num_vertices = model.num_vertices;
+    auto vertices = model.vertices;
+    auto transform = model.transform;
+
     int ret = 0;
     float rq = radius * radius;
     for (int vi = 0; vi < num_vertices; ++vi) {
-        float3 p = mul_p(trans, vertices[vi]);
+        float3 p = mul_p(transform, vertices[vi]);
         float dsq = length_sq(p - pos);
         if (dsq <= rq) {
             body(vi, std::sqrt(dsq), p);
@@ -47,12 +72,16 @@ inline static int SelectInside(float3 pos, float radius, const float3 vertices[]
     return ret;
 }
 
-static bool GetFurthestDistance(const float3 vertices[], const float selection[], int num_vertices, float3 pos, const float4x4& trans, int &vidx, float &dist)
+static bool GetFurthestDistance(const npModelData& model, float3 pos, int &vidx, float &dist)
 {
+    auto num_vertices = model.num_vertices;
+    auto vertices = model.vertices;
+    auto selection = model.selection;
+
     float furthest_sq = FLT_MIN;
     int furthest_vi;
 
-    float3 lpos = mul_p(invert(trans), pos);
+    float3 lpos = mul_p(invert(model.transform), pos);
     for (int vi = 0; vi < num_vertices; ++vi) {
         if (selection[vi] > 0.0f) {
             float dsq = length_sq(vertices[vi] - lpos);
@@ -64,7 +93,7 @@ static bool GetFurthestDistance(const float3 vertices[], const float selection[]
     }
 
     if (furthest_sq > FLT_MIN) {
-        dist = length(mul_p(trans, vertices[furthest_vi]) - pos);
+        dist = length(mul_p(model.transform, vertices[furthest_vi]) - pos);
         vidx = furthest_vi;
         return true;
     }
@@ -81,42 +110,36 @@ static inline float GetBrushSample(float distance, float bradius, float bsamples
 }
 
 
-struct npModelData
-{
-    float4x4 transform = float4x4::identity();
-    int      *indices = nullptr;
-    float3   *points = nullptr;
-    float3   *normals = nullptr;
-    float    *selection = nullptr;
-    int      num_vercies = 0;
-    int      num_triangles = 0;
-};
-
 npAPI int npRaycast(
-    int num_triangles, const float3 pos, const float3 dir, const float3 vertices[], const int indices[],
-    int *tindex, float *distance, const float4x4 *trans)
+    npModelData *model, const float3 pos, const float3 dir, int *tindex, float *distance)
 {
-    return Raycast(pos, dir, vertices, indices, num_triangles, *trans, *tindex, *distance);
+    return Raycast(*model, pos, dir, *tindex, *distance);
 }
 
 npAPI float3 npPickNormal(
-    const float3 vertices[], const int indices[], const float3 normals[], const float4x4 *trans,
-    const float3 pos, int ti)
+    npModelData *model, const float3 pos, int ti)
 {
-    float3 p[3]{ vertices[indices[ti * 3 + 0]], vertices[indices[ti * 3 + 1]], vertices[indices[ti * 3 + 2]] };
+    auto indices = model->indices;
+    auto points = model->vertices;
+    auto normals = model->normals;
+
+    float3 p[3]{ points[indices[ti * 3 + 0]], points[indices[ti * 3 + 1]], points[indices[ti * 3 + 2]] };
     float3 n[3]{ normals[indices[ti * 3 + 0]], normals[indices[ti * 3 + 1]], normals[indices[ti * 3 + 2]] };
-    float3 lpos = mul_p(invert(*trans), pos);
+    float3 lpos = mul_p(invert(model->transform), pos);
     float3 r = triangle_interpolation(lpos, p[0], p[1], p[2], n[0], n[1], n[2]);
-    return normalize(mul_v(*trans, r));
+    return normalize(mul_v(model->transform, r));
 }
 
 npAPI int npSelectSingle(
-    int num_vertices, int num_triangles, const float3 vertices[], const float3 normals[], const int indices[], float selection[], float strength,
-    const float4x4 *mvp_, const float4x4 *trans_, float2 rmin, float2 rmax, float3 campos, int frontface_only)
+    npModelData *model, const float4x4 *viewproj, float2 rmin, float2 rmax, float3 campos, float strength, int frontface_only)
 {
-    float4x4 mvp = *mvp_;
-    float4x4 trans = *trans_;
-    float3 lcampos = mul_p(invert(trans), campos);
+    auto num_vertices = model->num_vertices;
+    auto vertices = model->vertices;
+    auto normals = model->normals;
+    auto selection = model->selection;
+
+    float4x4 mvp = *viewproj * model->transform;
+    float3 lcampos = mul_p(invert(model->transform), campos);
     float2 rcenter = (rmin + rmax) * 0.5f;
 
     const int MaxInsider = 64;
@@ -138,7 +161,7 @@ npAPI int npSelectSingle(
                     float3 dir = normalize(vpos - lcampos);
                     int ti;
                     float distance;
-                    if (Raycast(lcampos, dir, vertices, indices, num_triangles, ti, distance)) {
+                    if (RaycastWithoutTransform(*model, lcampos, dir, ti, distance)) {
                         float3 hitpos = lcampos + dir * distance;
                         if (length(vpos - hitpos) < 0.01f) {
                             hit = true;
@@ -196,12 +219,14 @@ npAPI int npSelectSingle(
 
 
 npAPI int npSelectTriangle(
-    int num_triangles, const float3 vertices[], const int indices[], float selection[], float strength,
-    const float4x4 *trans, const float3 pos, const float3 dir)
+    npModelData *model, const float3 pos, const float3 dir, float strength)
 {
+    auto indices = model->indices;
+    auto selection = model->selection;
+
     int ti;
     float distance;
-    if (Raycast(pos, dir, vertices, indices, num_triangles, *trans, ti, distance)) {
+    if (Raycast(*model, pos, dir, ti, distance)) {
         for (int i = 0; i < 3; ++i) {
             selection[indices[ti * 3 + i]] = clamp01(selection[indices[ti * 3 + i]] + strength);
         }
@@ -211,22 +236,27 @@ npAPI int npSelectTriangle(
 }
 
 npAPI int npSelectEdge(
-    int num_vertices, int num_triangles, const float3 vertices_[], const int indices_[], float selection[], float strength, int clear)
+    npModelData *model, float strength, int clear, int all)
 {
-    auto indices = IArray<int>(indices_, num_triangles * 3);
-    auto vertices = IArray<float3>(vertices_, num_vertices);
+    auto indices = IArray<int>(model->indices, model->num_triangles * 3);
+    auto vertices = IArray<float3>(model->vertices, model->num_vertices);
+    auto selection = model->selection;
+    int num_vertices = model->num_vertices;
 
     RawVector<int> targets;
-    targets.reserve(num_vertices);
-    for (int vi = 0; vi < num_vertices; ++vi) {
-        if (selection[vi] > 0.0f) {
-            targets.push_back(vi);
+    if (all) {
+        targets.reserve(num_vertices);
+        for (int vi = 0; vi < num_vertices; ++vi) {
+            if (selection[vi] > 0.0f) {
+                targets.push_back(vi);
+            }
         }
     }
-    if (targets.size() == 0) {
+    else {
         targets.resize(num_vertices);
-        for (int vi = 0; vi < num_vertices; ++vi)
+        for (int vi = 0; vi < num_vertices; ++vi) {
             targets[vi] = vi;
+        }
     }
 
     if (clear) { memset(selection, 0, num_vertices * 4); }
@@ -240,22 +270,27 @@ npAPI int npSelectEdge(
 }
 
 npAPI int npSelectHole(
-    int num_vertices, int num_triangles, const float3 vertices_[], const int indices_[], float selection[], float strength, int clear)
+    npModelData *model, float strength, int clear, int all)
 {
-    auto indices = IArray<int>(indices_, num_triangles * 3);
-    auto vertices = IArray<float3>(vertices_, num_vertices);
+    auto indices = IArray<int>(model->indices, model->num_triangles * 3);
+    auto vertices = IArray<float3>(model->vertices, model->num_vertices);
+    auto selection = model->selection;
+    int num_vertices = model->num_vertices;
 
     RawVector<int> targets;
-    targets.reserve(num_vertices);
-    for (int vi = 0; vi < num_vertices; ++vi) {
-        if (selection[vi] > 0.0f) {
-            targets.push_back(vi);
+    if (all) {
+        targets.reserve(num_vertices);
+        for (int vi = 0; vi < num_vertices; ++vi) {
+            if (selection[vi] > 0.0f) {
+                targets.push_back(vi);
+            }
         }
     }
-    if (targets.size() == 0) {
+    else {
         targets.resize(num_vertices);
-        for (int vi = 0; vi < num_vertices; ++vi)
+        for (int vi = 0; vi < num_vertices; ++vi) {
             targets[vi] = vi;
+        }
     }
 
     if (clear) { memset(selection, 0, num_vertices * 4); }
@@ -269,10 +304,12 @@ npAPI int npSelectHole(
 }
 
 npAPI int npSelectConnected(
-    int num_vertices, int num_triangles, const float3 vertices_[], const int indices_[], float selection[], float strength, int clear)
+    npModelData *model, float strength, int clear)
 {
-    auto indices = IArray<int>(indices_, num_triangles * 3);
-    auto vertices = IArray<float3>(vertices_, num_vertices);
+    auto indices = IArray<int>(model->indices, model->num_triangles * 3);
+    auto vertices = IArray<float3>(model->vertices, model->num_vertices);
+    auto selection = model->selection;
+    int num_vertices = model->num_vertices;
 
     RawVector<int> targets;
     targets.reserve(num_vertices);
@@ -280,11 +317,6 @@ npAPI int npSelectConnected(
         if (selection[vi] > 0.0f) {
             targets.push_back(vi);
         }
-    }
-    if (targets.size() == 0) {
-        targets.resize(num_vertices);
-        for (int vi = 0; vi < num_vertices; ++vi)
-            targets[vi] = vi;
     }
 
     if (clear) { memset(selection, 0, num_vertices * 4); }
@@ -298,12 +330,16 @@ npAPI int npSelectConnected(
 }
 
 npAPI int npSelectRect(
-    int num_vertices, int num_triangles, const float3 vertices[], const int indices[], float selection[], float strength,
-    const float4x4 *mvp_, const float4x4 *trans_, float2 rmin, float2 rmax, float3 campos, int frontface_only)
+    npModelData *model,
+    const float4x4 *viewproj, float2 rmin, float2 rmax, float3 campos, float strength, int frontface_only)
 {
-    float4x4 mvp = *mvp_;
-    float4x4 trans = *trans_;
-    float3 lcampos = mul_p(invert(trans), campos);
+    auto num_vertices = model->num_vertices;
+    auto vertices = model->vertices;
+    auto normals = model->normals;
+    auto selection = model->selection;
+
+    float4x4 mvp = *viewproj * model->transform;
+    float3 lcampos = mul_p(invert(model->transform), campos);
 
     std::atomic_int ret{ 0 };
     parallel_for(0, num_vertices, [&](int vi) {
@@ -318,7 +354,7 @@ npAPI int npSelectRect(
                 float3 dir = normalize(vpos - lcampos);
                 int ti;
                 float distance;
-                if (Raycast(lcampos, dir, vertices, indices, num_triangles, ti, distance)) {
+                if (RaycastWithoutTransform(*model, lcampos, dir, ti, distance)) {
                     float3 hitpos = lcampos + dir * distance;
                     if (length(vpos - hitpos) < 0.01f) {
                         hit = true;
@@ -339,37 +375,41 @@ npAPI int npSelectRect(
 }
 
 npAPI int npSelectLasso(
-    int num_vertices, int num_triangles, const float3 vertices[], const int indices[], float selection[], float strength,
-    const float4x4 *mvp_, const float4x4 *trans_, const float2 poly[], int ngon, float3 campos, int frontface_only)
+    npModelData *model,
+    const float4x4 *viewproj, const float2 lasso[], int num_lasso_points, float3 campos, float strength, int frontface_only)
 {
-    if (ngon < 3) { return 0; }
+    if (num_lasso_points < 3) { return 0; }
 
-    float4x4 mvp = *mvp_;
-    float4x4 trans = *trans_;
-    float3 lcampos = mul_p(invert(trans), campos);
+    auto num_vertices = model->num_vertices;
+    auto vertices = model->vertices;
+    auto normals = model->normals;
+    auto selection = model->selection;
+
+    float4x4 mvp = *viewproj * model->transform;
+    float3 lcampos = mul_p(invert(model->transform), campos);
 
     float2 minp, maxp;
-    MinMax(poly, ngon, minp, maxp);
+    MinMax(lasso, num_lasso_points, minp, maxp);
 
     RawVector<float> polyx, polyy;
-    polyx.resize(ngon); polyy.resize(ngon);
-    for (int i = 0; i < ngon; ++i) {
-        polyx[i] = poly[i].x;
-        polyy[i] = poly[i].y;
+    polyx.resize(num_lasso_points); polyy.resize(num_lasso_points);
+    for (int i = 0; i < num_lasso_points; ++i) {
+        polyx[i] = lasso[i].x;
+        polyy[i] = lasso[i].y;
     }
 
     std::atomic_int ret{ 0 };
     parallel_for(0, num_vertices, [&](int vi) {
         float4 vp = mul4(mvp, vertices[vi]);
         float2 sp = float2{ vp.x, vp.y } / vp.w;
-        if (PolyInside(polyx.data(), polyy.data(), ngon, minp, maxp, sp)) {
+        if (PolyInside(polyx.data(), polyy.data(), num_lasso_points, minp, maxp, sp)) {
             bool hit = false;
             if (frontface_only) {
                 float3 vpos = vertices[vi];
                 float3 dir = normalize(vpos - lcampos);
                 int ti;
                 float distance;
-                if (Raycast(lcampos, dir, vertices, indices, num_triangles, ti, distance)) {
+                if (RaycastWithoutTransform(*model, lcampos, dir, ti, distance)) {
                     float3 hitpos = lcampos + dir * distance;
                     if (length(vpos - hitpos) < 0.01f) {
                         hit = true;
@@ -390,19 +430,24 @@ npAPI int npSelectLasso(
 }
 
 npAPI int npSelectBrush(
-    int num_vertices, const float3 vertices[], const float4x4 *trans,
+    npModelData *model,
     const float3 pos, float radius, float strength, float bsamples[], int num_bsamples, float selection[])
 {
-    return SelectInside(pos, radius, vertices, num_vertices, *trans, [&](int vi, float d, float3 p) {
+    return SelectInside(*model, pos, radius, [&](int vi, float d, float3 p) {
         float s = GetBrushSample(d, radius, bsamples, num_bsamples) * strength;
         selection[vi] = clamp01(selection[vi] + s);
     });
 }
 
 npAPI int npUpdateSelection(
-    int num_vertices, const float3 vertices[], const float3 normals[], const float selection[], const float4x4 *trans,
+    npModelData *model,
     float3 *selection_pos, float3 *selection_normal)
 {
+    auto num_vertices = model->num_vertices;
+    auto vertices = model->vertices;
+    auto normals = model->normals;
+    auto selection = model->selection;
+
     float st = 0.0f;
     int num_selected = 0;
     float3 spos = float3::zero();
@@ -420,9 +465,10 @@ npAPI int npUpdateSelection(
     }
 
     if (num_selected > 0) {
+        auto trans = model->transform;
         spos /= st;
-        spos = mul_p(*trans, spos);
-        snormal = normalize(mul_v(*trans, snormal));
+        spos = mul_p(trans, spos);
+        snormal = normalize(mul_v(trans, snormal));
         srot = to_quat(look33(snormal, {0,1,0}));
     }
 
@@ -433,10 +479,13 @@ npAPI int npUpdateSelection(
 
 
 npAPI void npAssign(
-    int num_vertices, const float selection[], const float4x4 *trans_,
-    float3 v, float3 normals[])
+    npModelData *model, float3 v)
 {
-    v = mul_v(invert(*trans_), v);
+    auto num_vertices = model->num_vertices;
+    auto normals = model->normals;
+    auto selection = model->selection;
+
+    v = mul_v(invert(model->transform), v);
     for (int vi = 0; vi < num_vertices; ++vi) {
         float s = selection[vi];
         if (s == 0.0f) continue;
@@ -446,34 +495,40 @@ npAPI void npAssign(
 }
 
 npAPI void npMove(
-    int num_vertices, const float selection[], const float4x4 *trans_,
-    float3 amount, float3 normals[])
+    npModelData *model, float3 v)
 {
-    amount = mul_v(invert(*trans_), amount);
+    auto num_vertices = model->num_vertices;
+    auto normals = model->normals;
+    auto selection = model->selection;
+
+    v = mul_v(invert(model->transform), v);
     for (int vi = 0; vi < num_vertices; ++vi) {
         float s = selection[vi];
         if (s == 0.0f) continue;
 
-        normals[vi] = normalize(normals[vi] + amount * s);
+        normals[vi] = normalize(normals[vi] + v * s);
     }
 }
 
 npAPI void npRotate(
-    int num_vertices, const float3 vertices[], const float selection[], const float4x4 *trans_,
-    quatf amount, quatf pivot_rot, float3 normals[])
+    npModelData *model, quatf v, quatf pivot_rot)
 {
     float3 axis;
     float angle;
-    to_axis_angle(amount, axis, angle);
+    to_axis_angle(v, axis, angle);
     if (near_equal(angle, 0.0f) || std::isnan(angle)) {
         return;
     }
 
+    auto num_vertices = model->num_vertices;
+    auto normals = model->normals;
+    auto selection = model->selection;
+
     auto ptrans = to_float4x4(invert(pivot_rot));
     auto iptrans = invert(ptrans);
-    auto trans = *trans_;
+    auto trans = model->transform;
     auto itrans = invert(trans);
-    auto rot = to_float4x4(invert(amount));
+    auto rot = to_float4x4(invert(v));
 
     auto to_lspace = trans * iptrans * rot * ptrans * itrans;
 
@@ -488,30 +543,34 @@ npAPI void npRotate(
 }
 
 npAPI void npRotatePivot(
-    int num_vertices, const float3 vertices[], const float selection[], const float4x4 *trans_,
-    quatf amount, float3 pivot_pos, quatf pivot_rot, float3 normals[])
+    npModelData *model, quatf v, float3 pivot_pos, quatf pivot_rot)
 {
     float3 axis;
     float angle;
-    to_axis_angle(amount, axis, angle);
+    to_axis_angle(v, axis, angle);
     if (near_equal(angle, 0.0f) || std::isnan(angle)) {
         return;
     }
 
     float furthest;
     int furthest_idx;
-    if (!GetFurthestDistance(vertices, selection, num_vertices, pivot_pos, *trans_, furthest_idx, furthest)) {
+    if (!GetFurthestDistance(*model, pivot_pos, furthest_idx, furthest)) {
         return;
     }
 
+    auto num_vertices = model->num_vertices;
+    auto vertices = model->vertices;
+    auto normals = model->normals;
+    auto selection = model->selection;
+
     auto ptrans = to_float4x4(invert(pivot_rot)) * translate(pivot_pos);
     auto iptrans = invert(ptrans);
-    auto trans = *trans_;
+    auto trans = model->transform;
     auto itrans = invert(trans);
 
     auto to_pspace = trans * iptrans;
     auto to_lspace = ptrans * itrans;
-    auto rot = to_float3x3(amount);
+    auto rot = to_float3x3(v);
 
     for (int vi = 0; vi < num_vertices; ++vi) {
         float s = selection[vi];
@@ -527,18 +586,22 @@ npAPI void npRotatePivot(
 }
 
 npAPI void npScale(
-    int num_vertices, const float3 vertices[], const float selection[], const float4x4 *trans_,
-    float3 amount, float3 pivot_pos, quatf pivot_rot, float3 normals[])
+    npModelData *model, float3 v, float3 pivot_pos, quatf pivot_rot)
 {
     float furthest;
     int furthest_idx;
-    if (!GetFurthestDistance(vertices, selection, num_vertices, pivot_pos, *trans_, furthest_idx, furthest)) {
+    if (!GetFurthestDistance(*model, pivot_pos, furthest_idx, furthest)) {
         return;
     }
 
+    auto num_vertices = model->num_vertices;
+    auto vertices = model->vertices;
+    auto normals = model->normals;
+    auto selection = model->selection;
+
     auto ptrans = to_float4x4(invert(pivot_rot)) * translate(pivot_pos);
     auto iptrans = invert(ptrans);
-    auto trans = *trans_;
+    auto trans = model->transform;
     auto itrans = invert(trans);
 
     auto to_pspace = trans * iptrans;
@@ -550,24 +613,28 @@ npAPI void npScale(
 
         float3 vpos = mul_p(to_pspace, vertices[vi]);
         float d = length(vpos);
-        float3 v = mul_v(to_lspace, (vpos / d) * amount);
+        float3 v = mul_v(to_lspace, (vpos / d) * v);
         normals[vi] = normalize(normals[vi] + v * (d / furthest * s));
     }
 }
 
 npAPI void npSmooth(
-    int num_vertices, const float3 vertices[], const float selection[], const float4x4 *trans,
-    float radius, float strength, float3 normals[])
+    npModelData *model, float radius, float strength, int all)
 {
+    auto num_vertices = model->num_vertices;
+    auto vertices = model->vertices;
+    auto normals = model->normals;
+    auto selection = model->selection;
+
     RawVector<float3> tvertices;
     tvertices.resize(num_vertices);
     parallel_for(0, num_vertices, [&](int vi) {
-        tvertices[vi] = mul_p(*trans, vertices[vi]);
+        tvertices[vi] = mul_p(model->transform, vertices[vi]);
     });
 
     float rsq = radius * radius;
     parallel_for(0, num_vertices, [&](int vi) {
-        float s = selection ? selection[vi] : 1.0f;
+        float s = all ? 1.0f : selection[vi];
         if (s == 0.0f) { return; }
 
         float3 p = tvertices[vi];
@@ -584,9 +651,14 @@ npAPI void npSmooth(
     });
 }
 
-npAPI int npWeld(int num_vertices, const float3 vertices[], const float selection[], float3 normals[]
-    , int smoothing, float weld_angle)
+npAPI int npWeld(
+    npModelData *model, int smoothing, float weld_angle, int all)
 {
+    auto num_vertices = model->num_vertices;
+    auto vertices = model->vertices;
+    auto normals = model->normals;
+    auto selection = model->selection;
+
     RawVector<bool> checked;
     checked.resize(num_vertices);
     checked.zeroclear();
@@ -595,7 +667,7 @@ npAPI int npWeld(int num_vertices, const float3 vertices[], const float selectio
     RawVector<int> shared;
     for (int vi = 0; vi < num_vertices; ++vi) {
         if (checked[vi]) { continue; }
-        float s = selection ? selection[vi] : 1.0f;
+        float s = all ? 1.0f : selection[vi];
         if (s == 0.0f) { continue; }
 
         float3 p = vertices[vi];
@@ -626,11 +698,16 @@ npAPI int npWeld(int num_vertices, const float3 vertices[], const float selectio
 }
 
 
-npAPI int npWeld2(int num_vertices, const float3 vertices[], const float selection[], float3 normals[], const float4x4 *trans_,
-    int num_targets, const int tnum_vertices[], const float3 *tvertices[], float3 *tnormals[], const float4x4 ttrans[],
-    int weld_mode, float weld_angle)
+npAPI int npWeld2(npModelData *model,
+    int num_targets, npModelData targets[],
+    int weld_mode, float weld_angle, int all)
 {
-    float4x4 trans = *trans_;
+    auto num_vertices = model->num_vertices;
+    auto vertices = model->vertices;
+    auto normals = model->normals;
+    auto selection = model->selection;
+
+    float4x4 trans = model->transform;
     float4x4 itrans = invert(trans);
 
     RawVector<float4x4> titrans;
@@ -649,14 +726,14 @@ npAPI int npWeld2(int num_vertices, const float3 vertices[], const float selecti
     twvertices.resize(num_targets);
     twnormals.resize(num_targets);
     for (int ti = 0; ti < num_targets; ++ti) {
-        auto tt = ttrans[ti];
+        auto tt = targets[ti].transform;
         titrans[ti] = invert(tt);
 
-        auto tva = tvertices[ti];
-        auto tna = tnormals[ti];
+        auto tva = targets[ti].vertices;
+        auto tna = targets[ti].normals;
         auto& twva = twvertices[ti];
         auto& twna = twnormals[ti];
-        int num_tv = tnum_vertices[ti];
+        int num_tv = targets[ti].num_vertices;
         twva.resize(num_tv);
         twna.resize(num_tv);
         for (int tvi = 0; tvi < num_tv; ++tvi) {
@@ -673,13 +750,13 @@ npAPI int npWeld2(int num_vertices, const float3 vertices[], const float selecti
         auto& weld_map = weld_maps[ti];
 
         for (int vi = 0; vi < num_vertices; ++vi) {
-            if (selection && selection[vi] == 0.0f) { continue; }
+            if (!all && selection[vi] == 0.0f) { continue; }
 
             auto p = wvertices[vi];
             auto n = wnormals[vi];
             auto& twva = twvertices[ti];
             auto& twna = twnormals[ti];
-            int num_tv = tnum_vertices[ti];
+            int num_tv = targets[ti].num_vertices;
             for (int tvi = 0; tvi < num_tv; ++tvi) {
                 if (near_equal(length_sq(twva[tvi] - p), 0.0f) && angle_between(n, twna[tvi]) * Rad2Deg <= weld_angle) {
                     weld_map.push_back({ vi, tvi });
@@ -698,7 +775,7 @@ npAPI int npWeld2(int num_vertices, const float3 vertices[], const float selecti
         for (int ti = 0; ti < num_targets; ++ti) {
             auto& weld_map = weld_maps[ti];
             auto it = titrans[ti];
-            auto tna = tnormals[ti];
+            auto tna = targets[ti].normals;
             for (auto& rel : weld_map) {
                 tna[rel.second] = mul_v(it, wnormals[rel.first]);
             }
@@ -732,7 +809,7 @@ npAPI int npWeld2(int num_vertices, const float3 vertices[], const float selecti
         for (int ti = 0; ti < num_targets; ++ti) {
             auto& weld_map = weld_maps[ti];
             auto it = titrans[ti];
-            auto tna = tnormals[ti];
+            auto tna = targets[ti].normals;
             for (auto& rel : weld_map) {
                 normals[rel.first] = mul_v(itrans, tmp_wnormals[rel.first]);
                 tna[rel.second] = mul_v(it, tmp_wnormals[rel.first]);
@@ -744,26 +821,32 @@ npAPI int npWeld2(int num_vertices, const float3 vertices[], const float selecti
 
 
 npAPI int npBrushReplace(
-    int num_vertices, const float3 vertices[], const float selection[], const float4x4 *trans,
-    const float3 pos, float radius, float strength, float bsamples[], int num_bsamples, float3 amount, float3 normals[])
+    npModelData *model,
+    const float3 pos, float radius, float strength, float bsamples[], int num_bsamples, float3 value)
 {
-    return SelectInside(pos, radius, vertices, num_vertices, *trans, [&](int vi, float d, float3 p) {
+    auto normals = model->normals;
+    auto selection = model->selection;
+
+    return SelectInside(*model, pos, radius, [&](int vi, float d, float3 p) {
         float s = GetBrushSample(d, radius, bsamples, num_bsamples) * strength;
         if (selection) s *= selection[vi];
 
-        normals[vi] = normalize(normals[vi] + amount * s);
+        normals[vi] = normalize(normals[vi] + value * s);
     });
     return 0;
 }
 
 npAPI int npBrushPaint(
-    int num_vertices, const float3 vertices[], const float selection[], const float4x4 *trans,
-    const float3 pos, float radius, float strength, float bsamples[], int num_bsamples, float3 n, int blend_mode, float3 normals[])
+    npModelData *model,
+    const float3 pos, float radius, float strength, float bsamples[], int num_bsamples, float3 n, int blend_mode)
 {
+    auto normals = model->normals;
+    auto selection = model->selection;
+
     float3 ln = n;
-    n = normalize(mul_v(*trans, n));
-    auto itrans = invert(*trans);
-    return SelectInside(pos, radius, vertices, num_vertices, *trans, [&](int vi, float d, float3 p) {
+    n = normalize(mul_v(model->transform, n));
+    auto itrans = invert(model->transform);
+    return SelectInside(*model, pos, radius, [&](int vi, float d, float3 p) {
         int bsi = GetBrushSampleIndex(d, radius, num_bsamples);
         float s = clamp11(bsamples[bsi] * strength * 2.0f);
         if (selection) s *= selection[vi];
@@ -808,24 +891,30 @@ npAPI int npBrushPaint(
 }
 
 npAPI int npBrushLerp(
-    int num_vertices, const float3 vertices[], const float selection[], const float4x4 *trans,
-    const float3 pos, float radius, float strength, float bsamples[], int num_bsamples, const float3 base[], float3 normals[])
+    npModelData *model,
+    const float3 pos, float radius, float strength, float bsamples[], int num_bsamples, const float3 n0[], const float3 n1[])
 {
-    return SelectInside(pos, radius, vertices, num_vertices, *trans, [&](int vi, float d, float3 p) {
+    auto normals = model->normals;
+    auto selection = model->selection;
+
+    return SelectInside(*model, pos, radius, [&](int vi, float d, float3 p) {
         float s = GetBrushSample(d, radius, bsamples, num_bsamples) * strength;
         if (selection) s *= selection[vi];
 
         float sign = strength < 0.0f ? -1.0f : 1.0f;
-        normals[vi] = normalize(lerp(normals[vi], base[vi] * sign, s));
+        normals[vi] = normalize(lerp(n1[vi], n0[vi] * sign, s));
     });
 }
 
 npAPI int npBrushSmooth(
-    int num_vertices, const float3 vertices[], const float selection[], const float4x4 *trans,
-    const float3 pos, float radius, float strength, float bsamples[], int num_bsamples, float3 normals[])
+    npModelData *model,
+    const float3 pos, float radius, float strength, float bsamples[], int num_bsamples)
 {
+    auto normals = model->normals;
+    auto selection = model->selection;
+
     RawVector<std::pair<int, float>> inside;
-    SelectInside(pos, radius, vertices, num_vertices, *trans, [&](int vi, float d, float3 p) {
+    SelectInside(*model, pos, radius, [&](int vi, float d, float3 p) {
         inside.push_back({ vi, d });
     });
 
