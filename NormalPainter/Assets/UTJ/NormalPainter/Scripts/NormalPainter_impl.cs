@@ -100,7 +100,6 @@ namespace UTJ.NormalPainter
             v = ToWorldVector(v, c).normalized;
 
             npAssign(ref m_npModelData, v);
-            ApplyMirroring();
             UpdateNormals();
         }
 
@@ -109,7 +108,6 @@ namespace UTJ.NormalPainter
             v = ToWorldVector(v, c);
 
             npMove(ref m_npModelData, v);
-            ApplyMirroring();
             UpdateNormals();
         }
 
@@ -136,7 +134,6 @@ namespace UTJ.NormalPainter
             npRotate(ref m_npModelData, amount, pivotRot);
             m_npModelData.transform = backup;
 
-            ApplyMirroring();
             UpdateNormals();
         }
 
@@ -164,7 +161,6 @@ namespace UTJ.NormalPainter
             npRotatePivot(ref m_npModelData, amount, pivotPos, pivotRot);
             m_npModelData.transform = backup;
 
-            ApplyMirroring();
             UpdateNormals();
         }
 
@@ -192,7 +188,6 @@ namespace UTJ.NormalPainter
             npScale(ref m_npModelData, amount, pivotPos, pivotRot);
             m_npModelData.transform = backup;
 
-            ApplyMirroring();
             UpdateNormals();
         }
 
@@ -200,7 +195,6 @@ namespace UTJ.NormalPainter
         {
             if (npBrushPaint(ref m_npModelData, pos, radius, strength, bsamples.Length, bsamples, baseDir, blendMode, useSelection) > 0)
             {
-                ApplyMirroring();
                 UpdateNormals();
                 return true;
             }
@@ -213,7 +207,6 @@ namespace UTJ.NormalPainter
 
             if (npBrushReplace(ref m_npModelData, pos, radius, strength, bsamples.Length, bsamples, amount, useSelection) > 0)
             {
-                ApplyMirroring();
                 UpdateNormals();
                 return true;
             }
@@ -224,7 +217,6 @@ namespace UTJ.NormalPainter
         {
             if (npBrushSmooth(ref m_npModelData, pos, radius, strength, bsamples.Length, bsamples, useSelection) > 0)
             {
-                ApplyMirroring();
                 UpdateNormals();
                 return true;
             }
@@ -235,7 +227,6 @@ namespace UTJ.NormalPainter
         {
             if (npBrushLerp(ref m_npModelData, pos, radius, strength, bsamples.Length, bsamples, m_normalsBase, m_normals, useSelection) > 0)
             {
-                ApplyMirroring();
                 UpdateNormals();
                 return true;
             }
@@ -275,7 +266,7 @@ namespace UTJ.NormalPainter
             if (m_history.normals != null && m_normals != null && m_history.normals.Length == m_normals.Length)
             {
                 Array.Copy(m_history.normals, m_normals, m_normals.Length);
-                UpdateNormals();
+                UpdateNormals(false);
             }
         }
 
@@ -311,7 +302,7 @@ namespace UTJ.NormalPainter
             if (UpdateBoneMatrices())
             {
                 npApplySkinning(ref m_npSkinData,
-                    m_meshTarget.vertices, m_meshTarget.normals, m_meshTarget.tangents,
+                    m_pointsPredeformed, m_normalsPredeformed, m_tangentsPredeformed,
                     m_points, m_normals, m_tangents);
                 npApplySkinning(ref m_npSkinData,
                     null, m_normalsBasePredeformed, m_tangentsBasePredeformed,
@@ -325,29 +316,38 @@ namespace UTJ.NormalPainter
             }
         }
 
-        public void UpdateNormals(bool upload = true)
+        public void UpdateNormals(bool mirror = true, bool upload = true)
         {
+            if (m_meshTarget == null) return;
+
+            if (m_skinned)
+            {
+                UpdateBoneMatrices();
+                npApplyReverseSkinning(ref m_npSkinData,
+                    null, m_normals, null,
+                    null, m_normalsPredeformed, null);
+                if (mirror)
+                {
+                    ApplyMirroring();
+                    npApplySkinning(ref m_npSkinData,
+                        null, m_normalsPredeformed, null,
+                        null, m_normals, null);
+                }
+                m_meshTarget.normals = m_normalsPredeformed;
+            }
+            else
+            {
+                if (mirror)
+                    ApplyMirroring();
+                m_meshTarget.normals = m_normals;
+            }
+
+            if (upload)
+                m_meshTarget.UploadMeshData(false);
+
             if (m_cbNormals != null)
                 m_cbNormals.SetData(m_normals);
 
-            if (m_meshTarget != null)
-            {
-                if (m_skinned)
-                {
-                    UpdateBoneMatrices();
-                    npApplyReverseSkinning(ref m_npSkinData,
-                        null, m_normals, null,
-                        null, m_normalsTmp, null);
-                    m_meshTarget.normals = m_normalsTmp;
-                }
-                else
-                {
-                    m_meshTarget.normals = m_normals;
-                }
-
-                if (upload)
-                    m_meshTarget.UploadMeshData(false);
-            }
         }
 
         public void UpdateSelection()
@@ -378,7 +378,7 @@ namespace UTJ.NormalPainter
         public void RecalculateTangents()
         {
             m_meshTarget.RecalculateTangents();
-            m_tangents = new PinnedArray<Vector4>(m_meshTarget.tangents, false);
+            m_tangents = new PinnedArray<Vector4>(m_meshTarget.tangents);
             if(m_cbTangents == null)
                 m_cbTangents = new ComputeBuffer(m_tangents.Length, 16);
             m_cbTangents.SetData(m_tangents);
@@ -573,10 +573,10 @@ namespace UTJ.NormalPainter
             Vector3 planeNormal = GetMirrorPlane(m_settings.mirrorMode);
             if (needsSetup)
             {
-                m_npModelData.normals = m_normalsBase;
-                bool succeeded = npBuildMirroringRelation(ref m_npModelData, planeNormal, 0.0001f, m_mirrorRelation) > 0;
-                m_npModelData.normals = m_normals;
-                if (!succeeded)
+                npModelData tmp = m_npModelData;
+                tmp.vertices = m_pointsPredeformed;
+                tmp.normals = m_normalsBasePredeformed;
+                if (npBuildMirroringRelation(ref tmp, planeNormal, 0.0001f, m_mirrorRelation) == 0)
                 {
                     Debug.LogWarning("NormalEditor: this mesh seems not symmetric");
                     m_mirrorRelation = null;
@@ -584,7 +584,8 @@ namespace UTJ.NormalPainter
                     return false;
                 }
             }
-            npApplyMirroring(m_normals.Length, m_mirrorRelation, planeNormal, m_normals);
+
+            npApplyMirroring(m_normals.Length, m_mirrorRelation, planeNormal, m_normalsPredeformed);
             return true;
         }
 
@@ -710,6 +711,7 @@ namespace UTJ.NormalPainter
         {
             bool mask = m_numSelected > 0;
             npSmooth(ref m_npModelData, radius, strength, mask);
+
             UpdateNormals();
         }
 
@@ -767,8 +769,8 @@ namespace UTJ.NormalPainter
                     d.skinned = true;
                     d.mesh = mesh;
                     d.transform = t.GetComponent<Transform>().localToWorldMatrix;
-                    d.vertices = new PinnedArray<Vector3>(mesh.vertices, false);
-                    d.normals = new PinnedArray<Vector3>(mesh.normals, false);
+                    d.vertices = new PinnedArray<Vector3>(mesh.vertices);
+                    d.normals = new PinnedArray<Vector3>(mesh.normals);
                     d.weights = mesh.boneWeights;
                     d.bindposes = mesh.bindposes;
                     d.bones = new Matrix4x4[d.bindposes.Length];
@@ -794,8 +796,8 @@ namespace UTJ.NormalPainter
                     var d = new WeldData();
                     d.mesh = mesh;
                     d.transform = t.GetComponent<Transform>().localToWorldMatrix;
-                    d.vertices = new PinnedArray<Vector3>(mesh.vertices, false);
-                    d.normals = new PinnedArray<Vector3>(mesh.normals, false);
+                    d.vertices = new PinnedArray<Vector3>(mesh.vertices);
+                    d.normals = new PinnedArray<Vector3>(mesh.normals);
                     data.Add(d);
                 }
             }

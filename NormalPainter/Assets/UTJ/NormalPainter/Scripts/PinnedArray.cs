@@ -14,7 +14,7 @@ namespace UTJ.NormalPainter
             m_data = new T[size];
             m_gch = GCHandle.Alloc(m_data, GCHandleType.Pinned);
         }
-        public PinnedArray(T[] data, bool clone = true)
+        public PinnedArray(T[] data, bool clone = false)
         {
             m_data = clone ? (T[])data.Clone() : data;
             m_gch = GCHandle.Alloc(m_data, GCHandleType.Pinned);
