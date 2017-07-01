@@ -76,7 +76,6 @@ namespace UTJ.NormalPainter
         }
 
         // edit options
-        [NonSerialized] public bool editing = false;
         public EditMode editMode = EditMode.Select;
         public BrushMode brushMode = BrushMode.Paint;
         public SelectMode selectMode = SelectMode.Single;

@@ -44,7 +44,7 @@ namespace UTJ.NormalPainter
 
         private void OnSceneGUI(SceneView sceneView)
         {
-            if (m_target != null && m_target.settings.editing)
+            if (m_target != null && m_target.editing)
             {
                 Tools.current = Tool.None;
 
@@ -74,10 +74,9 @@ namespace UTJ.NormalPainter
                 {
                     var tooltipHeight = 24;
                     var windowHeight = position.height;
-                    var settings = m_target.settings;
                     bool repaint = false;
 
-                    if (settings.editing)
+                    if (m_target.editing)
                     {
                         if (HandleMouseAction())
                         {
@@ -89,11 +88,11 @@ namespace UTJ.NormalPainter
 
                     EditorGUILayout.BeginHorizontal();
                     EditorGUI.BeginChangeCheck();
-                    settings.editing = GUILayout.Toggle(settings.editing, EditorGUIUtility.IconContent("EditCollider"),
+                    m_target.editing = GUILayout.Toggle(m_target.editing, EditorGUIUtility.IconContent("EditCollider"),
                         "Button", GUILayout.Width(33), GUILayout.Height(23));
                     if (EditorGUI.EndChangeCheck())
                     {
-                        if (settings.editing)
+                        if (m_target.editing)
                         {
                             Tools.current = Tool.None;
                         }
@@ -106,7 +105,7 @@ namespace UTJ.NormalPainter
                     EditorGUILayout.EndHorizontal();
 
 
-                    if (settings.editing)
+                    if (m_target.editing)
                     {
                         EditorGUILayout.BeginVertical(GUILayout.Height(windowHeight - tooltipHeight));
                         m_scrollPos = EditorGUILayout.BeginScrollView(m_scrollPos);
@@ -123,7 +122,7 @@ namespace UTJ.NormalPainter
                         }
                     }
 
-                    if(repaint)
+                    if (repaint)
                         RepaintAllViews();
                 }
             }
@@ -141,7 +140,7 @@ namespace UTJ.NormalPainter
         {
             if (m_target != null)
             {
-                m_target.settings.editing = false;
+                m_target.editing = false;
             }
 
             m_target = null;

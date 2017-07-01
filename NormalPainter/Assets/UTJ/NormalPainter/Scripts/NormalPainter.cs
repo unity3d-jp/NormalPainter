@@ -49,13 +49,14 @@ namespace UTJ.NormalPainter
         Vector3[]   m_points;
         Vector3[]   m_normals, m_normalsBase, m_normalsBasePredeformed, m_normalsTmp;
         Vector4[]   m_tangents, m_tangentsBase, m_tangentsBasePredeformed;
-        int[]       m_triangles;
+        int[]       m_indices;
         int[]       m_mirrorRelation;
         float[]     m_selection;
 
         Matrix4x4   m_rootMatrix;
         Matrix4x4[] m_boneMatrices;
 
+        bool        m_editing;
         int         m_numSelected = 0;
         bool        m_rayHit;
         int         m_rayHitTriangle;
@@ -70,7 +71,17 @@ namespace UTJ.NormalPainter
         int         m_brushNumPainted = 0;
 
         [SerializeField] History m_history = new History();
+        GCHandle m_gchIndices, m_gchPoints, m_gchNormals, m_gchSelection;
+        npModelData m_npData = new npModelData();
 
+        public bool editing
+        {
+            get { return m_editing; }
+            set {
+                if (value && !m_editing) BeginEdit();
+                if (!value && m_editing) EndEdit();
+            }
+        }
 
         public NormalPainterSettings settings { get { return m_settings; } }
         public Mesh mesh { get { return m_meshTarget; } }
@@ -105,7 +116,7 @@ namespace UTJ.NormalPainter
             return ret;
         }
 
-        void SetupResources()
+        void BeginEdit()
         {
             if (m_settings == null)
             {
@@ -186,16 +197,16 @@ namespace UTJ.NormalPainter
                 m_normals = null;
                 m_normalsBase = null;
                 m_tangents = null;
-                m_triangles = null;
+                m_indices = null;
                 m_mirrorRelation = null;
                 m_selection = null;
+
                 ReleaseComputeBuffers();
+                ReleasePinnedData();
             }
 
-            bool initialized = false;
-            if (m_points == null && m_meshTarget != null)
+            if (m_meshTarget != null)
             {
-                initialized = true;
                 m_skinned = GetComponent<SkinnedMeshRenderer>() != null;
 
                 m_points = m_meshTarget.vertices;
@@ -226,8 +237,15 @@ namespace UTJ.NormalPainter
                     m_meshTarget.tangents = m_tangents;
                 }
 
-                m_triangles = m_meshTarget.triangles;
+                m_indices = m_meshTarget.triangles;
                 m_selection = new float[m_points.Length];
+            }
+
+            {
+                if (!m_gchPoints.IsAllocated)    m_npData.points = PinArray(m_points, ref m_gchPoints);
+                if (!m_gchNormals.IsAllocated)   m_npData.normals = PinArray(m_normals, ref m_gchNormals);
+                if (!m_gchIndices.IsAllocated)   m_npData.indices = PinArray(m_indices, ref m_gchIndices);
+                if (!m_gchSelection.IsAllocated) m_npData.selection = PinArray(m_selection, ref m_gchSelection);
             }
 
             if (m_cbPoints == null && m_points != null && m_points.Length > 0)
@@ -278,11 +296,18 @@ namespace UTJ.NormalPainter
 
             m_settings.InitializeBrushData();
 
-            if (initialized)
-            {
-                UpdateNormals();
-                PushUndo();
-            }
+            UpdateNormals();
+            PushUndo();
+
+            m_editing = true;
+        }
+
+        void EndEdit()
+        {
+            ReleaseComputeBuffers();
+            ReleasePinnedData();
+
+            m_editing = false;
         }
 
         void ReleaseComputeBuffers()
@@ -298,6 +323,14 @@ namespace UTJ.NormalPainter
             if (m_cmdDraw != null) { m_cmdDraw.Release(); m_cmdDraw = null; }
         }
 
+        void ReleasePinnedData()
+        {
+            if (m_gchIndices.IsAllocated)   m_gchIndices.Free();
+            if (m_gchPoints.IsAllocated)    m_gchPoints.Free();
+            if (m_gchNormals.IsAllocated)   m_gchNormals.Free();
+            if (m_gchSelection.IsAllocated) m_gchSelection.Free();
+        }
+
         void Start()
         {
             npInitializePenInput();
@@ -306,12 +339,11 @@ namespace UTJ.NormalPainter
         void OnEnable()
         {
             Undo.undoRedoPerformed += OnUndoRedo;
-            SetupResources();
         }
 
         void OnDisable()
         {
-            ReleaseComputeBuffers();
+            EndEdit();
             Undo.undoRedoPerformed -= OnUndoRedo;
         }
 
@@ -674,8 +706,7 @@ namespace UTJ.NormalPainter
 
         void OnDrawGizmosSelected()
         {
-            SetupResources();
-            if(!m_settings.editing) { return; }
+            if(!m_editing) { return; }
 
             if (m_matVisualize == null || m_meshCube == null || m_meshLine == null)
             {

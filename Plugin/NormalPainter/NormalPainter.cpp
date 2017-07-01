@@ -81,6 +81,17 @@ static inline float GetBrushSample(float distance, float bradius, float bsamples
 }
 
 
+struct npModelData
+{
+    float4x4 transform = float4x4::identity();
+    int      *indices = nullptr;
+    float3   *points = nullptr;
+    float3   *normals = nullptr;
+    float    *selection = nullptr;
+    int      num_vercies = 0;
+    int      num_triangles = 0;
+};
+
 npAPI int npRaycast(
     int num_triangles, const float3 pos, const float3 dir, const float3 vertices[], const int indices[],
     int *tindex, float *distance, const float4x4 *trans)

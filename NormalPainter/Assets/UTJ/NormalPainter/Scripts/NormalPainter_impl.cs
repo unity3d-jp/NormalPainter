@@ -403,31 +403,31 @@ namespace UTJ.NormalPainter
         public bool Raycast(Ray ray, ref int ti, ref float distance)
         {
             Matrix4x4 trans = GetComponent<Transform>().localToWorldMatrix;
-            bool ret = npRaycast(m_triangles.Length / 3, ray.origin, ray.direction,
-                m_points, m_triangles, ref ti, ref distance, ref trans) > 0;
+            bool ret = npRaycast(m_indices.Length / 3, ray.origin, ray.direction,
+                m_points, m_indices, ref ti, ref distance, ref trans) > 0;
             return ret;
         }
 
         public Vector3 PickNormal(Vector3 pos, int ti)
         {
             Matrix4x4 trans = GetComponent<Transform>().localToWorldMatrix;
-            return npPickNormal(m_points, m_triangles, m_normals, ref trans, pos, ti);
+            return npPickNormal(m_points, m_indices, m_normals, ref trans, pos, ti);
         }
 
         public Vector3 PickBaseNormal(Vector3 pos, int ti)
         {
             Matrix4x4 trans = GetComponent<Transform>().localToWorldMatrix;
-            return npPickNormal(m_points, m_triangles, m_normalsBase, ref trans, pos, ti);
+            return npPickNormal(m_points, m_indices, m_normalsBase, ref trans, pos, ti);
         }
 
 
         public bool SelectEdge(float strength, bool clear)
         {
-            return npSelectEdge(m_points.Length, m_triangles.Length / 3, m_points, m_triangles, m_selection, strength, clear) > 0;
+            return npSelectEdge(m_points.Length, m_indices.Length / 3, m_points, m_indices, m_selection, strength, clear) > 0;
         }
         public bool SelectHole(float strength, bool clear)
         {
-            return npSelectHole(m_points.Length, m_triangles.Length / 3, m_points, m_triangles, m_selection, strength, clear) > 0;
+            return npSelectHole(m_points.Length, m_indices.Length / 3, m_points, m_indices, m_selection, strength, clear) > 0;
         }
 
         public bool SelectConnected(float strength, bool clear)
@@ -435,7 +435,7 @@ namespace UTJ.NormalPainter
             if (m_numSelected == 0)
                 return SelectAll();
             else
-                return npSelectConnected(m_points.Length, m_triangles.Length / 3, m_points, m_triangles, m_selection, strength, clear) > 0;
+                return npSelectConnected(m_points.Length, m_indices.Length / 3, m_points, m_indices, m_selection, strength, clear) > 0;
         }
 
         public bool SelectAll()
@@ -489,7 +489,7 @@ namespace UTJ.NormalPainter
             var rmin = new Vector2(Math.Min(r1.x, r2.x), Math.Min(r1.y, r2.y));
             var rmax = new Vector2(Math.Max(r1.x, r2.x), Math.Max(r1.y, r2.y));
 
-            return npSelectSingle(m_points.Length, m_triangles.Length / 3, m_points, m_normalsBase, m_triangles, m_selection, strength,
+            return npSelectSingle(m_points.Length, m_indices.Length / 3, m_points, m_normalsBase, m_indices, m_selection, strength,
                 ref mvp, ref trans, rmin, rmax, campos, frontFaceOnly) > 0;
         }
 
@@ -501,7 +501,7 @@ namespace UTJ.NormalPainter
         public bool SelectTriangle(Ray ray, float strength)
         {
             Matrix4x4 trans = GetComponent<Transform>().localToWorldMatrix;
-            return npSelectTriangle(m_triangles.Length / 3, m_points, m_triangles, m_selection, strength, ref trans, ray.origin, ray.direction) > 0;
+            return npSelectTriangle(m_indices.Length / 3, m_points, m_indices, m_selection, strength, ref trans, ray.origin, ray.direction) > 0;
         }
 
 
@@ -518,7 +518,7 @@ namespace UTJ.NormalPainter
             var rmin = new Vector2(Math.Min(r1.x, r2.x), Math.Min(r1.y, r2.y));
             var rmax = new Vector2(Math.Max(r1.x, r2.x), Math.Max(r1.y, r2.y));
 
-            return npSelectRect(m_points.Length, m_triangles.Length / 3, m_points, m_triangles, m_selection, strength,
+            return npSelectRect(m_points.Length, m_indices.Length / 3, m_points, m_indices, m_selection, strength,
                 ref mvp, ref trans, rmin, rmax, campos, frontFaceOnly) > 0;
         }
 
@@ -531,7 +531,7 @@ namespace UTJ.NormalPainter
             var trans = GetComponent<Transform>().localToWorldMatrix;
             var mvp = GL.GetGPUProjectionMatrix(cam.projectionMatrix, false) * cam.worldToCameraMatrix * trans;
 
-            return npSelectLasso(m_points.Length, m_triangles.Length / 3, m_points, m_triangles, m_selection, strength,
+            return npSelectLasso(m_points.Length, m_indices.Length / 3, m_points, m_indices, m_selection, strength,
                 ref mvp, ref trans, points, points.Length, campos, frontFaceOnly) > 0;
         }
 
@@ -818,10 +818,8 @@ namespace UTJ.NormalPainter
             {
                 var d = data[i];
                 tnumVertices[i] = d.vertices.Length;
-                d.hvertices = GCHandle.Alloc(d.vertices);
-                d.hnormals = GCHandle.Alloc(d.normals);
-                tvertices[i] = Marshal.UnsafeAddrOfPinnedArrayElement(d.vertices, 0);
-                tnormals[i] = Marshal.UnsafeAddrOfPinnedArrayElement(d.normals, 0);
+                tvertices[i] = PinArray(d.vertices, ref d.hvertices);
+                tnormals[i] = PinArray(d.normals, ref d.hnormals);
                 ttrans[i] = d.trans;
             }
 
@@ -955,6 +953,28 @@ namespace UTJ.NormalPainter
             AssetDatabase.CreateAsset(Instantiate(m_settings), path);
         }
 
+
+        public static IntPtr PinArray(Array v, ref GCHandle gch)
+        {
+            gch = GCHandle.Alloc(v, GCHandleType.Pinned);
+            return gch.AddrOfPinnedObject();
+        }
+        public static IntPtr GetArrayPtr(Array v)
+        {
+            return Marshal.UnsafeAddrOfPinnedArrayElement(v, 0);
+        }
+
+
+        struct npModelData
+        {
+            public Matrix4x4 transform;
+            public IntPtr indices;
+            public IntPtr points;
+            public IntPtr normals;
+            public IntPtr selection;
+            public int num_vertices;
+            public int num_triangles;
+        }
 
         [DllImport("NormalPainterCore")] static extern int npRaycast(
             int num_triangles, Vector3 pos, Vector3 dir, Vector3[] vertices, int[] indices,
