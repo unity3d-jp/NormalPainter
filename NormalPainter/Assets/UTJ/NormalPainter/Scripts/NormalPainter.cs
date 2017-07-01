@@ -722,7 +722,6 @@ namespace UTJ.NormalPainter
             m_matVisualize.SetFloat("_BinormalSize", m_settings.binormalSize);
             m_matVisualize.SetColor("_VertexColor", m_settings.vertexColor);
             m_matVisualize.SetColor("_VertexColor2", m_settings.vertexColor2);
-            m_matVisualize.SetColor("_VertexColor3", m_settings.vertexColor3);
             m_matVisualize.SetColor("_NormalColor", m_settings.normalColor);
             m_matVisualize.SetColor("_TangentColor", m_settings.tangentColor);
             m_matVisualize.SetColor("_BinormalColor", m_settings.binormalColor);
@@ -730,6 +729,7 @@ namespace UTJ.NormalPainter
 
             if (m_rayHit)
             {
+                m_matVisualize.SetColor("_VertexColor3", m_settings.vertexColor3);
                 if (brushMode)
                 {
                     var bd = m_settings.activeBrush;
@@ -751,6 +751,10 @@ namespace UTJ.NormalPainter
                     m_matVisualize.SetVector("_Direction", PickNormal(m_rayPos, m_rayHitTriangle));
                 else if (brushReplace)
                     m_matVisualize.SetVector("_Direction", m_settings.assignValue);
+            }
+            else
+            {
+                m_matVisualize.SetColor("_VertexColor3", Color.black);
             }
 
             if (m_cbPoints != null) m_matVisualize.SetBuffer("_Points", m_cbPoints);

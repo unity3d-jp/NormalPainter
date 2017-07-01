@@ -72,7 +72,7 @@ inline static int SelectInside(const npModelData& model, float3 pos, float radiu
     return ret;
 }
 
-static bool GetFurthestDistance(const npModelData& model, float3 pos, int &vidx, float &dist)
+static bool GetFurthestDistance(const npModelData& model, float3 pos, bool mask, int &vidx, float &dist)
 {
     auto num_vertices = model.num_vertices;
     auto vertices = model.vertices;
@@ -83,7 +83,7 @@ static bool GetFurthestDistance(const npModelData& model, float3 pos, int &vidx,
 
     float3 lpos = mul_p(invert(model.transform), pos);
     for (int vi = 0; vi < num_vertices; ++vi) {
-        if (selection[vi] > 0.0f) {
+        if (!mask || selection[vi] > 0.0f) {
             float dsq = length_sq(vertices[vi] - lpos);
             if (dsq > furthest_sq) {
                 furthest_sq = dsq;
@@ -131,14 +131,14 @@ npAPI float3 npPickNormal(
 }
 
 npAPI int npSelectSingle(
-    npModelData *model, const float4x4 *viewproj, float2 rmin, float2 rmax, float3 campos, float strength, int frontface_only)
+    npModelData *model, const float4x4 *mvp_, float2 rmin, float2 rmax, float3 campos, float strength, int frontface_only)
 {
     auto num_vertices = model->num_vertices;
     auto vertices = model->vertices;
     auto normals = model->normals;
     auto selection = model->selection;
 
-    float4x4 mvp = *viewproj * model->transform;
+    float4x4 mvp = *mvp_;
     float3 lcampos = mul_p(invert(model->transform), campos);
     float2 rcenter = (rmin + rmax) * 0.5f;
 
@@ -236,7 +236,7 @@ npAPI int npSelectTriangle(
 }
 
 npAPI int npSelectEdge(
-    npModelData *model, float strength, int clear, int all)
+    npModelData *model, float strength, int clear, int mask)
 {
     auto indices = IArray<int>(model->indices, model->num_triangles * 3);
     auto vertices = IArray<float3>(model->vertices, model->num_vertices);
@@ -244,7 +244,7 @@ npAPI int npSelectEdge(
     int num_vertices = model->num_vertices;
 
     RawVector<int> targets;
-    if (all) {
+    if (mask) {
         targets.reserve(num_vertices);
         for (int vi = 0; vi < num_vertices; ++vi) {
             if (selection[vi] > 0.0f) {
@@ -270,7 +270,7 @@ npAPI int npSelectEdge(
 }
 
 npAPI int npSelectHole(
-    npModelData *model, float strength, int clear, int all)
+    npModelData *model, float strength, int clear, int mask)
 {
     auto indices = IArray<int>(model->indices, model->num_triangles * 3);
     auto vertices = IArray<float3>(model->vertices, model->num_vertices);
@@ -278,7 +278,7 @@ npAPI int npSelectHole(
     int num_vertices = model->num_vertices;
 
     RawVector<int> targets;
-    if (all) {
+    if (mask) {
         targets.reserve(num_vertices);
         for (int vi = 0; vi < num_vertices; ++vi) {
             if (selection[vi] > 0.0f) {
@@ -331,14 +331,14 @@ npAPI int npSelectConnected(
 
 npAPI int npSelectRect(
     npModelData *model,
-    const float4x4 *viewproj, float2 rmin, float2 rmax, float3 campos, float strength, int frontface_only)
+    const float4x4 *mvp_, float2 rmin, float2 rmax, float3 campos, float strength, int frontface_only)
 {
     auto num_vertices = model->num_vertices;
     auto vertices = model->vertices;
     auto normals = model->normals;
     auto selection = model->selection;
 
-    float4x4 mvp = *viewproj * model->transform;
+    float4x4 mvp = *mvp_;
     float3 lcampos = mul_p(invert(model->transform), campos);
 
     std::atomic_int ret{ 0 };
@@ -376,7 +376,7 @@ npAPI int npSelectRect(
 
 npAPI int npSelectLasso(
     npModelData *model,
-    const float4x4 *viewproj, const float2 lasso[], int num_lasso_points, float3 campos, float strength, int frontface_only)
+    const float4x4 *mvp_, const float2 lasso[], int num_lasso_points, float3 campos, float strength, int frontface_only)
 {
     if (num_lasso_points < 3) { return 0; }
 
@@ -385,7 +385,7 @@ npAPI int npSelectLasso(
     auto normals = model->normals;
     auto selection = model->selection;
 
-    float4x4 mvp = *viewproj * model->transform;
+    float4x4 mvp = *mvp_;
     float3 lcampos = mul_p(invert(model->transform), campos);
 
     float2 minp, maxp;
@@ -431,8 +431,10 @@ npAPI int npSelectLasso(
 
 npAPI int npSelectBrush(
     npModelData *model,
-    const float3 pos, float radius, float strength, float bsamples[], int num_bsamples, float selection[])
+    const float3 pos, float radius, float strength, int num_bsamples, float bsamples[])
 {
+    auto selection = model->selection;
+
     return SelectInside(*model, pos, radius, [&](int vi, float d, float3 p) {
         float s = GetBrushSample(d, radius, bsamples, num_bsamples) * strength;
         selection[vi] = clamp01(selection[vi] + s);
@@ -554,7 +556,7 @@ npAPI void npRotatePivot(
 
     float furthest;
     int furthest_idx;
-    if (!GetFurthestDistance(*model, pivot_pos, furthest_idx, furthest)) {
+    if (!GetFurthestDistance(*model, pivot_pos, true, furthest_idx, furthest)) {
         return;
     }
 
@@ -590,7 +592,7 @@ npAPI void npScale(
 {
     float furthest;
     int furthest_idx;
-    if (!GetFurthestDistance(*model, pivot_pos, furthest_idx, furthest)) {
+    if (!GetFurthestDistance(*model, pivot_pos, true, furthest_idx, furthest)) {
         return;
     }
 
@@ -619,7 +621,7 @@ npAPI void npScale(
 }
 
 npAPI void npSmooth(
-    npModelData *model, float radius, float strength, int all)
+    npModelData *model, float radius, float strength, int mask)
 {
     auto num_vertices = model->num_vertices;
     auto vertices = model->vertices;
@@ -634,7 +636,7 @@ npAPI void npSmooth(
 
     float rsq = radius * radius;
     parallel_for(0, num_vertices, [&](int vi) {
-        float s = all ? 1.0f : selection[vi];
+        float s = mask ? selection[vi] : 1.0f;
         if (s == 0.0f) { return; }
 
         float3 p = tvertices[vi];
@@ -652,7 +654,7 @@ npAPI void npSmooth(
 }
 
 npAPI int npWeld(
-    npModelData *model, int smoothing, float weld_angle, int all)
+    npModelData *model, int smoothing, float weld_angle, int mask)
 {
     auto num_vertices = model->num_vertices;
     auto vertices = model->vertices;
@@ -667,7 +669,7 @@ npAPI int npWeld(
     RawVector<int> shared;
     for (int vi = 0; vi < num_vertices; ++vi) {
         if (checked[vi]) { continue; }
-        float s = all ? 1.0f : selection[vi];
+        float s = mask ? selection[vi] : 1.0f;
         if (s == 0.0f) { continue; }
 
         float3 p = vertices[vi];
@@ -698,9 +700,9 @@ npAPI int npWeld(
 }
 
 
-npAPI int npWeld2(npModelData *model,
-    int num_targets, npModelData targets[],
-    int weld_mode, float weld_angle, int all)
+npAPI int npWeld2(
+    npModelData *model, int num_targets, npModelData targets[],
+    int weld_mode, float weld_angle, int mask)
 {
     auto num_vertices = model->num_vertices;
     auto vertices = model->vertices;
@@ -750,7 +752,8 @@ npAPI int npWeld2(npModelData *model,
         auto& weld_map = weld_maps[ti];
 
         for (int vi = 0; vi < num_vertices; ++vi) {
-            if (!all && selection[vi] == 0.0f) { continue; }
+            float s = mask ? selection[vi] : 1.0f;
+            if (s == 0.0f) { continue; }
 
             auto p = wvertices[vi];
             auto n = wnormals[vi];
@@ -822,14 +825,14 @@ npAPI int npWeld2(npModelData *model,
 
 npAPI int npBrushReplace(
     npModelData *model,
-    const float3 pos, float radius, float strength, float bsamples[], int num_bsamples, float3 value)
+    const float3 pos, float radius, float strength, int num_bsamples, float bsamples[], float3 value, int mask)
 {
     auto normals = model->normals;
     auto selection = model->selection;
 
     return SelectInside(*model, pos, radius, [&](int vi, float d, float3 p) {
         float s = GetBrushSample(d, radius, bsamples, num_bsamples) * strength;
-        if (selection) s *= selection[vi];
+        if (mask) s *= selection[vi];
 
         normals[vi] = normalize(normals[vi] + value * s);
     });
@@ -838,7 +841,7 @@ npAPI int npBrushReplace(
 
 npAPI int npBrushPaint(
     npModelData *model,
-    const float3 pos, float radius, float strength, float bsamples[], int num_bsamples, float3 n, int blend_mode)
+    const float3 pos, float radius, float strength, int num_bsamples, float bsamples[], float3 n, int blend_mode, int mask)
 {
     auto normals = model->normals;
     auto selection = model->selection;
@@ -849,7 +852,7 @@ npAPI int npBrushPaint(
     return SelectInside(*model, pos, radius, [&](int vi, float d, float3 p) {
         int bsi = GetBrushSampleIndex(d, radius, num_bsamples);
         float s = clamp11(bsamples[bsi] * strength * 2.0f);
-        if (selection) s *= selection[vi];
+        if (mask) s *= selection[vi];
 
         float slope;
         if (bsi == 0) {
@@ -892,14 +895,14 @@ npAPI int npBrushPaint(
 
 npAPI int npBrushLerp(
     npModelData *model,
-    const float3 pos, float radius, float strength, float bsamples[], int num_bsamples, const float3 n0[], const float3 n1[])
+    const float3 pos, float radius, float strength, int num_bsamples, float bsamples[], const float3 n0[], const float3 n1[], int mask)
 {
     auto normals = model->normals;
     auto selection = model->selection;
 
     return SelectInside(*model, pos, radius, [&](int vi, float d, float3 p) {
         float s = GetBrushSample(d, radius, bsamples, num_bsamples) * strength;
-        if (selection) s *= selection[vi];
+        if (mask) s *= selection[vi];
 
         float sign = strength < 0.0f ? -1.0f : 1.0f;
         normals[vi] = normalize(lerp(n1[vi], n0[vi] * sign, s));
@@ -908,7 +911,7 @@ npAPI int npBrushLerp(
 
 npAPI int npBrushSmooth(
     npModelData *model,
-    const float3 pos, float radius, float strength, float bsamples[], int num_bsamples)
+    const float3 pos, float radius, float strength, int num_bsamples, float bsamples[], int mask)
 {
     auto normals = model->normals;
     auto selection = model->selection;
@@ -925,7 +928,7 @@ npAPI int npBrushSmooth(
     average = normalize(average);
     for (auto& p : inside) {
         float s = GetBrushSample(p.second, radius, bsamples, num_bsamples) * strength;
-        if (selection) s *= selection[p.first];
+        if (mask) s *= selection[p.first];
 
         normals[p.first] = normalize(normals[p.first] + average * s);
     }
