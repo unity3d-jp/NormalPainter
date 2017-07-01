@@ -53,10 +53,9 @@ namespace UTJ.NormalPainter
         PinnedArray<int>        m_mirrorRelation;
         PinnedArray<float>      m_selection;
 
-        PinnedArray<BoneWeight> m_weights;
+        PinnedArray<BoneWeight> m_boneWeights;
         PinnedArray<Matrix4x4>  m_bindposes;
         PinnedArray<Matrix4x4>  m_boneMatrices;
-        Matrix4x4       m_rootMatrix;
 
         bool        m_editing;
         int         m_numSelected = 0;
@@ -74,6 +73,7 @@ namespace UTJ.NormalPainter
 
         [SerializeField] History m_history = new History();
         npModelData m_npModelData = new npModelData();
+        npSkinData m_npSkinData = new npSkinData();
 
         public bool editing
         {
@@ -207,8 +207,6 @@ namespace UTJ.NormalPainter
 
             if (m_meshTarget != null)
             {
-                m_skinned = GetComponent<SkinnedMeshRenderer>() != null;
-
                 m_points = new PinnedArray<Vector3>(m_meshTarget.vertices, false);
 
                 m_normals = new PinnedArray<Vector3>(m_meshTarget.normals, false);
@@ -246,6 +244,22 @@ namespace UTJ.NormalPainter
                 m_npModelData.vertices = m_points;
                 m_npModelData.normals = m_normals;
                 m_npModelData.selection = m_selection;
+
+                var smr = GetComponent<SkinnedMeshRenderer>();
+                if (smr != null)
+                {
+                    m_skinned = true;
+
+                    m_boneWeights = new PinnedArray<BoneWeight>(m_meshTarget.boneWeights);
+                    m_bindposes = new PinnedArray<Matrix4x4>(m_meshTarget.bindposes);
+                    m_boneMatrices = new PinnedArray<Matrix4x4>(m_bindposes.Length);
+
+                    m_npSkinData.num_vertices = m_boneWeights.Length;
+                    m_npSkinData.num_bones = m_bindposes.Length;
+                    m_npSkinData.weights = m_boneWeights;
+                    m_npSkinData.bindposes = m_bindposes;
+                    m_npSkinData.bones = m_boneMatrices;
+                }
             }
 
             if (m_cbPoints == null && m_points != null && m_points.Length > 0)
@@ -296,9 +310,9 @@ namespace UTJ.NormalPainter
 
             m_settings.InitializeBrushData();
 
+            UpdateTransform();
             UpdateNormals();
             PushUndo();
-
             m_editing = true;
         }
 
@@ -340,7 +354,10 @@ namespace UTJ.NormalPainter
 
         void LateUpdate()
         {
-            UpdateTransform();
+            if (m_editing)
+            {
+                UpdateTransform();
+            }
         }
 
         public int OnSceneGUI()

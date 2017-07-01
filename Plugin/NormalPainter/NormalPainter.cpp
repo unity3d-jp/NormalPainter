@@ -937,9 +937,12 @@ npAPI int npBrushSmooth(
 
 
 npAPI int npBuildMirroringRelation(
-    int num_vertices, const float3 vertices[], const float3 normals[], 
-    float3 plane_normal, float epsilon, int relation[])
+    npModelData *model, float3 plane_normal, float epsilon, int relation[])
 {
+    auto num_vertices = model->num_vertices;
+    auto vertices = model->vertices;
+    auto normals = model->normals;
+
     RawVector<float> distances;
     distances.resize(num_vertices);
     parallel_for(0, num_vertices, [&](int vi) {
@@ -953,7 +956,7 @@ npAPI int npBuildMirroringRelation(
         if (d1 < 0.0f) {
             for (int i = 0; i < num_vertices; ++i) {
                 float d2 = distances[i];
-                if (d2 > 0.0f && near_equal(vertices[vi], vertices[i] - plane_normal * (d2 * 2.0f))) {
+                if (d2 > 0.0f && near_equal(vertices[vi], vertices[i] - plane_normal * (d2 * 2.0f), epsilon)) {
                     float3 n1 = normals[vi];
                     float3 n2 = plane_mirror(normals[i], plane_normal);
                     if (dot(n1, n2) >= 0.99f) {
@@ -1088,33 +1091,33 @@ static void SkinningImpl(
 }
 
 npAPI void npApplySkinning(
-    int num_vertices, const Weights4 weights[], int num_bones, const float4x4 bones[], const float4x4 bindposes[], const float4x4 *root,
+    npSkinData *skin,
     const float3 ipoints[], const float3 inormals[], const float4 itangents[],
     float3 opoints[], float3 onormals[], float4 otangents[])
 {
     RawVector<float4x4> poses;
-    poses.resize(num_bones);
+    poses.resize(skin->num_bones);
 
-    auto iroot = invert(*root);
-    for (int bi = 0; bi < num_bones; ++bi) {
-        poses[bi] = bindposes[bi] * bones[bi] * iroot;
+    auto iroot = invert(skin->root);
+    for (int bi = 0; bi < skin->num_bones; ++bi) {
+        poses[bi] = skin->bindposes[bi] * skin->bones[bi] * iroot;
     }
-    SkinningImpl(num_vertices, poses, weights, ipoints, inormals, itangents, opoints, onormals, otangents);
+    SkinningImpl(skin->num_vertices, poses, skin->weights, ipoints, inormals, itangents, opoints, onormals, otangents);
 }
 
 npAPI void npApplyReverseSkinning(
-    int num_vertices, const Weights4 weights[], int num_bones, const float4x4 bones[], const float4x4 bindposes[], const float4x4 *root,
+    npSkinData *skin,
     const float3 ipoints[], const float3 inormals[], const float4 itangents[],
     float3 opoints[], float3 onormals[], float4 otangents[])
 {
     RawVector<float4x4> poses;
-    poses.resize(num_bones);
+    poses.resize(skin->num_bones);
 
-    auto iroot = invert(*root);
-    for (int bi = 0; bi < num_bones; ++bi) {
-        poses[bi] = invert(bindposes[bi] * bones[bi] * iroot);
+    auto iroot = invert(skin->root);
+    for (int bi = 0; bi < skin->num_bones; ++bi) {
+        poses[bi] = invert(skin->bindposes[bi] * skin->bones[bi] * iroot);
     }
-    SkinningImpl(num_vertices, poses, weights, ipoints, inormals, itangents, opoints, onormals, otangents);
+    SkinningImpl(skin->num_vertices, poses, skin->weights, ipoints, inormals, itangents, opoints, onormals, otangents);
 }
 
 

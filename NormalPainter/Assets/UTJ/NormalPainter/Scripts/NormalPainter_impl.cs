@@ -288,9 +288,9 @@ namespace UTJ.NormalPainter
             var smr = GetComponent<SkinnedMeshRenderer>();
 
             var rootMatrix = GetComponent<Transform>().localToWorldMatrix;
-            if (m_rootMatrix != rootMatrix)
+            if (m_npSkinData.root != rootMatrix)
             {
-                m_rootMatrix = rootMatrix;
+                m_npSkinData.root = rootMatrix;
                 ret = true;
             }
             for (int i = 0; i < m_boneMatrices.Length; ++i)
@@ -310,12 +310,12 @@ namespace UTJ.NormalPainter
 
             if (UpdateBoneMatrices())
             {
-                npApplySkinning(
-                    m_points.Length, m_meshTarget.boneWeights, m_boneMatrices.Length, m_boneMatrices, m_meshTarget.bindposes, ref m_rootMatrix,
-                    m_meshTarget.vertices, m_meshTarget.normals, m_meshTarget.tangents, m_points, m_normals, m_tangents);
-                npApplySkinning(
-                    m_points.Length, m_meshTarget.boneWeights, m_boneMatrices.Length, m_boneMatrices, m_meshTarget.bindposes, ref m_rootMatrix,
-                    null, m_normalsBasePredeformed, m_tangentsBasePredeformed, null, m_normalsBase, m_tangentsBase);
+                npApplySkinning(ref m_npSkinData,
+                    m_meshTarget.vertices, m_meshTarget.normals, m_meshTarget.tangents,
+                    m_points, m_normals, m_tangents);
+                npApplySkinning(ref m_npSkinData,
+                    null, m_normalsBasePredeformed, m_tangentsBasePredeformed,
+                    null, m_normalsBase, m_tangentsBase);
 
                 m_cbPoints.SetData(m_points);
                 m_cbNormals.SetData(m_normals);
@@ -335,9 +335,9 @@ namespace UTJ.NormalPainter
                 if (m_skinned)
                 {
                     UpdateBoneMatrices();
-                    npApplyReverseSkinning(
-                        m_points.Length, m_meshTarget.boneWeights, m_boneMatrices.Length, m_boneMatrices, m_meshTarget.bindposes, ref m_rootMatrix,
-                        null, m_normals, null, null, m_normalsTmp, null);
+                    npApplyReverseSkinning(ref m_npSkinData,
+                        null, m_normals, null,
+                        null, m_normalsTmp, null);
                     m_meshTarget.normals = m_normalsTmp;
                 }
                 else
@@ -573,7 +573,10 @@ namespace UTJ.NormalPainter
             Vector3 planeNormal = GetMirrorPlane(m_settings.mirrorMode);
             if (needsSetup)
             {
-                if (npBuildMirroringRelation(m_points.Length, m_points, m_normalsBase, planeNormal, 0.001f, m_mirrorRelation) == 0)
+                m_npModelData.normals = m_normalsBase;
+                bool succeeded = npBuildMirroringRelation(ref m_npModelData, planeNormal, 0.0001f, m_mirrorRelation) > 0;
+                m_npModelData.normals = m_normals;
+                if (!succeeded)
                 {
                     Debug.LogWarning("NormalEditor: this mesh seems not symmetric");
                     m_mirrorRelation = null;
@@ -775,7 +778,7 @@ namespace UTJ.NormalPainter
                     for (int bi = 0; bi < n; ++bi)
                         d.bones[bi] = smr.bones[bi].localToWorldMatrix;
 
-                    npApplySkinning(d.vertices.Length, d.weights, d.bones.Length, d.bones, d.bindposes, ref d.transform,
+                    npApplySkinning(ref m_npSkinData,
                         d.vertices, d.normals, null,
                         d.vertices, d.normals, null);
 
@@ -829,7 +832,7 @@ namespace UTJ.NormalPainter
                     {
                         if (d.skinned)
                         {
-                            npApplyReverseSkinning(d.vertices.Length, d.weights, d.bones.Length, d.bones, d.bindposes, ref d.transform,
+                            npApplyReverseSkinning(ref m_npSkinData,
                                 null, d.normals, null,
                                 null, d.normals, null);
                         }
@@ -1035,21 +1038,21 @@ namespace UTJ.NormalPainter
             int weldMode, float weldAngle, bool mask);
 
         [DllImport("NormalPainterCore")] static extern int npBuildMirroringRelation(
-            int num_vertices, Vector3[] vertices, Vector3[] base_normals, Vector3 plane_normal, float epsilon, int[] relation);
+            ref npModelData model, Vector3 plane_normal, float epsilon, int[] relation);
 
         [DllImport("NormalPainterCore")] static extern void npApplyMirroring(
             int num_vertices, int[] relation, Vector3 plane_normal, Vector3[] normals);
 
         [DllImport("NormalPainterCore")] static extern void npProjectNormals(
-            ref npModelData model, ref npModelData target, Vector3[] dst, bool mask);
+            ref npModelData model, ref npModelData target, IntPtr ray_dir, bool mask);
 
         [DllImport("NormalPainterCore")] static extern void npApplySkinning(
-            int num_vertices, BoneWeight[] weights, int num_bones, Matrix4x4[] bones, Matrix4x4[] bindposes, ref Matrix4x4 root,
+            ref npSkinData skin,
             Vector3[] ipoints, Vector3[] inormals, Vector4[] itangents,
             Vector3[] opoints, Vector3[] onormals, Vector4[] otangents);
 
         [DllImport("NormalPainterCore")] static extern void npApplyReverseSkinning(
-            int num_vertices, BoneWeight[] weights, int num_bones, Matrix4x4[] bones, Matrix4x4[] bindposes, ref Matrix4x4 root,
+            ref npSkinData skin,
             Vector3[] ipoints, Vector3[] inormals, Vector4[] itangents,
             Vector3[] opoints, Vector3[] onormals, Vector4[] otangents);
 
