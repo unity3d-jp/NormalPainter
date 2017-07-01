@@ -872,22 +872,25 @@ namespace UTJ.NormalPainter
             ApplyProjection(mesh, ptrans, baseNormalsAsRayDirection);
         }
 
-        public void ApplyProjection(Mesh projector, Matrix4x4 ptrans, bool baseNormalsAsRayDirection)
+        public void ApplyProjection(Mesh target, Matrix4x4 ttrans, bool baseNormalsAsRayDirection)
         {
-            var mat = GetComponent<Transform>().localToWorldMatrix;
-            var ppoints = projector.vertices;
-            var prtiangles = projector.triangles;
-            var pnormals = projector.normals;
-            var selection = m_numSelected > 0 ? m_selection : null;
-            if (pnormals.Length == 0)
-            {
-                Debug.LogWarning("ProjectNormals(): projector mesh has no normals!");
-                return;
-            }
+            if (!IsValidMesh(target)) { return; }
+
+            var tpoints = new PinnedArray<Vector3>(target.vertices, false);
+            var tnormals = new PinnedArray<Vector3>(target.normals, false);
+            var tindices = new PinnedArray<int>(target.triangles, false);
+
+            var tdata = new npModelData();
+            tdata.transform = ttrans;
+            tdata.num_vertices = tpoints.Length;
+            tdata.num_triangles = tindices.Length / 3;
+            tdata.vertices = tpoints;
+            tdata.normals = tnormals;
+            tdata.indices = tindices;
 
             var rayDirections = baseNormalsAsRayDirection ? m_normalsBase : m_normals;
-            npProjectNormals(m_points.Length, prtiangles.Length / 3, m_points, rayDirections, selection, ref mat,
-                ppoints, pnormals, prtiangles, ref ptrans, m_normals);
+            bool mask = m_numSelected > 0;
+            npProjectNormals(ref m_npModelData, ref tdata, rayDirections, mask);
             UpdateNormals();
             PushUndo();
         }
@@ -1038,9 +1041,7 @@ namespace UTJ.NormalPainter
             int num_vertices, int[] relation, Vector3 plane_normal, Vector3[] normals);
 
         [DllImport("NormalPainterCore")] static extern void npProjectNormals(
-            int num_vertices, int num_triangles, Vector3[] vertices, Vector3[] normals, float[] selection, ref Matrix4x4 trans,
-            Vector3[] pvertices, Vector3[] pnormals, int[] pindices, ref Matrix4x4 ptrans,
-            Vector3[] dst);
+            ref npModelData model, ref npModelData target, Vector3[] dst, bool mask);
 
         [DllImport("NormalPainterCore")] static extern void npApplySkinning(
             int num_vertices, BoneWeight[] weights, int num_bones, Matrix4x4[] bones, Matrix4x4[] bindposes, ref Matrix4x4 root,

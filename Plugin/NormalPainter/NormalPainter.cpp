@@ -481,43 +481,43 @@ npAPI int npUpdateSelection(
 
 
 npAPI void npAssign(
-    npModelData *model, float3 v)
+    npModelData *model, float3 value)
 {
     auto num_vertices = model->num_vertices;
     auto normals = model->normals;
     auto selection = model->selection;
 
-    v = mul_v(invert(model->transform), v);
+    value = mul_v(invert(model->transform), value);
     for (int vi = 0; vi < num_vertices; ++vi) {
         float s = selection[vi];
         if (s == 0.0f) continue;
 
-        normals[vi] = normalize(lerp(normals[vi], v, s));
+        normals[vi] = normalize(lerp(normals[vi], value, s));
     }
 }
 
 npAPI void npMove(
-    npModelData *model, float3 v)
+    npModelData *model, float3 value)
 {
     auto num_vertices = model->num_vertices;
     auto normals = model->normals;
     auto selection = model->selection;
 
-    v = mul_v(invert(model->transform), v);
+    value = mul_v(invert(model->transform), value);
     for (int vi = 0; vi < num_vertices; ++vi) {
         float s = selection[vi];
         if (s == 0.0f) continue;
 
-        normals[vi] = normalize(normals[vi] + v * s);
+        normals[vi] = normalize(normals[vi] + value * s);
     }
 }
 
 npAPI void npRotate(
-    npModelData *model, quatf v, quatf pivot_rot)
+    npModelData *model, quatf value, quatf pivot_rot)
 {
     float3 axis;
     float angle;
-    to_axis_angle(v, axis, angle);
+    to_axis_angle(value, axis, angle);
     if (near_equal(angle, 0.0f) || std::isnan(angle)) {
         return;
     }
@@ -530,7 +530,7 @@ npAPI void npRotate(
     auto iptrans = invert(ptrans);
     auto trans = model->transform;
     auto itrans = invert(trans);
-    auto rot = to_float4x4(invert(v));
+    auto rot = to_float4x4(invert(value));
 
     auto to_lspace = trans * iptrans * rot * ptrans * itrans;
 
@@ -545,11 +545,11 @@ npAPI void npRotate(
 }
 
 npAPI void npRotatePivot(
-    npModelData *model, quatf v, float3 pivot_pos, quatf pivot_rot)
+    npModelData *model, quatf value, float3 pivot_pos, quatf pivot_rot)
 {
     float3 axis;
     float angle;
-    to_axis_angle(v, axis, angle);
+    to_axis_angle(value, axis, angle);
     if (near_equal(angle, 0.0f) || std::isnan(angle)) {
         return;
     }
@@ -572,7 +572,7 @@ npAPI void npRotatePivot(
 
     auto to_pspace = trans * iptrans;
     auto to_lspace = ptrans * itrans;
-    auto rot = to_float3x3(v);
+    auto rot = to_float3x3(value);
 
     for (int vi = 0; vi < num_vertices; ++vi) {
         float s = selection[vi];
@@ -588,7 +588,7 @@ npAPI void npRotatePivot(
 }
 
 npAPI void npScale(
-    npModelData *model, float3 v, float3 pivot_pos, quatf pivot_rot)
+    npModelData *model, float3 value, float3 pivot_pos, quatf pivot_rot)
 {
     float furthest;
     int furthest_idx;
@@ -615,7 +615,7 @@ npAPI void npScale(
 
         float3 vpos = mul_p(to_pspace, vertices[vi]);
         float d = length(vpos);
-        float3 v = mul_v(to_lspace, (vpos / d) * v);
+        float3 v = mul_v(to_lspace, (vpos / d) * value);
         normals[vi] = normalize(normals[vi] + v * (d / furthest * s));
     }
 }
@@ -980,21 +980,29 @@ npAPI void npApplyMirroring(int num_vertices, const int relation[], float3 plane
 
 
 npAPI void npProjectNormals(
-    int num_vertices, int num_triangles, const float3 vertices[], const float3 normals[], float selection[], const float4x4 *trans,
-    const float3 pvertices[], const float3 pnormals[], const int pindices[], const float4x4 *ptrans,
-    float3 dst[])
+    npModelData *model, npModelData *target, const float3 ray_dirs[], int mask)
 {
-    auto mat = *ptrans * invert(*trans);
+    auto num_vertices = model->num_vertices;
+    auto vertices = model->vertices;
+    auto normals = model->normals;
+    auto selection = model->selection;
+
+    auto pnum_triangles = target->num_triangles;
+    auto pvertices = target->vertices;
+    auto pnormals = target->normals;
+    auto pindices = target->indices;
+
+    auto to_local = target->transform * invert(model->transform);
     RawVector<float> soa[9]; // flattened + SoA-nized vertices (faster on CPU)
 
     // flatten + SoA-nize
     {
         for (int i = 0; i < 9; ++i) {
-            soa[i].resize(num_triangles);
+            soa[i].resize(pnum_triangles);
         }
-        for (int ti = 0; ti < num_triangles; ++ti) {
+        for (int ti = 0; ti < pnum_triangles; ++ti) {
             for (int i = 0; i < 3; ++i) {
-                auto p = mul_p(mat, pvertices[pindices[ti * 3 + i]]);
+                auto p = mul_p(to_local, pvertices[pindices[ti * 3 + i]]);
                 soa[i * 3 + 0][ti] = p.x;
                 soa[i * 3 + 1][ti] = p.y;
                 soa[i * 3 + 2][ti] = p.z;
@@ -1002,16 +1010,16 @@ npAPI void npProjectNormals(
         }
     }
 
-    parallel_for(0, num_vertices, [&](int ri) {
-        float3 rpos = vertices[ri];
-        float3 rdir = normals[ri];
+    parallel_for(0, num_vertices, [&](int vi) {
+        float3 rpos = vertices[vi];
+        float3 rdir = ray_dirs[vi];
         int ti;
         float distance;
         int num_hit = RayTrianglesIntersection(rpos, rdir,
             soa[0].data(), soa[1].data(), soa[2].data(),
             soa[3].data(), soa[4].data(), soa[5].data(),
             soa[6].data(), soa[7].data(), soa[8].data(),
-            num_triangles, ti, distance);
+            pnum_triangles, ti, distance);
 
         if (num_hit > 0) {
             float3 result = triangle_interpolation(
@@ -1023,9 +1031,9 @@ npAPI void npProjectNormals(
                 pnormals[pindices[ti * 3 + 1]],
                 pnormals[pindices[ti * 3 + 2]]);
 
-            result = normalize(mul_v(mat, result));
-            float s = selection ? selection[ri] : 1.0f;
-            dst[ri] = normalize(lerp(dst[ri], result, s));
+            result = normalize(mul_v(to_local, result));
+            float s = mask ? selection[vi] : 1.0f;
+            normals[vi] = normalize(lerp(normals[vi], result, s));
         }
     });
 }
