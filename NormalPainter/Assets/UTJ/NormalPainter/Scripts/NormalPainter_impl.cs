@@ -309,8 +309,6 @@ namespace UTJ.NormalPainter
 
         bool UpdateBoneMatrices()
         {
-            if (!m_skinned) { return false; }
-
             bool ret = false;
 
             var rootMatrix = GetComponent<Transform>().localToWorldMatrix;
@@ -337,7 +335,7 @@ namespace UTJ.NormalPainter
         {
             m_npModelData.transform = GetComponent<Transform>().localToWorldMatrix;
 
-            if (UpdateBoneMatrices())
+            if (m_skinned && UpdateBoneMatrices())
             {
                 npApplySkinning(ref m_npSkinData,
                     m_pointsPredeformed, m_normalsPredeformed, m_tangentsPredeformed,
@@ -346,11 +344,11 @@ namespace UTJ.NormalPainter
                     null, m_normalsBasePredeformed, m_tangentsBasePredeformed,
                     null, m_normalsBase, m_tangentsBase);
 
-                m_cbPoints.SetData(m_points);
-                m_cbNormals.SetData(m_normals);
-                m_cbBaseNormals.SetData(m_normalsBase);
-                m_cbTangents.SetData(m_tangents);
-                m_cbBaseTangents.SetData(m_tangentsBase);
+                if (m_cbPoints != null) m_cbPoints.SetData(m_points);
+                if (m_cbNormals != null) m_cbNormals.SetData(m_normals);
+                if (m_cbBaseNormals != null) m_cbBaseNormals.SetData(m_normalsBase);
+                if (m_cbTangents != null) m_cbTangents.SetData(m_tangents);
+                if (m_cbBaseTangents != null) m_cbBaseTangents.SetData(m_tangentsBase);
             }
         }
 
