@@ -274,6 +274,9 @@ namespace UTJ.NormalPainter
                     Array.Copy(normals, m_history.normals, normals.Length);
                 else
                     m_history.normals = (Vector3[])normals.Clone();
+
+                if (m_settings.tangentsAutoUpdate)
+                    RecalculateTangents();
             }
 
             m_history.records = records != null ? (History.Record[])records.Clone() : null;
@@ -292,6 +295,9 @@ namespace UTJ.NormalPainter
                 {
                     Array.Copy(m_history.normals, m_normals, m_normals.Length);
                     UpdateNormals(false);
+
+                    if (m_settings.tangentsAutoUpdate)
+                        RecalculateTangents();
                 }
 
                 if (m_history.records != null)
@@ -381,7 +387,6 @@ namespace UTJ.NormalPainter
             m_meshTarget.UploadMeshData(false);
             if (m_cbNormals != null)
                 m_cbNormals.SetData(m_normals);
-
         }
 
         public void UpdateSelection()

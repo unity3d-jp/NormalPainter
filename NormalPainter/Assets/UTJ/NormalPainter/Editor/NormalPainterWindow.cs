@@ -559,8 +559,12 @@ namespace UTJ.NormalPainter
                 }
 
                 EditorGUILayout.Space();
-                if (GUILayout.Button("Recalculate Tangents [T]"))
-                    m_target.RecalculateTangents();
+                settings.tangentsAutoUpdate = EditorGUILayout.Toggle("Auto Update Tangents", settings.tangentsAutoUpdate);
+                if (!settings.tangentsAutoUpdate)
+                {
+                    if (GUILayout.Button("Recalculate Tangents [T]"))
+                        m_target.RecalculateTangents();
+                }
 
                 if (m_target.GetComponent<SkinnedMeshRenderer>() != null)
                 {
