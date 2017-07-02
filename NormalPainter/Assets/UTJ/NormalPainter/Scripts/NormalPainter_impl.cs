@@ -276,7 +276,6 @@ namespace UTJ.NormalPainter
             if (!m_skinned) { return false; }
 
             bool ret = false;
-            var smr = GetComponent<SkinnedMeshRenderer>();
 
             var rootMatrix = GetComponent<Transform>().localToWorldMatrix;
             if (m_npSkinData.root != rootMatrix)
@@ -284,11 +283,14 @@ namespace UTJ.NormalPainter
                 m_npSkinData.root = rootMatrix;
                 ret = true;
             }
+
+            var bones = GetComponent<SkinnedMeshRenderer>().bones;
             for (int i = 0; i < m_boneMatrices.Length; ++i)
             {
-                if (m_boneMatrices[i] != smr.bones[i].localToWorldMatrix)
+                var l2w = bones[i].localToWorldMatrix;
+                if (m_boneMatrices[i] != l2w)
                 {
-                    m_boneMatrices[i] = smr.bones[i].localToWorldMatrix;
+                    m_boneMatrices[i] = l2w;
                     ret = true;
                 }
             }
@@ -739,7 +741,7 @@ namespace UTJ.NormalPainter
             public Matrix4x4[] bindposes;
         }
 
-        bool IsValidMesh(Mesh mesh)
+        public static bool IsValidMesh(Mesh mesh)
         {
             if (!mesh || mesh.vertexCount == 0) return false;
             if (!mesh.isReadable)

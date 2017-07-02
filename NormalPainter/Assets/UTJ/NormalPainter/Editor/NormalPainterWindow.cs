@@ -220,8 +220,9 @@ namespace UTJ.NormalPainter
             EditorGUILayout.Space();
 
             var bd = settings.activeBrush;
-            bd.radius = EditorGUILayout.Slider("Radius [Shift+Wheel]", bd.radius, 0.01f, settings.brushMaxRadius);
-            bd.strength = EditorGUILayout.Slider("Strength [Ctrl+Wheel]", bd.strength, -1.0f, 1.0f);
+            bd.maxRadius = EditorGUILayout.FloatField("Max Radius", bd.maxRadius);
+            bd.radius = EditorGUILayout.Slider("Radius [Shift+Drag]", bd.radius, 0.0f, bd.maxRadius);
+            bd.strength = EditorGUILayout.Slider("Strength [Ctrl+Drag]", bd.strength, -1.0f, 1.0f);
             EditorGUI.BeginChangeCheck();
             bd.curve = EditorGUILayout.CurveField("Brush Shape", bd.curve, GUILayout.Width(EditorGUIUtility.labelWidth + 32), GUILayout.Height(32));
             if (EditorGUI.EndChangeCheck())
@@ -969,24 +970,27 @@ namespace UTJ.NormalPainter
             var settings = m_target.settings;
             var e = Event.current;
 
-            if (e.type == EventType.ScrollWheel)
+            if (e.type == EventType.MouseDrag)
             {
+                float amount = e.delta.x - e.delta.y;
+
                 if (settings.editMode == EditMode.Brush ||
                     (settings.editMode == EditMode.Select && settings.selectMode == SelectMode.Brush))
                 {
                     var bd = settings.activeBrush;
                     if (e.shift)
                     {
-                        bd.radius = Mathf.Clamp(bd.radius + -e.delta.y * 0.01f, 0.01f, settings.brushMaxRadius);
+                        bd.radius = Mathf.Clamp(bd.radius + amount * (bd.maxRadius * 0.0025f), 0.0f, bd.maxRadius);
                         handled = true;
                     }
                     else if (e.control)
                     {
-                        bd.strength = Mathf.Clamp(bd.strength + -e.delta.y * 0.02f, -1.0f, 1.0f);
+                        bd.strength = Mathf.Clamp(bd.strength + amount * 0.0025f, -1.0f, 1.0f);
                         handled = true;
                     }
                 }
             }
+
             return handled;
         }
     }

@@ -104,21 +104,29 @@ namespace UTJ.NormalPainter
 
         Mesh GetTargetMesh()
         {
-            Mesh ret = null;
-            {
-                var mf = GetComponent<MeshFilter>();
-                if (mf != null) { ret = mf.sharedMesh; }
-            }
-            if (ret == null)
-            {
-                var smr = GetComponent<SkinnedMeshRenderer>();
-                if(smr != null) { ret = smr.sharedMesh; }
-            }
-            return ret;
+            var smr = GetComponent<SkinnedMeshRenderer>();
+            if (smr) { return smr.sharedMesh; }
+
+            var mf = GetComponent<MeshFilter>();
+            if (mf) { return mf.sharedMesh; }
+
+            return null;
         }
 
         void BeginEdit()
         {
+            var tmesh = GetTargetMesh();
+            if (tmesh == null)
+            {
+                Debug.LogWarning("Target mesh is null.");
+                return;
+            }
+            else if (!tmesh.isReadable)
+            {
+                Debug.LogWarning("Target mesh is not readable.");
+                return;
+            }
+
             if (m_settings == null)
             {
                 var ds = AssetDatabase.LoadAssetAtPath<NormalPainterSettings>(AssetDatabase.GUIDToAssetPath("f9fa1a75054c38b439daaed96bc5b424"));
@@ -185,9 +193,6 @@ namespace UTJ.NormalPainter
                 m_matBake = new Material(AssetDatabase.LoadAssetAtPath<Shader>(AssetDatabase.GUIDToAssetPath("4ddd0053dc720414b8afc76bf0a93f8e")));
             if (m_csBakeFromMap == null)
                 m_csBakeFromMap = AssetDatabase.LoadAssetAtPath<ComputeShader>(AssetDatabase.GUIDToAssetPath("f6687b99e1b6bfc4f854f46669e84e31"));
-
-            var tmesh = GetTargetMesh();
-            if (tmesh == null) { return; }
 
             if (m_meshTarget == null ||
                 m_meshTarget.vertexCount != tmesh.vertexCount ||
@@ -537,7 +542,7 @@ namespace UTJ.NormalPainter
             }
             else if (editMode == EditMode.Brush)
             {
-                if (m_rayHit && (et == EventType.MouseDown || et == EventType.MouseDrag))
+                if (m_rayHit && (et == EventType.MouseDown || et == EventType.MouseDrag) && (!e.shift && !e.control))
                 {
                     var bd = m_settings.activeBrush;
                     switch (m_settings.brushMode)

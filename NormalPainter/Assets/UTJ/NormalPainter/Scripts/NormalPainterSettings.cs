@@ -11,6 +11,7 @@ namespace UTJ.NormalPainter
         public static Mesh s_quad;
         public static Material s_mat;
 
+        public float maxRadius = 3.0f;
         public float radius = 0.2f;
         public float strength = 0.2f;
         public AnimationCurve curve = new AnimationCurve();
@@ -84,7 +85,6 @@ namespace UTJ.NormalPainter
         public bool selectVertex = true;
         public bool selectTriangle = true;
         public bool rotatePivot = false;
-        public float brushMaxRadius = 5.0f;
         public bool brushUseSelection = false;
         public int brushBlendMode = 0;
 

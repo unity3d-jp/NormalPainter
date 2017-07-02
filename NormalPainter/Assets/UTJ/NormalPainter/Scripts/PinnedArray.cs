@@ -4,6 +4,42 @@ using System.Runtime.InteropServices;
 
 namespace UTJ.NormalPainter
 {
+
+    public class PinnedObject<T> : IDisposable
+    {
+        T m_data;
+        GCHandle m_gch;
+
+        public PinnedObject(T data)
+        {
+            m_data = data;
+            m_gch = GCHandle.Alloc(m_data, GCHandleType.Pinned);
+        }
+
+        public T Object { get { return m_data; } }
+        public IntPtr Pointer { get { return m_gch.AddrOfPinnedObject(); } }
+
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                if (m_gch.IsAllocated)
+                    m_gch.Free();
+            }
+        }
+
+        public static implicit operator IntPtr(PinnedObject<T> v) { return v.Pointer; }
+        public static implicit operator T (PinnedObject<T> v) { return v.Object; }
+    }
+
+
     public class PinnedArray<T> : IDisposable, IEnumerable<T>
     {
         T[] m_data;
