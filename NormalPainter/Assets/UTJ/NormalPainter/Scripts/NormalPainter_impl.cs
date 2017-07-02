@@ -95,23 +95,25 @@ namespace UTJ.NormalPainter
         }
 
 
-        public void ApplyAssign(Vector3 v, Coordinate c)
+        public void ApplyAssign(Vector3 v, Coordinate c, bool pushUndo)
         {
             v = ToWorldVector(v, c).normalized;
 
             npAssign(ref m_npModelData, v);
             UpdateNormals();
+            if (pushUndo) PushUndo();
         }
 
-        public void ApplyMove(Vector3 v, Coordinate c)
+        public void ApplyMove(Vector3 v, Coordinate c, bool pushUndo)
         {
             v = ToWorldVector(v, c);
 
             npMove(ref m_npModelData, v);
             UpdateNormals();
+            if (pushUndo) PushUndo();
         }
 
-        public void ApplyRotate(Quaternion amount, Quaternion pivotRot, Coordinate c)
+        public void ApplyRotate(Quaternion amount, Quaternion pivotRot, Coordinate c, bool pushUndo)
         {
             var backup = m_npModelData.transform;
             var t = GetComponent<Transform>();
@@ -135,9 +137,10 @@ namespace UTJ.NormalPainter
             m_npModelData.transform = backup;
 
             UpdateNormals();
+            if (pushUndo) PushUndo();
         }
 
-        public void ApplyRotatePivot(Quaternion amount, Vector3 pivotPos, Quaternion pivotRot, Coordinate c)
+        public void ApplyRotatePivot(Quaternion amount, Vector3 pivotPos, Quaternion pivotRot, Coordinate c, bool pushUndo)
         {
             var backup = m_npModelData.transform;
             var t = GetComponent<Transform>();
@@ -162,9 +165,10 @@ namespace UTJ.NormalPainter
             m_npModelData.transform = backup;
 
             UpdateNormals();
+            if (pushUndo) PushUndo();
         }
 
-        public void ApplyScale(Vector3 amount, Vector3 pivotPos, Quaternion pivotRot, Coordinate c)
+        public void ApplyScale(Vector3 amount, Vector3 pivotPos, Quaternion pivotRot, Coordinate c, bool pushUndo)
         {
             var backup = m_npModelData.transform;
             var t = GetComponent<Transform>();
@@ -189,6 +193,7 @@ namespace UTJ.NormalPainter
             m_npModelData.transform = backup;
 
             UpdateNormals();
+            if (pushUndo) PushUndo();
         }
 
         public bool ApplyPaintBrush(bool useSelection, Vector3 pos, float radius, float strength, float[] bsamples, Vector3 baseDir, int blendMode)
@@ -233,7 +238,7 @@ namespace UTJ.NormalPainter
             return false;
         }
 
-        public void ResetNormals(bool useSelection)
+        public void ResetNormals(bool useSelection, bool pushUndo)
         {
             if (!useSelection)
             {
@@ -245,28 +250,59 @@ namespace UTJ.NormalPainter
                     m_normals[i] = Vector3.Lerp(m_normals[i], m_normalsBase[i], m_selection[i]).normalized;
             }
             UpdateNormals();
+            if (pushUndo) PushUndo();
         }
 
-        public void PushUndo()
+        void PushUndo()
         {
-            Undo.RecordObject(this, "NormalEditor");
-            m_history.count++;
-            if (m_history.normals != null && m_history.normals.Length == m_normals.Length)
-                Array.Copy(m_normals, m_history.normals, m_normals.Length);
+            PushUndo(m_normals, null);
+        }
+
+        void PushUndo(Vector3[] normals, History.Record[] records)
+        {
+            Undo.RecordObject(this, "NormalEditor [" + m_history.index + "]");
+            m_historyIndex = ++m_history.index;
+
+            if (normals == null)
+            {
+                m_history.normals = null;
+            }
             else
-                m_history.normals = (Vector3[])m_normals.Clone();
+            {
+                if (m_history.normals != null && m_history.normals.Length == normals.Length)
+                    Array.Copy(normals, m_history.normals, normals.Length);
+                else
+                    m_history.normals = (Vector3[])normals.Clone();
+            }
+
+            m_history.records = records != null ? (History.Record[])records.Clone() : null;
+
             Undo.FlushUndoRecordObjects();
-            //Debug.Log("PushUndo(): " + m_history.count);
+            Undo.IncrementCurrentGroup();
         }
 
         public void OnUndoRedo()
         {
-            //Debug.Log("OnUndoRedo(): " + m_history.count);
-            UpdateTransform();
-            if (m_history.normals != null && m_normals != null && m_history.normals.Length == m_normals.Length)
+            if (m_historyIndex != m_history.index)
             {
-                Array.Copy(m_history.normals, m_normals, m_normals.Length);
-                UpdateNormals(false);
+                m_historyIndex = m_history.index;
+
+                UpdateTransform();
+                if (m_history.normals != null && m_normals != null && m_history.normals.Length == m_normals.Length)
+                {
+                    Array.Copy(m_history.normals, m_normals, m_normals.Length);
+                    UpdateNormals(false);
+                }
+
+                if (m_history.records != null)
+                {
+                    foreach (var r in m_history.records)
+                    {
+                        if (r.normals != null) r.mesh.normals = r.normals;
+                        if (r.colors != null) r.mesh.colors = r.colors;
+                        r.mesh.UploadMeshData(false);
+                    }
+                }
             }
         }
 
@@ -318,7 +354,7 @@ namespace UTJ.NormalPainter
             }
         }
 
-        public void UpdateNormals(bool mirror = true, bool upload = true)
+        public void UpdateNormals(bool mirror = true)
         {
             if (m_meshTarget == null) return;
 
@@ -330,7 +366,7 @@ namespace UTJ.NormalPainter
                     null, m_normalsPredeformed, null);
                 if (mirror)
                 {
-                    ApplyMirroring();
+                    ApplyMirroringInternal();
                     npApplySkinning(ref m_npSkinData,
                         null, m_normalsPredeformed, null,
                         null, m_normals, null);
@@ -340,13 +376,11 @@ namespace UTJ.NormalPainter
             else
             {
                 if (mirror)
-                    ApplyMirroring();
+                    ApplyMirroringInternal();
                 m_meshTarget.normals = m_normals;
             }
 
-            if (upload)
-                m_meshTarget.UploadMeshData(false);
-
+            m_meshTarget.UploadMeshData(false);
             if (m_cbNormals != null)
                 m_cbNormals.SetData(m_normals);
 
@@ -556,7 +590,7 @@ namespace UTJ.NormalPainter
 
         MirrorMode m_prevMirrorMode;
 
-        public bool ApplyMirroring()
+        bool ApplyMirroringInternal()
         {
             if (m_settings.mirrorMode == MirrorMode.None) return false;
 
@@ -588,6 +622,13 @@ namespace UTJ.NormalPainter
             }
 
             npApplyMirroring(m_normals.Length, m_mirrorRelation, planeNormal, m_normalsPredeformed);
+            return true;
+        }
+        public bool ApplyMirroring(bool pushUndo)
+        {
+            ApplyMirroringInternal();
+            UpdateNormals();
+            if (pushUndo) PushUndo();
             return true;
         }
 
@@ -657,7 +698,7 @@ namespace UTJ.NormalPainter
             return true;
         }
 
-        public bool LoadTexture(Texture tex)
+        public bool LoadTexture(Texture tex, bool pushUndo)
         {
             if (tex == null)
                 return false;
@@ -685,12 +726,12 @@ namespace UTJ.NormalPainter
             cbUV.Dispose();
 
             UpdateNormals();
-            PushUndo();
+            if (pushUndo) PushUndo();
 
             return true;
         }
 
-        public bool LoadVertexColor()
+        public bool LoadVertexColor(bool pushUndo)
         {
             var color = m_meshTarget.colors;
             if (color.Length != m_normals.Length)
@@ -705,24 +746,26 @@ namespace UTJ.NormalPainter
                     c.b * 2.0f - 1.0f);
             }
             UpdateNormals();
-            PushUndo();
+            if (pushUndo) PushUndo();
             return true;
         }
 
-        public void ApplySmoothing(float radius, float strength)
+        public void ApplySmoothing(float radius, float strength, bool pushUndo)
         {
             bool mask = m_numSelected > 0;
             npSmooth(ref m_npModelData, radius, strength, mask);
 
             UpdateNormals();
+            if (pushUndo) PushUndo();
         }
 
-        public bool ApplyWelding(bool smoothing, float weldAngle)
+        public bool ApplyWelding(bool smoothing, float weldAngle, bool pushUndo)
         {
             bool mask = m_numSelected > 0;
             if (npWeld(ref m_npModelData, smoothing, weldAngle, mask) > 0)
             {
                 UpdateNormals();
+                if (pushUndo) PushUndo();
                 return true;
             }
             return false;
@@ -752,7 +795,7 @@ namespace UTJ.NormalPainter
             return true;
         }
 
-        public bool ApplyWelding2(GameObject[] targets, int weldMode, float weldAngle)
+        public bool ApplyWelding2(GameObject[] targets, int weldMode, float weldAngle, bool pushUndo)
         {
             var data = new List<WeldData>();
 
@@ -821,10 +864,30 @@ namespace UTJ.NormalPainter
                 tdata[i].transform = data[i].transform;
             }
 
+            Vector3[] normalsPreWeld = null;
+            if (pushUndo)
+                normalsPreWeld = m_normals.Clone();
+
             // do weld
             bool ret = false;
             if (npWeld2(ref m_npModelData, tdata.Length, tdata, weldMode, weldAngle, mask) > 0)
             {
+                // data to undo
+                History.Record[] records = null;
+
+                if (pushUndo && (weldMode == 0 || weldMode == 2))
+                {
+                    records = new History.Record[data.Count];
+
+                    for (int i = 0; i < data.Count; ++i)
+                    {
+                        records[i] = new History.Record();
+                        records[i].mesh = data[i].mesh;
+                        records[i].normals = data[i].mesh.normals;
+                    }
+                    PushUndo(normalsPreWeld, records);
+                }
+
                 // update normals
                 if (weldMode == 1 || weldMode == 2)
                 {
@@ -843,14 +906,28 @@ namespace UTJ.NormalPainter
                         d.mesh.normals = d.normals;
                         d.mesh.UploadMeshData(false);
                     }
+
+                    if (pushUndo)
+                    {
+                        for (int i = 0; i < data.Count; ++i)
+                        {
+                            records[i] = new History.Record();
+                            records[i].mesh = data[i].mesh;
+                            records[i].normals = data[i].normals;
+                        }
+                    }
                 }
+
+                if (pushUndo)
+                    PushUndo(m_normals, records);
+
                 ret = true;
             }
 
             return ret;
         }
 
-        public void ApplyProjection(GameObject go, bool baseNormalsAsRayDirection)
+        public void ApplyProjection(GameObject go, bool baseNormalsAsRayDirection, bool pushUndo)
         {
             if (go == null) { return; }
 
@@ -876,10 +953,10 @@ namespace UTJ.NormalPainter
             }
 
             var ptrans = go.GetComponent<Transform>().localToWorldMatrix;
-            ApplyProjection(mesh, ptrans, baseNormalsAsRayDirection);
+            ApplyProjection(mesh, ptrans, baseNormalsAsRayDirection, pushUndo);
         }
 
-        public void ApplyProjection(Mesh target, Matrix4x4 ttrans, bool baseNormalsAsRayDirection)
+        public void ApplyProjection(Mesh target, Matrix4x4 ttrans, bool baseNormalsAsRayDirection, bool pushUndo)
         {
             if (!IsValidMesh(target)) { return; }
 
@@ -898,8 +975,9 @@ namespace UTJ.NormalPainter
             var rayDirections = baseNormalsAsRayDirection ? m_normalsBase : m_normals;
             bool mask = m_numSelected > 0;
             npProjectNormals(ref m_npModelData, ref tdata, rayDirections, mask);
+
             UpdateNormals();
-            PushUndo();
+            if (pushUndo) PushUndo();
         }
 
         public void ResetToBindpose(bool pushUndo)

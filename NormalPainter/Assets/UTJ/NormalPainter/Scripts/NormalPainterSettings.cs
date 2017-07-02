@@ -85,7 +85,7 @@ namespace UTJ.NormalPainter
         public bool selectVertex = true;
         public bool selectTriangle = true;
         public bool rotatePivot = false;
-        public bool brushUseSelection = false;
+        public bool brushMaskWithSelection = false;
         public int brushBlendMode = 0;
 
         public BrushData[] brushData = new BrushData[5] {
@@ -137,12 +137,12 @@ namespace UTJ.NormalPainter
         [NonSerialized] public Vector3  rotateAmount;
         [NonSerialized] public Vector3  scaleAmount;
 
+        [NonSerialized] public int smoothMode = 0;
         [NonSerialized] public float smoothRadius = 0.5f;
         [NonSerialized] public float smoothAmount = 1.0f;
         [NonSerialized] public float weldAngle = 60.0f;
         [NonSerialized] public bool weldWithSmoothing = true;
-        [NonSerialized] public bool weldWithOtherObjects;
-        [NonSerialized] public int weldTargetsMode;
+        [NonSerialized] public int weldTargetsMode = 2;
         [NonSerialized] public GameObject[] weldTargets = new GameObject[1];
 
         [NonSerialized] public GameObject projectionNormalSource;

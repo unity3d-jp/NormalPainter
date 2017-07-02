@@ -15,12 +15,21 @@ namespace UTJ.NormalPainter
     public partial class NormalPainter : MonoBehaviour
     {
 #if UNITY_EDITOR
-
         [Serializable]
-        class History
+        public class History
         {
-            public int count = 0;
+            [Serializable]
+            public class Record
+            {
+                public Mesh mesh;
+                public Vector3[] normals;
+                public Color[] colors;
+            }
+
+
+            public int index;
             public Vector3[] normals;
+            public Record[] records;
         }
 
 
@@ -72,6 +81,8 @@ namespace UTJ.NormalPainter
         int         m_brushNumPainted = 0;
 
         [SerializeField] History m_history = new History();
+        int m_historyIndex = 0;
+
         npModelData m_npModelData = new npModelData();
         npSkinData m_npSkinData = new npSkinData();
 
@@ -446,7 +457,7 @@ namespace UTJ.NormalPainter
                     var diff = move - m_prevMove;
                     m_prevMove = move;
 
-                    ApplyMove(diff * 3.0f, Coordinate.World);
+                    ApplyMove(diff * 3.0f, Coordinate.World, false);
                 }
             }
             else if (m_numSelected > 0 && editMode == EditMode.Rotate)
@@ -474,9 +485,9 @@ namespace UTJ.NormalPainter
                     m_prevRot = rot;
 
                     if (m_settings.rotatePivot)
-                        ApplyRotatePivot(diff, m_settings.pivotPos, pivotRot, Coordinate.Pivot);
+                        ApplyRotatePivot(diff, m_settings.pivotPos, pivotRot, Coordinate.Pivot, false);
                     else
-                        ApplyRotate(diff, pivotRot, Coordinate.Pivot);
+                        ApplyRotate(diff, pivotRot, Coordinate.Pivot, false);
                 }
             }
             else if (m_numSelected > 0 && editMode == EditMode.Scale)
@@ -503,7 +514,7 @@ namespace UTJ.NormalPainter
                     var diff = scale - m_prevScale;
                     m_prevScale = scale;
 
-                    ApplyScale(diff, m_settings.pivotPos, pivotRot, Coordinate.Pivot);
+                    ApplyScale(diff, m_settings.pivotPos, pivotRot, Coordinate.Pivot, false);
                 }
             }
 
@@ -548,21 +559,21 @@ namespace UTJ.NormalPainter
                     switch (m_settings.brushMode)
                     {
                         case BrushMode.Paint:
-                            if (ApplyPaintBrush(m_settings.brushUseSelection, m_rayPos, bd.radius, bd.strength, bd.samples,
+                            if (ApplyPaintBrush(m_settings.brushMaskWithSelection, m_rayPos, bd.radius, bd.strength, bd.samples,
                                 PickBaseNormal(m_rayPos, m_rayHitTriangle), settings.brushBlendMode))
                                 ++m_brushNumPainted;
                             break;
                         case BrushMode.Replace:
-                            if (ApplyReplaceBrush(m_settings.brushUseSelection, m_rayPos, bd.radius, bd.strength, bd.samples,
+                            if (ApplyReplaceBrush(m_settings.brushMaskWithSelection, m_rayPos, bd.radius, bd.strength, bd.samples,
                                 m_settings.assignValue))
                                 ++m_brushNumPainted;
                             break;
                         case BrushMode.Smooth:
-                            if (ApplySmoothBrush(m_settings.brushUseSelection, m_rayPos, bd.radius, bd.strength, bd.samples))
+                            if (ApplySmoothBrush(m_settings.brushMaskWithSelection, m_rayPos, bd.radius, bd.strength, bd.samples))
                                 ++m_brushNumPainted;
                             break;
                         case BrushMode.Reset:
-                            if (ApplyResetBrush(m_settings.brushUseSelection, m_rayPos, bd.radius, bd.strength, bd.samples))
+                            if (ApplyResetBrush(m_settings.brushMaskWithSelection, m_rayPos, bd.radius, bd.strength, bd.samples))
                                 ++m_brushNumPainted;
                             break;
                     }

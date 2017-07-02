@@ -205,6 +205,12 @@ namespace UTJ.NormalPainter
             "Base Normals",
             "Current Normals",
         };
+        static readonly string[] strSmoothMode = new string[] {
+            "Smoothing",
+            "Welding",
+            "Welding2",
+        };
+
 
         void DrawBrushPanel()
         {
@@ -355,7 +361,7 @@ namespace UTJ.NormalPainter
                 settings.brushMode = (BrushMode)GUILayout.SelectionGrid((int)settings.brushMode, strBrushTypes, 4);
                 EditorGUILayout.Space();
 
-                settings.brushUseSelection = EditorGUILayout.Toggle("Mask With Selection", settings.brushUseSelection); EditorGUILayout.Space();
+                settings.brushMaskWithSelection = EditorGUILayout.Toggle("Mask With Selection", settings.brushMaskWithSelection); EditorGUILayout.Space();
                 DrawBrushPanel();
 
                 if (settings.brushMode == BrushMode.Paint)
@@ -387,8 +393,7 @@ namespace UTJ.NormalPainter
 
                 if (GUILayout.Button("Assign [Shift+V]"))
                 {
-                    m_target.ApplyAssign(settings.assignValue, settings.coordinate);
-                    m_target.PushUndo();
+                    m_target.ApplyAssign(settings.assignValue, settings.coordinate, true);
                 }
             }
             else if (settings.editMode == EditMode.Move)
@@ -406,8 +411,7 @@ namespace UTJ.NormalPainter
 
                 if (GUILayout.Button("Apply Move"))
                 {
-                    m_target.ApplyMove(settings.moveAmount, settings.coordinate);
-                    m_target.PushUndo();
+                    m_target.ApplyMove(settings.moveAmount, settings.coordinate, true);
                 }
             }
             else if (settings.editMode == EditMode.Rotate)
@@ -428,10 +432,9 @@ namespace UTJ.NormalPainter
                 {
                     if (settings.rotatePivot)
                         m_target.ApplyRotatePivot(
-                            Quaternion.Euler(settings.rotateAmount), settings.pivotPos, settings.pivotRot, settings.coordinate);
+                            Quaternion.Euler(settings.rotateAmount), settings.pivotPos, settings.pivotRot, settings.coordinate, true);
                     else
-                        m_target.ApplyRotate(Quaternion.Euler(settings.rotateAmount), settings.pivotRot, settings.coordinate);
-                    m_target.PushUndo();
+                        m_target.ApplyRotate(Quaternion.Euler(settings.rotateAmount), settings.pivotRot, settings.coordinate, true);
                 }
             }
             else if (settings.editMode == EditMode.Scale)
@@ -448,58 +451,53 @@ namespace UTJ.NormalPainter
                 EditorGUILayout.Space();
                 if (GUILayout.Button("Apply Scale"))
                 {
-                    m_target.ApplyScale(settings.scaleAmount, settings.pivotPos, settings.pivotRot, settings.coordinate);
-                    m_target.PushUndo();
+                    m_target.ApplyScale(settings.scaleAmount, settings.pivotPos, settings.pivotRot, settings.coordinate, true);
                 }
             }
             else if (settings.editMode == EditMode.Smooth)
             {
-                settings.smoothRadius = EditorGUILayout.FloatField("Smooth Radius", settings.smoothRadius);
-                settings.smoothAmount = EditorGUILayout.FloatField("Smooth Amount", settings.smoothAmount);
-                if (GUILayout.Button("Apply Smoothing [Shift+S]"))
-                {
-                    m_target.ApplySmoothing(settings.smoothRadius, settings.smoothAmount);
-                    m_target.PushUndo();
-                }
-
+                settings.smoothMode = GUILayout.SelectionGrid(settings.smoothMode, strSmoothMode, 3);
                 EditorGUILayout.Space();
 
-                settings.weldWithOtherObjects = EditorGUILayout.Toggle("Weld With Other Objects", settings.weldWithOtherObjects);
-                if (settings.weldWithOtherObjects)
+                if (settings.smoothMode == 0)
                 {
-                    EditorGUI.indentLevel++;
+                    settings.smoothRadius = EditorGUILayout.FloatField("Smooth Radius", settings.smoothRadius);
+                    settings.smoothAmount = EditorGUILayout.FloatField("Smooth Amount", settings.smoothAmount);
+                    if (GUILayout.Button("Apply Smoothing [Shift+S]"))
+                    {
+                        m_target.ApplySmoothing(settings.smoothRadius, settings.smoothAmount, true);
+                    }
+                }
+                else if (settings.smoothMode == 1)
+                {
+                    settings.weldWithSmoothing = EditorGUILayout.Toggle("Smoothing", settings.weldWithSmoothing);
+                    settings.weldAngle = EditorGUILayout.FloatField("Weld Angle", settings.weldAngle);
+
+                    if (GUILayout.Button("Apply Welding [Shift+W]"))
+                    {
+                        m_target.ApplyWelding(settings.weldWithSmoothing, settings.weldAngle, true);
+                    }
+                }
+                else if (settings.smoothMode == 2)
+                {
                     int n = EditorGUILayout.IntField("Targets Count", settings.weldTargets.Length);
                     if (n != settings.weldTargets.Length)
                         System.Array.Resize(ref settings.weldTargets, n);
 
                     for (int i = 0; i < settings.weldTargets.Length; ++i)
                         settings.weldTargets[i] = (GameObject)EditorGUILayout.ObjectField(settings.weldTargets[i], typeof(GameObject), true);
-                    EditorGUI.indentLevel--;
+
+                    EditorGUILayout.Space();
+
                     settings.weldTargetsMode = EditorGUILayout.IntPopup("Weld Mode", settings.weldTargetsMode,
-                        new string[3] {"Copy To Targets", "Copy From Targets", "Smoothing"},
-                        new int[3] { 0, 1, 2});
+                        new string[3] { "Copy To Targets", "Copy From Targets", "Smoothing" },
+                        new int[3] { 0, 1, 2 });
 
                     settings.weldAngle = EditorGUILayout.FloatField("Weld Angle", settings.weldAngle);
 
                     if (GUILayout.Button("Apply Welding"))
                     {
-                        if (m_target.ApplyWelding2(settings.weldTargets, settings.weldTargetsMode, settings.weldAngle))
-                        {
-                            m_target.PushUndo();
-                        }
-                    }
-                }
-                else
-                {
-                    settings.weldWithSmoothing = EditorGUILayout.Toggle("Weld With Smoothing", settings.weldWithSmoothing);
-                    settings.weldAngle = EditorGUILayout.FloatField("Weld Angle", settings.weldAngle);
-
-                    if (GUILayout.Button("Apply Welding [Shift+W]"))
-                    {
-                        if (m_target.ApplyWelding(settings.weldWithSmoothing, settings.weldAngle))
-                        {
-                            m_target.PushUndo();
-                        }
+                        m_target.ApplyWelding2(settings.weldTargets, settings.weldTargetsMode, settings.weldAngle, true);
                     }
                 }
             }
@@ -513,8 +511,7 @@ namespace UTJ.NormalPainter
                 EditorGUILayout.Space();
                 if (GUILayout.Button("Apply Projection"))
                 {
-                    m_target.ApplyProjection(settings.projectionNormalSource, settings.projectionRayDirection == 0);
-                    m_target.PushUndo();
+                    m_target.ApplyProjection(settings.projectionNormalSource, settings.projectionRayDirection == 0, true);
                 }
             }
             else if (settings.editMode == EditMode.Reset)
@@ -522,13 +519,11 @@ namespace UTJ.NormalPainter
                 EditorGUILayout.BeginHorizontal();
                 if (GUILayout.Button("Reset (Selection)"))
                 {
-                    m_target.ResetNormals(true);
-                    m_target.PushUndo();
+                    m_target.ResetNormals(true, true);
                 }
                 else if (GUILayout.Button("Reset (All)"))
                 {
-                    m_target.ResetNormals(false);
-                    m_target.PushUndo();
+                    m_target.ResetNormals(false, true);
                 }
                 EditorGUILayout.EndHorizontal();
             }
@@ -560,11 +555,7 @@ namespace UTJ.NormalPainter
                 settings.mirrorMode = (MirrorMode)EditorGUILayout.EnumPopup("Mirroring", settings.mirrorMode);
                 if (mirrorMode != settings.mirrorMode)
                 {
-                    if (m_target.ApplyMirroring())
-                    {
-                        m_target.UpdateNormals();
-                        m_target.PushUndo();
-                    }
+                    m_target.ApplyMirroring(true);
                 }
 
                 EditorGUILayout.Space();
@@ -621,7 +612,7 @@ namespace UTJ.NormalPainter
                 if (GUILayout.Button("Convert To Vertex Color"))
                     m_target.BakeToVertexColor();
                 if (GUILayout.Button("Convert From Vertex Color"))
-                    m_target.LoadVertexColor();
+                    m_target.LoadVertexColor(true);
                 GUILayout.EndHorizontal();
             }
             else if (settings.inexportIndex == 1)
@@ -643,7 +634,7 @@ namespace UTJ.NormalPainter
                 settings.bakeSource = EditorGUILayout.ObjectField("Source Texture", settings.bakeSource, typeof(Texture), true) as Texture;
 
                 if (GUILayout.Button("Load"))
-                    m_target.LoadTexture(settings.bakeSource);
+                    m_target.LoadTexture(settings.bakeSource, true);
             }
             else if (settings.inexportIndex == 3)
             {
@@ -875,24 +866,19 @@ namespace UTJ.NormalPainter
                 {
                     handled = true;
                     tips = "Paste";
-                    m_target.ApplyAssign(settings.assignValue, settings.coordinate);
-                    m_target.PushUndo();
+                    m_target.ApplyAssign(settings.assignValue, settings.coordinate, true);
                 }
                 else if (e.keyCode == KeyCode.S && e.shift)
                 {
                     handled = true;
                     tips = "Apply Smoothing";
-                    m_target.ApplySmoothing(settings.smoothRadius, settings.smoothAmount);
-                    m_target.PushUndo();
+                    m_target.ApplySmoothing(settings.smoothRadius, settings.smoothAmount, true);
                 }
                 else if (e.keyCode == KeyCode.W && e.shift)
                 {
                     handled = true;
                     tips = "Apply Welding";
-                    if (m_target.ApplyWelding(settings.weldWithSmoothing, settings.weldAngle))
-                    {
-                        m_target.PushUndo();
-                    }
+                    m_target.ApplyWelding(settings.weldWithSmoothing, settings.weldAngle, true);
                 }
                 else if (e.keyCode == KeyCode.Tab)
                 {
