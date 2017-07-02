@@ -480,12 +480,15 @@ namespace UTJ.NormalPainter
                 }
                 else if (settings.smoothMode == 2)
                 {
-                    int n = EditorGUILayout.IntField("Targets Count", settings.weldTargets.Length);
+                    EditorGUILayout.LabelField("Weld Targets");
+                    EditorGUI.indentLevel++;
+                    int n = EditorGUILayout.IntField("Size", settings.weldTargets.Length);
                     if (n != settings.weldTargets.Length)
                         System.Array.Resize(ref settings.weldTargets, n);
 
                     for (int i = 0; i < settings.weldTargets.Length; ++i)
                         settings.weldTargets[i] = (GameObject)EditorGUILayout.ObjectField(settings.weldTargets[i], typeof(GameObject), true);
+                    EditorGUI.indentLevel--;
 
                     EditorGUILayout.Space();
 
@@ -562,8 +565,13 @@ namespace UTJ.NormalPainter
                 settings.tangentsAutoUpdate = EditorGUILayout.Toggle("Auto Update Tangents", settings.tangentsAutoUpdate);
                 if (!settings.tangentsAutoUpdate)
                 {
+                    EditorGUILayout.BeginHorizontal();
+                    EditorGUILayout.BeginVertical(GUILayout.Width(indentSize));
+                    EditorGUILayout.Space();
+                    EditorGUILayout.EndVertical();
                     if (GUILayout.Button("Recalculate Tangents [T]"))
                         m_target.RecalculateTangents();
+                    EditorGUILayout.EndHorizontal();
                 }
 
                 if (m_target.GetComponent<SkinnedMeshRenderer>() != null)
@@ -714,33 +722,18 @@ namespace UTJ.NormalPainter
             if (settings.displayIndex == 0)
             {
                 settings.visualize = EditorGUILayout.Toggle("Vidualize [Tab]", settings.visualize);
-                EditorGUI.indentLevel++;
-                bool showVertices = EditorGUILayout.Toggle("Vertices", settings.visualize && settings.showVertices);
-                bool showNormals = EditorGUILayout.Toggle("Normals", settings.visualize && settings.showNormals);
-                bool showTangents = EditorGUILayout.Toggle("Tangents", settings.visualize && settings.showTangents);
-                bool showBinormals = EditorGUILayout.Toggle("Binormals", settings.visualize && settings.showBinormals);
-                EditorGUI.indentLevel--;
                 if (settings.visualize)
                 {
-                    settings.showVertices = showVertices;
-                    settings.showNormals = showNormals;
-                    settings.showTangents = showTangents;
-                    settings.showBinormals = showBinormals;
-                }
-                else
-                {
-                    if (showVertices || showNormals || showTangents || showBinormals)
-                    {
-                        settings.showVertices = showVertices;
-                        settings.showNormals = showNormals;
-                        settings.showTangents = showTangents;
-                        settings.showBinormals = showBinormals;
-                        settings.visualize = true;
-                    }
+                    EditorGUI.indentLevel++;
+                    settings.showVertices = EditorGUILayout.Toggle("Vertices", settings.showVertices);
+                    settings.showNormals = EditorGUILayout.Toggle("Normals", settings.showNormals);
+                    settings.showTangents = EditorGUILayout.Toggle("Tangents", settings.showTangents);
+                    settings.showBinormals = EditorGUILayout.Toggle("Binormals", settings.showBinormals);
+                    EditorGUI.indentLevel--;
+                    EditorGUILayout.Space();
                 }
                 //settings.showSelectedOnly = EditorGUILayout.Toggle("Selected Only", settings.showSelectedOnly);
 
-                EditorGUILayout.Space();
                 settings.modelOverlay = (ModelOverlay)EditorGUILayout.EnumPopup("Overlay", settings.modelOverlay);
                 settings.showBrushRange = EditorGUILayout.Toggle("Brush Range", settings.showBrushRange);
             }
