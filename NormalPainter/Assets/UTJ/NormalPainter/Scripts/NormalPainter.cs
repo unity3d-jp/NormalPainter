@@ -26,7 +26,6 @@ namespace UTJ.NormalPainter
                 public Color[] colors;
             }
 
-
             public int index;
             public Vector3[] normals;
             public Record[] records;
@@ -822,21 +821,24 @@ namespace UTJ.NormalPainter
             if (m_settings.showBrushRange && m_rayHit && brushMode)
                 m_cmdDraw.DrawRenderer(renderer, m_matVisualize, 0, 8);
 
-            // visualize vertices
-            if (m_settings.showVertices && m_points != null)
-                m_cmdDraw.DrawMeshInstancedIndirect(m_meshCube, 0, m_matVisualize, 0, m_cbArg);
+            if(!m_settings.hideTemporary)
+            {
+                // visualize vertices
+                if (m_settings.showVertices && m_points != null)
+                    m_cmdDraw.DrawMeshInstancedIndirect(m_meshCube, 0, m_matVisualize, 0, m_cbArg);
 
-            // visualize binormals
-            if (m_settings.showBinormals && m_tangents != null)
-                m_cmdDraw.DrawMeshInstancedIndirect(m_meshLine, 0, m_matVisualize, 3, m_cbArg);
+                // visualize binormals
+                if (m_settings.showBinormals && m_tangents != null)
+                    m_cmdDraw.DrawMeshInstancedIndirect(m_meshLine, 0, m_matVisualize, 3, m_cbArg);
 
-            // visualize tangents
-            if (m_settings.showTangents && m_tangents != null)
-                m_cmdDraw.DrawMeshInstancedIndirect(m_meshLine, 0, m_matVisualize, 2, m_cbArg);
+                // visualize tangents
+                if (m_settings.showTangents && m_tangents != null)
+                    m_cmdDraw.DrawMeshInstancedIndirect(m_meshLine, 0, m_matVisualize, 2, m_cbArg);
 
-            // visualize normals
-            if (m_settings.showNormals && m_normals != null)
-                m_cmdDraw.DrawMeshInstancedIndirect(m_meshLine, 0, m_matVisualize, 1, m_cbArg);
+                // visualize normals
+                if (m_settings.showNormals && m_normals != null)
+                    m_cmdDraw.DrawMeshInstancedIndirect(m_meshLine, 0, m_matVisualize, 1, m_cbArg);
+            }
 
             if (m_settings.showBrushRange && m_rayHit)
             {

@@ -100,12 +100,13 @@ namespace UTJ.NormalPainter
         [NonSerialized] public bool pickNormal = false;
 
         // display options
-        public bool showBrushRange = true;
         public bool showVertices = true;
         public bool showNormals = true;
         public bool showTangents = false;
         public bool showBinormals = false;
+        public bool hideTemporary = false;
         public bool showSelectedOnly = false;
+        public bool showBrushRange = true;
         public ModelOverlay modelOverlay = ModelOverlay.None;
         public float vertexSize;
         public float normalSize;

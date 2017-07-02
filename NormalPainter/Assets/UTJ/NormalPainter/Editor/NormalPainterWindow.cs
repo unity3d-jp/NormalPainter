@@ -610,7 +610,7 @@ namespace UTJ.NormalPainter
             {
                 GUILayout.BeginHorizontal();
                 if (GUILayout.Button("Convert To Vertex Color"))
-                    m_target.BakeToVertexColor();
+                    m_target.BakeToVertexColor(true);
                 if (GUILayout.Button("Convert From Vertex Color"))
                     m_target.LoadVertexColor(true);
                 GUILayout.EndHorizontal();
@@ -689,21 +689,6 @@ namespace UTJ.NormalPainter
         };
 
 
-        bool DisplayEnabledAll()
-        {
-            var settings = m_target.settings;
-            return settings.showVertices && settings.showNormals && settings.showTangents && settings.showBinormals;
-        }
-
-        void DisplayToggleAll(bool v)
-        {
-            var settings = m_target.settings;
-            settings.showVertices = v;
-            settings.showNormals = v;
-            settings.showTangents = v;
-            settings.showBinormals = v;
-        }
-
         void DrawDisplayPanel()
         {
             var settings = m_target.settings;
@@ -724,21 +709,14 @@ namespace UTJ.NormalPainter
             EditorGUILayout.BeginVertical();
             if (settings.displayIndex == 0)
             {
-                bool all = DisplayEnabledAll();
-                bool allToggle = EditorGUILayout.Toggle("All [Tab]", all);
-                if(!all && allToggle)
-                    DisplayToggleAll(true);
-                else if (all && !allToggle)
-                    DisplayToggleAll(false);
-
-                EditorGUI.indentLevel++;
                 settings.showVertices = EditorGUILayout.Toggle("Vertices", settings.showVertices);
                 settings.showNormals = EditorGUILayout.Toggle("Normals", settings.showNormals);
                 settings.showTangents = EditorGUILayout.Toggle("Tangents", settings.showTangents);
                 settings.showBinormals = EditorGUILayout.Toggle("Binormals", settings.showBinormals);
-                EditorGUI.indentLevel--;
-
+                EditorGUI.indentLevel++;
+                settings.hideTemporary = EditorGUILayout.Toggle("Hide Temporary [Tab]", settings.hideTemporary);
                 settings.showSelectedOnly = EditorGUILayout.Toggle("Selected Only", settings.showSelectedOnly);
+                EditorGUI.indentLevel--;
 
                 EditorGUILayout.Space();
                 settings.modelOverlay = (ModelOverlay)EditorGUILayout.EnumPopup("Overlay", settings.modelOverlay);
@@ -883,12 +861,8 @@ namespace UTJ.NormalPainter
                 else if (e.keyCode == KeyCode.Tab)
                 {
                     handled = true;
-                    tips = "Toggle Display All";
-                    bool all = DisplayEnabledAll();
-                    if (!all)
-                        DisplayToggleAll(true);
-                    else
-                        DisplayToggleAll(false);
+                    tips = "Hide Temporary";
+                    settings.hideTemporary = !settings.hideTemporary;
 
                 }
                 else if (e.keyCode == KeyCode.A)

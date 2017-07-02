@@ -260,6 +260,7 @@ namespace UTJ.NormalPainter
 
         void PushUndo(Vector3[] normals, History.Record[] records)
         {
+            Undo.IncrementCurrentGroup();
             Undo.RecordObject(this, "NormalEditor [" + m_history.index + "]");
             m_historyIndex = ++m_history.index;
 
@@ -278,7 +279,6 @@ namespace UTJ.NormalPainter
             m_history.records = records != null ? (History.Record[])records.Clone() : null;
 
             Undo.FlushUndoRecordObjects();
-            Undo.IncrementCurrentGroup();
         }
 
         public void OnUndoRedo()
@@ -684,17 +684,29 @@ namespace UTJ.NormalPainter
             return true;
         }
 
-        public bool BakeToVertexColor()
+        public bool BakeToVertexColor(bool pushUndo)
         {
-            var color = new Color[m_normals.Length];
+            if (pushUndo)
+            {
+                var record = new History.Record { mesh = m_meshTarget, colors = m_meshTarget.colors };
+                PushUndo(null, new History.Record[1] { record });
+            }
+
+            var colors = new Color[m_normals.Length];
             for (int i = 0; i < m_normals.Length; ++i)
             {
-                color[i].r = m_normals[i].x * 0.5f + 0.5f;
-                color[i].g = m_normals[i].y * 0.5f + 0.5f;
-                color[i].b = m_normals[i].z * 0.5f + 0.5f;
-                color[i].a = 1.0f;
+                colors[i].r = m_normals[i].x * 0.5f + 0.5f;
+                colors[i].g = m_normals[i].y * 0.5f + 0.5f;
+                colors[i].b = m_normals[i].z * 0.5f + 0.5f;
+                colors[i].a = 1.0f;
             }
-            m_meshTarget.colors = color;
+            m_meshTarget.colors = colors;
+
+            if (pushUndo)
+            {
+                var record = new History.Record { mesh = m_meshTarget, colors = colors };
+                PushUndo(null, new History.Record[1] { record });
+            }
             return true;
         }
 
@@ -779,9 +791,11 @@ namespace UTJ.NormalPainter
             public Matrix4x4 transform;
             public PinnedArray<Vector3> vertices;
             public PinnedArray<Vector3> normals;
-            public BoneWeight[] weights;
-            public Matrix4x4[] bones;
-            public Matrix4x4[] bindposes;
+
+            public PinnedArray<BoneWeight> weights;
+            public PinnedArray<Matrix4x4> bones;
+            public PinnedArray<Matrix4x4> bindposes;
+            public npSkinData skinData;
         }
 
         public static bool IsValidMesh(Mesh mesh)
@@ -816,16 +830,24 @@ namespace UTJ.NormalPainter
                     d.transform = t.GetComponent<Transform>().localToWorldMatrix;
                     d.vertices = new PinnedArray<Vector3>(mesh.vertices);
                     d.normals = new PinnedArray<Vector3>(mesh.normals);
-                    d.weights = mesh.boneWeights;
-                    d.bindposes = mesh.bindposes;
-                    d.bones = new Matrix4x4[d.bindposes.Length];
+
+                    d.weights = new PinnedArray<BoneWeight>(mesh.boneWeights);
+                    d.bindposes = new PinnedArray<Matrix4x4>(mesh.bindposes);
+                    d.bones = new PinnedArray<Matrix4x4>(d.bindposes.Length);
 
                     var bones = smr.bones;
                     int n = System.Math.Min(d.bindposes.Length, smr.bones.Length);
                     for (int bi = 0; bi < n; ++bi)
                         d.bones[bi] = smr.bones[bi].localToWorldMatrix;
 
-                    npApplySkinning(ref m_npSkinData,
+                    d.skinData.num_vertices = d.vertices.Length;
+                    d.skinData.num_bones = d.bindposes.Length;
+                    d.skinData.weights = d.weights;
+                    d.skinData.bindposes = d.bindposes;
+                    d.skinData.bones = d.bones;
+                    d.skinData.root = d.transform;
+
+                    npApplySkinning(ref d.skinData,
                         d.vertices, d.normals, null,
                         d.vertices, d.normals, null);
 
@@ -899,7 +921,7 @@ namespace UTJ.NormalPainter
                     {
                         if (d.skinned)
                         {
-                            npApplyReverseSkinning(ref m_npSkinData,
+                            npApplyReverseSkinning(ref d.skinData,
                                 null, d.normals, null,
                                 null, d.normals, null);
                         }
