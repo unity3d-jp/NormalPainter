@@ -709,14 +709,32 @@ namespace UTJ.NormalPainter
             EditorGUILayout.BeginVertical();
             if (settings.displayIndex == 0)
             {
-                settings.showVertices = EditorGUILayout.Toggle("Vertices", settings.showVertices);
-                settings.showNormals = EditorGUILayout.Toggle("Normals", settings.showNormals);
-                settings.showTangents = EditorGUILayout.Toggle("Tangents", settings.showTangents);
-                settings.showBinormals = EditorGUILayout.Toggle("Binormals", settings.showBinormals);
+                settings.visualize = EditorGUILayout.Toggle("Vidualize [Tab]", settings.visualize);
                 EditorGUI.indentLevel++;
-                settings.hideTemporary = EditorGUILayout.Toggle("Hide Temporary [Tab]", settings.hideTemporary);
-                settings.showSelectedOnly = EditorGUILayout.Toggle("Selected Only", settings.showSelectedOnly);
+                bool showVertices = EditorGUILayout.Toggle("Vertices", settings.visualize && settings.showVertices);
+                bool showNormals = EditorGUILayout.Toggle("Normals", settings.visualize && settings.showNormals);
+                bool showTangents = EditorGUILayout.Toggle("Tangents", settings.visualize && settings.showTangents);
+                bool showBinormals = EditorGUILayout.Toggle("Binormals", settings.visualize && settings.showBinormals);
                 EditorGUI.indentLevel--;
+                if (settings.visualize)
+                {
+                    settings.showVertices = showVertices;
+                    settings.showNormals = showNormals;
+                    settings.showTangents = showTangents;
+                    settings.showBinormals = showBinormals;
+                }
+                else
+                {
+                    if (showVertices || showNormals || showTangents || showBinormals)
+                    {
+                        settings.showVertices = showVertices;
+                        settings.showNormals = showNormals;
+                        settings.showTangents = showTangents;
+                        settings.showBinormals = showBinormals;
+                        settings.visualize = true;
+                    }
+                }
+                //settings.showSelectedOnly = EditorGUILayout.Toggle("Selected Only", settings.showSelectedOnly);
 
                 EditorGUILayout.Space();
                 settings.modelOverlay = (ModelOverlay)EditorGUILayout.EnumPopup("Overlay", settings.modelOverlay);
@@ -861,8 +879,8 @@ namespace UTJ.NormalPainter
                 else if (e.keyCode == KeyCode.Tab)
                 {
                     handled = true;
-                    tips = "Hide Temporary";
-                    settings.hideTemporary = !settings.hideTemporary;
+                    tips = "Toggle Visualization";
+                    settings.visualize = !settings.visualize;
 
                 }
                 else if (e.keyCode == KeyCode.A)

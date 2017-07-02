@@ -104,7 +104,7 @@ namespace UTJ.NormalPainter
         public bool showNormals = true;
         public bool showTangents = false;
         public bool showBinormals = false;
-        public bool hideTemporary = false;
+        public bool visualize = true;
         public bool showSelectedOnly = false;
         public bool showBrushRange = true;
         public ModelOverlay modelOverlay = ModelOverlay.None;

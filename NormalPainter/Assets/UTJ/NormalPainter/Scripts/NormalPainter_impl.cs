@@ -412,10 +412,15 @@ namespace UTJ.NormalPainter
         public void RecalculateTangents()
         {
             m_meshTarget.RecalculateTangents();
-            m_tangents = new PinnedArray<Vector4>(m_meshTarget.tangents);
-            if(m_cbTangents == null)
-                m_cbTangents = new ComputeBuffer(m_tangents.Length, 16);
-            m_cbTangents.SetData(m_tangents);
+            m_tangentsPredeformed.Assign(m_meshTarget.tangents);
+
+            if(m_skinned)
+                npApplySkinning(ref m_npSkinData,
+                    null, null, m_tangentsPredeformed,
+                    null, null, m_tangents);
+
+            if (m_cbTangents != null)
+                m_cbTangents.SetData(m_tangents);
         }
 
 

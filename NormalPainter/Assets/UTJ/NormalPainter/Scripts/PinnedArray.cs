@@ -66,6 +66,15 @@ namespace UTJ.NormalPainter
         public IntPtr Pointer { get { return m_gch.AddrOfPinnedObject(); } }
 
         public PinnedArray<T> Clone() { return new PinnedArray<T>((T[])m_data.Clone()); }
+        public bool Assign(T[] source)
+        {
+            if (source != null && m_data.Length == source.Length)
+            {
+                System.Array.Copy(source, m_data, m_data.Length);
+                return true;
+            }
+            return false;
+        }
 
         public void Dispose()
         {

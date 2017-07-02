@@ -821,7 +821,7 @@ namespace UTJ.NormalPainter
             if (m_settings.showBrushRange && m_rayHit && brushMode)
                 m_cmdDraw.DrawRenderer(renderer, m_matVisualize, 0, 8);
 
-            if(!m_settings.hideTemporary)
+            if(m_settings.visualize)
             {
                 // visualize vertices
                 if (m_settings.showVertices && m_points != null)
