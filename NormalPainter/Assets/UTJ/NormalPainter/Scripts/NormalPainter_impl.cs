@@ -375,13 +375,13 @@ namespace UTJ.NormalPainter
                         null, m_normalsPredeformed, null,
                         null, m_normals, null);
                 }
-                m_meshTarget.normals = m_normalsPredeformed;
+                m_meshTarget.SetNormals(m_normalsPredeformed);
             }
             else
             {
                 if (mirror)
                     ApplyMirroringInternal();
-                m_meshTarget.normals = m_normals;
+                m_meshTarget.SetNormals(m_normals);
             }
 
             m_meshTarget.UploadMeshData(false);
@@ -605,7 +605,7 @@ namespace UTJ.NormalPainter
             bool needsSetup = false;
             if (m_mirrorRelation == null || m_mirrorRelation.Length != m_points.Length)
             {
-                m_mirrorRelation = new PinnedArray<int>(m_points.Length);
+                m_mirrorRelation = new PinnedList<int>(m_points.Length);
                 needsSetup = true;
             }
             else if(m_prevMirrorMode != m_settings.mirrorMode)
@@ -797,12 +797,12 @@ namespace UTJ.NormalPainter
             public bool skinned;
             public Mesh mesh;
             public Matrix4x4 transform;
-            public PinnedArray<Vector3> vertices;
-            public PinnedArray<Vector3> normals;
+            public PinnedList<Vector3> vertices;
+            public PinnedList<Vector3> normals;
 
-            public PinnedArray<BoneWeight> weights;
-            public PinnedArray<Matrix4x4> bones;
-            public PinnedArray<Matrix4x4> bindposes;
+            public PinnedList<BoneWeight> weights;
+            public PinnedList<Matrix4x4> bones;
+            public PinnedList<Matrix4x4> bindposes;
             public npSkinData skinData;
         }
 
@@ -836,12 +836,12 @@ namespace UTJ.NormalPainter
                     d.skinned = true;
                     d.mesh = mesh;
                     d.transform = t.GetComponent<Transform>().localToWorldMatrix;
-                    d.vertices = new PinnedArray<Vector3>(mesh.vertices);
-                    d.normals = new PinnedArray<Vector3>(mesh.normals);
+                    d.vertices = new PinnedList<Vector3>(mesh.vertices);
+                    d.normals = new PinnedList<Vector3>(mesh.normals);
 
-                    d.weights = new PinnedArray<BoneWeight>(mesh.boneWeights);
-                    d.bindposes = new PinnedArray<Matrix4x4>(mesh.bindposes);
-                    d.bones = new PinnedArray<Matrix4x4>(d.bindposes.Length);
+                    d.weights = new PinnedList<BoneWeight>(mesh.boneWeights);
+                    d.bindposes = new PinnedList<Matrix4x4>(mesh.bindposes);
+                    d.bones = new PinnedList<Matrix4x4>(d.bindposes.Length);
 
                     var bones = smr.bones;
                     int n = System.Math.Min(d.bindposes.Length, smr.bones.Length);
@@ -871,8 +871,8 @@ namespace UTJ.NormalPainter
                     var d = new WeldData();
                     d.mesh = mesh;
                     d.transform = t.GetComponent<Transform>().localToWorldMatrix;
-                    d.vertices = new PinnedArray<Vector3>(mesh.vertices);
-                    d.normals = new PinnedArray<Vector3>(mesh.normals);
+                    d.vertices = new PinnedList<Vector3>(mesh.vertices);
+                    d.normals = new PinnedList<Vector3>(mesh.normals);
                     data.Add(d);
                 }
             }
@@ -990,9 +990,9 @@ namespace UTJ.NormalPainter
         {
             if (!IsValidMesh(target)) { return; }
 
-            var tpoints = new PinnedArray<Vector3>(target.vertices, false);
-            var tnormals = new PinnedArray<Vector3>(target.normals, false);
-            var tindices = new PinnedArray<int>(target.triangles, false);
+            var tpoints = new PinnedList<Vector3>(target.vertices);
+            var tnormals = new PinnedList<Vector3>(target.normals);
+            var tindices = new PinnedList<int>(target.triangles);
 
             var tdata = new npModelData();
             tdata.transform = ttrans;

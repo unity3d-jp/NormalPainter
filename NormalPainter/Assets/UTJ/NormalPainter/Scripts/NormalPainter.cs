@@ -54,16 +54,16 @@ namespace UTJ.NormalPainter
         CommandBuffer m_cmdDraw;
 
         bool m_skinned;
-        PinnedArray<Vector3>    m_points, m_pointsPredeformed;
-        PinnedArray<Vector3>    m_normals, m_normalsPredeformed, m_normalsBase, m_normalsBasePredeformed;
-        PinnedArray<Vector4>    m_tangents, m_tangentsPredeformed, m_tangentsBase, m_tangentsBasePredeformed;
-        PinnedArray<int>        m_indices;
-        PinnedArray<int>        m_mirrorRelation;
-        PinnedArray<float>      m_selection;
+        PinnedList<Vector3>     m_points, m_pointsPredeformed;
+        PinnedList<Vector3>     m_normals, m_normalsPredeformed, m_normalsBase, m_normalsBasePredeformed;
+        PinnedList<Vector4>     m_tangents, m_tangentsPredeformed, m_tangentsBase, m_tangentsBasePredeformed;
+        PinnedList<int>         m_indices;
+        PinnedList<int>         m_mirrorRelation;
+        PinnedList<float>       m_selection;
 
-        PinnedArray<BoneWeight> m_boneWeights;
-        PinnedArray<Matrix4x4>  m_bindposes;
-        PinnedArray<Matrix4x4>  m_boneMatrices;
+        PinnedList<BoneWeight>  m_boneWeights;
+        PinnedList<Matrix4x4>   m_bindposes;
+        PinnedList<Matrix4x4>   m_boneMatrices;
 
         bool        m_editing;
         int         m_numSelected = 0;
@@ -222,41 +222,41 @@ namespace UTJ.NormalPainter
 
             if (m_meshTarget != null)
             {
-                m_points = new PinnedArray<Vector3>(m_meshTarget.vertices);
+                m_points = new PinnedList<Vector3>(m_meshTarget.vertices);
                 m_pointsPredeformed = m_points;
 
-                m_normals = new PinnedArray<Vector3>(m_meshTarget.normals);
+                m_normals = new PinnedList<Vector3>(m_meshTarget.normals);
                 if (m_normals.Length == 0)
                 {
                     m_meshTarget.RecalculateNormals();
-                    m_normalsBase = m_normals = new PinnedArray<Vector3>(m_meshTarget.normals);
+                    m_normalsBase = m_normals = new PinnedList<Vector3>(m_meshTarget.normals);
                 }
                 else
                 {
                     m_meshTarget.RecalculateNormals();
-                    m_normalsBase = new PinnedArray<Vector3>(m_meshTarget.normals);
+                    m_normalsBase = new PinnedList<Vector3>(m_meshTarget.normals);
                     m_meshTarget.normals = m_normals;
                 }
                 m_normalsPredeformed = m_normals;
                 m_normalsBasePredeformed = m_normalsBase;
 
-                m_tangents = new PinnedArray<Vector4>(m_meshTarget.tangents);
+                m_tangents = new PinnedList<Vector4>(m_meshTarget.tangents);
                 if (m_tangents.Length == 0)
                 {
                     m_meshTarget.RecalculateTangents();
-                    m_tangentsBase = m_tangents = new PinnedArray<Vector4>(m_meshTarget.tangents);
+                    m_tangentsBase = m_tangents = new PinnedList<Vector4>(m_meshTarget.tangents);
                 }
                 else
                 {
                     m_meshTarget.RecalculateTangents();
-                    m_tangentsBase = new PinnedArray<Vector4>(m_meshTarget.tangents);
+                    m_tangentsBase = new PinnedList<Vector4>(m_meshTarget.tangents);
                     m_meshTarget.tangents = m_tangents;
                 }
                 m_tangentsPredeformed = m_tangents;
                 m_tangentsBasePredeformed = m_tangentsBase;
 
-                m_indices = new PinnedArray<int>(m_meshTarget.triangles);
-                m_selection = new PinnedArray<float>(m_points.Length);
+                m_indices = new PinnedList<int>(m_meshTarget.triangles);
+                m_selection = new PinnedList<float>(m_points.Length);
 
                 m_npModelData.num_vertices = m_points.Length;
                 m_npModelData.num_triangles = m_indices.Length / 3;
@@ -270,9 +270,9 @@ namespace UTJ.NormalPainter
                 {
                     m_skinned = true;
 
-                    m_boneWeights = new PinnedArray<BoneWeight>(m_meshTarget.boneWeights);
-                    m_bindposes = new PinnedArray<Matrix4x4>(m_meshTarget.bindposes);
-                    m_boneMatrices = new PinnedArray<Matrix4x4>(m_bindposes.Length);
+                    m_boneWeights = new PinnedList<BoneWeight>(m_meshTarget.boneWeights);
+                    m_bindposes = new PinnedList<Matrix4x4>(m_meshTarget.bindposes);
+                    m_boneMatrices = new PinnedList<Matrix4x4>(m_bindposes.Length);
 
                     m_pointsPredeformed = m_points.Clone();
                     m_normalsPredeformed = m_normals.Clone();
