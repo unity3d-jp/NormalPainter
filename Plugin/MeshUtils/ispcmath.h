@@ -14,6 +14,12 @@ struct float4 { float x, y, z, w; };
 struct quatf  { float x, y, z, w; };
 struct float4x4 { float4 m[4]; };
 
+inline float2 float2_(float x, float y) { float2 r={x,y}; return r; }
+inline float3 float3_(float x, float y, float z) { float3 r={x,y,z }; return r; }
+inline float4 float4_(float x, float y, float z, float w) { float4 r={x,y,z,w}; return r; }
+inline uniform float2 float2_(uniform float x, uniform float y) { uniform float2 r = { x,y }; return r; }
+inline uniform float3 float3_(uniform float x, uniform float y, uniform float z) { uniform float3 r = { x,y,z }; return r; }
+inline uniform float4 float4_(uniform float x, uniform float y, uniform float z, uniform float w) { uniform float4 r = { x,y,z,w }; return r; }
 
 
 static inline float2 half_to_float(half2 h)

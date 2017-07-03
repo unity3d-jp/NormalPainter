@@ -47,8 +47,8 @@ static inline void ComputeTriangleTangentBasis(
         tangent = binormal = float3::zero();
     }
 
-    static const unsigned kNextIndex[][2] = { { 2, 1 },{ 0, 2 },{ 1, 0 } };
-    for (unsigned v = 0; v < 3; ++v)
+    const int kNextIndex[][2] = { { 2, 1 },{ 0, 2 },{ 1, 0 } };
+    for (int v = 0; v < 3; ++v)
     {
         float3 edge1 = {
             vertices[kNextIndex[v][0]].x - vertices[v].x,
