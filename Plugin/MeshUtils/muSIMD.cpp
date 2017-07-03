@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "muMath.h"
 #include "muSIMD.h"
+#include "muRawVector.h"
 
 namespace mu {
 
@@ -195,6 +196,12 @@ bool PolyInside_Generic(const float2 poly[], int ngon, const float2 pos)
     return poly_inside(poly, ngon, minp, maxp, pos);
 }
 
+void GenerateTangents_Generic(float4 *dst,
+    const float3 *vertices, const float3 *normals, const float2 *uv, const int *indices, int num_triangles, int num_vertices)
+{
+    generate_tangents(dst, vertices, normals, uv, indices, num_triangles, num_vertices);
+}
+
 
 
 #ifdef muEnableISPC
@@ -350,6 +357,51 @@ bool PolyInside_ISPC(const float2 poly[], int ngon, const float2 pos)
     return PolyInside_ISPC(poly, ngon, minp, maxp, pos);
 }
 
+void GenerateTangents_ISPC(float4 *dst,
+    const float3 *vertices, const float3 *normals, const float2 *uv, const int *indices, int num_triangles, int num_vertices)
+{
+    RawVector<float> vsoa[9], usoa[6];
+    RawVector<float3> tmp_tangents, tmp_binormals;
+
+    // make soa-nized data
+    for (auto& v : vsoa) { v.resize(num_triangles); }
+    for (auto& v : usoa) { v.resize(num_triangles); }
+    for (int ti = 0; ti < num_triangles; ++ti) {
+        float3 v[] = {
+            vertices[indices[ti * 3 + 0]],
+            vertices[indices[ti * 3 + 1]],
+            vertices[indices[ti * 3 + 2]],
+        };
+        float2 u[] = {
+            uv[indices[ti * 3 + 0]],
+            uv[indices[ti * 3 + 1]],
+            uv[indices[ti * 3 + 2]],
+        };
+        for (int i = 0; i < 9; ++i) { vsoa[i][ti] = ((float*)v)[i]; }
+        for (int i = 0; i < 6; ++i) { usoa[i][ti] = ((float*)u)[i]; }
+    }
+
+    tmp_tangents.resize(num_vertices); tmp_tangents.zeroclear();
+    tmp_binormals.resize(num_vertices); tmp_binormals.zeroclear();
+
+    ispc::GenerateTangentsSoA(
+        vsoa[0].data(), vsoa[1].data(), vsoa[2].data(),
+        vsoa[3].data(), vsoa[4].data(), vsoa[5].data(),
+        vsoa[6].data(), vsoa[7].data(), vsoa[8].data(),
+
+        usoa[0].data(), usoa[1].data(),
+        usoa[2].data(), usoa[3].data(),
+        usoa[4].data(), usoa[5].data(),
+
+        num_triangles, num_vertices,
+        indices,
+        (ispc::float3*)tmp_tangents.data(),
+        (ispc::float3*)tmp_binormals.data(),
+        (ispc::float3*)normals,
+        (ispc::float4*)dst);
+}
+
+
 #endif
 
 
@@ -466,6 +518,12 @@ bool PolyInside(const float2 poly[], int ngon, const float2 minp, const float2 m
 bool PolyInside(const float2 poly[], int ngon, const float2 pos)
 {
     return Forward(PolyInside, poly, ngon, pos);
+}
+
+void GenerateTangents(float4 *dst,
+    const float3 *vertices, const float3 *normals, const float2 *uv, const int *indices, int num_triangles, int num_vertices)
+{
+    return Forward(GenerateTangents, dst, vertices, normals, uv, indices, num_triangles, num_vertices);
 }
 
 #undef Forward

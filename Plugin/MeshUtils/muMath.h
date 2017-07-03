@@ -1165,8 +1165,8 @@ inline bool poly_inside(const float2 points[], int num_points, const float2 pos)
 
 
 // assume faces are triangles
-void generate_tangents(IArray<float4> dst,
-    const IArray<float3>& vertices, const IArray<float3>& normals, const IArray<float2>& uv, const IArray<int>& indices);
+void generate_tangents(float4 *dst,
+    const float3 *vertices, const float3 *normals, const float2 *uv, const int *indices, int num_triangles, int num_vertices);
 
 
 

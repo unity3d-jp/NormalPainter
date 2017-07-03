@@ -229,8 +229,7 @@ static inline void ComputeTriangleTangentBasis(
         binormal = normalize(tb) * areaMult;
     }
     else {
-        float3 zero = {0,0,0};
-        tangent = binormal = zero;
+        tangent = binormal = float3_(0.0f, 0.0f, 0.0f);
     }
 
     float3 edge1[3] = {
@@ -318,7 +317,7 @@ static inline float4 OrthogonalizeTangent(float3 tangent, float3 binormal, float
         dot(cross(normal, tangent), binormal) > 0.0f ? 1.0f : -1.0f);
 }
 
-export uniform int GenerateTangentsSoA(
+export void GenerateTangentsSoA(
     uniform const float v1x[], uniform const float v1y[], uniform const float v1z[],
     uniform const float v2x[], uniform const float v2y[], uniform const float v2z[],
     uniform const float v3x[], uniform const float v3y[], uniform const float v3z[],

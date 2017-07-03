@@ -4,17 +4,18 @@
 #include <initializer_list>
 #include "muAllocator.h"
 
-template<class T, size_t Alignment = 0x20>
+template<class T, int Align = 0x20>
 class RawVector
 {
 public:
-    typedef T               value_type;
-    typedef T&              reference;
-    typedef const T&        const_reference;
-    typedef T*              pointer;
-    typedef const T*        const_pointer;
-    typedef pointer         iterator;
-    typedef const_pointer   const_iterator;
+    using value_type      = T;
+    using reference       = T&;
+    using const_reference = const T&;
+    using pointer         = T*;
+    using const_pointer   = const T*;
+    using iterator        = pointer;
+    using const_iterator  = const_pointer;
+    static const int alignment = Align;
 
     RawVector() {}
     RawVector(const RawVector& v)
@@ -75,7 +76,7 @@ public:
     iterator end() { return m_data + m_size; }
     const_iterator end() const { return m_data + m_size; }
 
-    static void* allocate(size_t size) { return AlignedMalloc(size, Alignment); }
+    static void* allocate(size_t size) { return AlignedMalloc(size, alignment); }
     static void deallocate(void *addr, size_t /*size*/) { AlignedFree(addr); }
 
     void reserve(size_t s)

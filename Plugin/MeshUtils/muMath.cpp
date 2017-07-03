@@ -134,19 +134,19 @@ static inline float4 OrthogonalizeTangent(float3 tangent, float3 binormal, float
 }
 
 
-void generate_tangents(IArray<float4> dst,
-    const IArray<float3>& vertices, const IArray<float3>& normals, const IArray<float2>& uv, const IArray<int>& indices)
+void generate_tangents(float4 *dst,
+    const float3 *vertices, const float3 *normals, const float2 *uv, const int *indices, int num_triangles, int num_vertices)
 {
     RawVector<float3> tangents, binormals;
-    tangents.resize(vertices.size());
-    binormals.resize(vertices.size());
+    tangents.resize(num_vertices);
+    binormals.resize(num_vertices);
     tangents.zeroclear();
     binormals.zeroclear();
 
-    size_t ic = indices.size();
-    size_t vc = vertices.size();
+    int ic = num_triangles * 3;
+    int vc = num_vertices;
 
-    for (size_t ti = 0; ti < ic; ti += 3) {
+    for (int ti = 0; ti < ic; ti += 3) {
         int idx[] = { indices[ti + 0], indices[ti + 1], indices[ti + 2] };
         float3 v[3] = { vertices[idx[0]], vertices[idx[1]], vertices[idx[2]] };
         float2 u[3] = { uv[idx[0]], uv[idx[1]], uv[idx[2]] };
@@ -161,7 +161,7 @@ void generate_tangents(IArray<float4> dst,
         }
     }
 
-    for (size_t vi = 0; vi < vc; ++vc) {
+    for (int vi = 0; vi < vc; ++vc) {
         dst[vc] = OrthogonalizeTangent(tangents[vc], binormals[vc], normals[vc]);
     }
 }

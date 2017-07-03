@@ -37,6 +37,9 @@ bool PolyInside(const float px[], const float py[], int ngon, const float2 minp,
 bool PolyInside(const float2 poly[], int ngon, const float2 minp, const float2 maxp, const float2 pos);
 bool PolyInside(const float2 poly[], int ngon, const float2 pos);
 
+void GenerateTangents(float4 *dst,
+    const float3 *vertices, const float3 *normals, const float2 *uv, const int *indices, int num_triangles, int num_vertices);
+
 
 // ------------------------------------------------------------
 // internal (for test)
@@ -98,5 +101,10 @@ bool PolyInside_Generic(const float2 poly[], int ngon, const float2 pos);
 bool PolyInside_ISPC(const float px[], const float py[], int ngon, const float2 minp, const float2 maxp, const float2 pos);
 bool PolyInside_ISPC(const float2 poly[], int ngon, const float2 minp, const float2 maxp, const float2 pos);
 bool PolyInside_ISPC(const float2 poly[], int ngon, const float2 pos);
+
+void GenerateTangents_Generic(float4 *dst,
+    const float3 *vertices, const float3 *normals, const float2 *uv, const int *indices, int num_triangles, int num_vertices);
+void GenerateTangents_ISPC(float4 *dst,
+    const float3 *vertices, const float3 *normals, const float2 *uv, const int *indices, int num_triangles, int num_vertices);
 
 } // namespace mu
