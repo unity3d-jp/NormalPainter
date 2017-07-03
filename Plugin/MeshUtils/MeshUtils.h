@@ -2,9 +2,9 @@
 
 #include <vector>
 #include <memory>
-#include "muMath.h"
 #include "muRawVector.h"
 #include "muIntrusiveArray.h"
+#include "muMath.h"
 #include "muSIMD.h"
 #include "muVertex.h"
 #include "muTLS.h"

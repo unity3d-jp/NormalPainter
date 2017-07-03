@@ -6,6 +6,7 @@
 #ifdef muEnableHalf
     #include "half.h"
 #endif // muEnableHalf
+#include "muIntrusiveArray.h"
 
 #define muEpsilon 1e-4f
 #define muMath_AddNamespace
@@ -1161,6 +1162,11 @@ inline bool poly_inside(const float2 points[], int num_points, const float2 pos)
     poly_minmax(points, num_points, minp, maxp);
     return poly_inside(points, num_points, minp, maxp, pos);
 }
+
+
+// assume faces are triangles
+void generate_tangents(IArray<float4> dst,
+    const IArray<float3>& vertices, const IArray<float3>& normals, const IArray<float2>& uv, const IArray<int>& indices);
 
 
 
