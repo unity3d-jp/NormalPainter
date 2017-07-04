@@ -296,6 +296,27 @@ static inline float clamp_and_normalize(float v, float low, float high, float rc
     return clamp(r, 0.0f, 1.0f);
 }
 
+static inline float angle_between(float3 a, float3 b)
+{
+    return acos(dot(a, b));
+}
+static inline uniform float angle_between(uniform float3 a, uniform float3 b)
+{
+    return acos(dot(a, b));
+}
+static inline float angle_between(float3 pos1, float3 pos2, float3 center)
+{
+    return angle_between(
+        normalize(pos1 - center),
+        normalize(pos2 - center));
+}
+static inline uniform float angle_between(uniform float3 pos1, uniform float3 pos2, uniform float3 center)
+{
+    return angle_between(
+        normalize(pos1 - center),
+        normalize(pos2 - center));
+}
+
 
 
 static inline bool ray_triangle_intersection(uniform float3 pos, uniform float3 dir, float3 p1, float3 p2, float3 p3, float& distance)
@@ -358,61 +379,40 @@ static inline uniform float ray_point_distance(uniform float3 pos, uniform float
 
 
 static inline void compute_triangle_tangents(
-    const float3 vertices[3], const float2 uv[3], float3 dst_tangent[3], float3 dst_binormal[3])
+    const float3 (&vertices)[3], const float2 (&uv)[3], float3 (&dst_tangent)[3], float3 (&dst_binormal)[3])
 {
+    float3 p = vertices[1] - vertices[0];
+    float3 q = vertices[2] - vertices[0];
+    float2 s = { uv[1].x - uv[0].x, uv[2].x - uv[0].x };
+    float2 t = { uv[1].y - uv[0].y, uv[2].y - uv[0].y };
 
-    float p[] = { vertices[1].x - vertices[0].x, vertices[1].y - vertices[0].y, vertices[1].z - vertices[0].z };
-    float q[] = { vertices[2].x - vertices[0].x, vertices[2].y - vertices[0].y, vertices[2].z - vertices[0].z };
+    float div = s.x * t.y - s.y * t.x;
+    float area = abs(div);
+    float rdiv = 1.0f / div;
+    s = s * rdiv;
+    t = t * rdiv;
 
-    float s[] = { uv[1].x - uv[0].x, uv[2].x - uv[0].x };
-    float t[] = { uv[1].y - uv[0].y, uv[2].y - uv[0].y };
+    float3 tangent = normalize(float3_(
+        t.y * p.x - t.x * q.x,
+        t.y * p.y - t.x * q.y,
+        t.y * p.z - t.x * q.z
+    )) * area;
 
-    float div = s[0] * t[1] - s[1] * t[0];
-    float areaMult = abs(div);
+    float3 binormal = normalize(float3_(
+        s.x * q.x - s.y * p.x,
+        s.x * q.y - s.y * p.y,
+        s.x * q.z - s.y * p.z
+    )) * area;
 
-    float3 tangent, binormal;
-    if (areaMult >= 1e-8)
-    {
-        float r = 1.0f / div;
-
-        s[0] *= r;  t[0] *= r;
-        s[1] *= r;  t[1] *= r;
-
-        float3 tt = {
-            t[1] * p[0] - t[0] * q[0],
-            t[1] * p[1] - t[0] * q[1],
-            t[1] * p[2] - t[0] * q[2]
-        };
-        tangent = normalize(tt) * areaMult;
-
-        float3 tb = {
-            s[0] * q[0] - s[1] * p[0],
-            s[0] * q[1] - s[1] * p[1],
-            s[0] * q[2] - s[1] * p[2]
-        };
-        binormal = normalize(tb) * areaMult;
-    }
-    else {
-        tangent = binormal = float3_(0.0f, 0.0f, 0.0f);
-    }
-
-    float3 edge1[3] = {
-        vertices[2] - vertices[0],
-        vertices[0] - vertices[1],
-        vertices[1] - vertices[2],
-    };
-    float3 edge2[3] = {
-        vertices[1] - vertices[0],
-        vertices[2] - vertices[1],
-        vertices[0] - vertices[2],
+    float angles[3] = {
+        angle_between(vertices[2], vertices[1], vertices[0]),
+        angle_between(vertices[0], vertices[2], vertices[1]),
+        angle_between(vertices[1], vertices[0], vertices[2]),
     };
     for (int v = 0; v < 3; ++v)
     {
-        float angle = dot(normalize(edge1[v]), normalize(edge2[v]));
-        float w = acos(clamp(angle, -1.0f, 1.0f));
-
-        dst_tangent[v] = tangent * w;
-        dst_binormal[v] = binormal * w;
+        dst_tangent[v] = tangent * angles[v];
+        dst_binormal[v] = binormal * angles[v];
     }
 }
 

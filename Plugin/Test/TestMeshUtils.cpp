@@ -10,7 +10,7 @@ using namespace mu;
 void ExportFbxImpl(const char *path,
     const RawVector<int>& indices, int ngon,
     const RawVector<float3>& points, const RawVector<float3>& normals, const RawVector<float4>& tangents,
-    const RawVector<float3>& uv, const RawVector<float4>& colors)
+    const RawVector<float2>& uv, const RawVector<float4>& colors)
 {
     fbxe::ExportOptions opt;
     auto ctx = fbxeCreateContext(&opt);
@@ -96,7 +96,7 @@ void TestNormalsAndTangents()
     RawVector<int> indices, counts;
     RawVector<float3> points;
     RawVector<float2> uv;
-    GenerateWaveMesh(counts, indices, points, uv, 1.0f, 0.25f, 250, 0.0f, true);
+    GenerateWaveMesh(counts, indices, points, uv, 5.0f, 0.25f, 250, 0.0f, true);
 
     int num_points = (int)points.size();
     int num_triangles = (int)indices.size() / 3;
@@ -180,22 +180,22 @@ void TestNormalsAndTangents()
     {
         auto s1b = Now();
         GenerateTangentsTriangleIndexed_Generic(tangents[0].data(),
-            points.data(), uv.data(), normals->data(), indices.data(), num_triangles, num_points);
+            points.data(), uv.data(), normals[0].data(), indices.data(), num_triangles, num_points);
         auto s1e = Now();
 
         auto s2b = Now();
         GenerateTangentsTriangleIndexed_ISPC(tangents[1].data(),
-            points.data(), uv.data(), normals->data(), indices.data(), num_triangles, num_points);
+            points.data(), uv.data(), normals[1].data(), indices.data(), num_triangles, num_points);
         auto s2e = Now();
 
         auto s3b = Now();
         GenerateTangentsTriangleSoA_Generic(tangents[2].data(),
-            SoAPointsArgs, SoAUVArgs, normals->data(), indices.data(), num_triangles, num_points);
+            SoAPointsArgs, SoAUVArgs, normals[2].data(), indices.data(), num_triangles, num_points);
         auto s3e = Now();
 
         auto s4b = Now();
         GenerateTangentsTriangleSoA_ISPC(tangents[3].data(),
-            SoAPointsArgs, SoAUVArgs, normals->data(), indices.data(), num_triangles, num_points);
+            SoAPointsArgs, SoAUVArgs, normals[3].data(), indices.data(), num_triangles, num_points);
         auto s4e = Now();
 
         printf(
@@ -209,6 +209,11 @@ void TestNormalsAndTangents()
             NS2MS(s3e - s3b),
             NS2MS(s4e - s4b));
     }
+
+    ExportFbx("Wave_IndexedCpp.fbx", indices, 3, points, normals[0], tangents[0], uv, {});
+    ExportFbx("Wave_IndexedISPC.fbx", indices, 3, points, normals[1], tangents[1], uv, {});
+    ExportFbx("Wave_SoACpp.fbx", indices, 3, points, normals[2], tangents[2], uv, {});
+    ExportFbx("Wave_SoAISPC.fbx", indices, 3, points, normals[3], tangents[3], uv, {});
 
 #undef SoAUVArgs
 #undef SoAPointsArgs

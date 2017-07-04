@@ -431,6 +431,8 @@ export void GenerateNormalsTriangleIndexed(uniform float3 dst[],
     uniform const int num_triangles, uniform const int num_vertices)
 {
     uniform int num_triangles_simd = num_triangles & ~(C - 1);
+
+    // SIMD pass
     for(uniform int bi=0; bi < num_triangles_simd; bi += C) {
         int ti = bi+I;
 
@@ -451,6 +453,23 @@ export void GenerateNormalsTriangleIndexed(uniform float3 dst[],
             dst[i2] = dst[i2] + n_aos[i];
         }
     }
+
+    // non-SIMD pass
+    for(uniform int ti=num_triangles_simd; ti < num_triangles; ++ti) {
+        uniform int i0 = indices[ti * 3 + 0];
+        uniform int i1 = indices[ti * 3 + 1];
+        uniform int i2 = indices[ti * 3 + 2];
+
+        uniform float3 p0 = vertices[i0];
+        uniform float3 p1 = vertices[i1];
+        uniform float3 p2 = vertices[i2];
+        uniform float3 n = cross(p1 - p0, p2 - p0);
+
+        dst[i0] = dst[i0] + n;
+        dst[i1] = dst[i1] + n;
+        dst[i2] = dst[i2] + n;
+    }
+
     NormalizeImpl(dst, num_vertices);
 }
 
@@ -462,6 +481,8 @@ export void GenerateNormalsTriangleSoA(uniform float3 dst[],
     uniform const int num_triangles, uniform const int num_vertices)
 {
     uniform int num_triangles_simd = num_triangles & ~(C - 1);
+
+    // SIMD pass
     for(uniform int bi=0; bi < num_triangles_simd; bi += C) {
         int ti = bi+I;
 
@@ -482,6 +503,22 @@ export void GenerateNormalsTriangleSoA(uniform float3 dst[],
             dst[i2] = dst[i2] + n_aos[i];
         }
     }
+
+    // non-SIMD pass
+    for(uniform int ti=num_triangles_simd; ti < num_triangles; ++ti) {
+        uniform float3 p0 = {v1x[ti], v1y[ti], v1z[ti]};
+        uniform float3 p1 = {v2x[ti], v2y[ti], v2z[ti]};
+        uniform float3 p2 = {v3x[ti], v3y[ti], v3z[ti]};
+        uniform float3 n = cross(p1 - p0, p2 - p0);
+
+        uniform int i0 = indices[ti * 3 + 0];
+        uniform int i1 = indices[ti * 3 + 1];
+        uniform int i2 = indices[ti * 3 + 2];
+        dst[i0] = dst[i0] + n;
+        dst[i1] = dst[i1] + n;
+        dst[i2] = dst[i2] + n;
+    }
+
     NormalizeImpl(dst, num_vertices);
 }
 
@@ -529,7 +566,8 @@ export void GenerateTangentsIndexed(
         }
     }
 
-    for(uniform int bi=0; bi < num_vertices; bi += C) {
+    uniform int num_vertices_simd = num_vertices & ~(C - 1);
+    for(uniform int bi=0; bi < num_vertices_simd; bi += C) {
         float3 t, b, n;
         aos_to_soa3((uniform float*)&tmp_tangents[bi], &t.x, &t.y, &t.z);
         aos_to_soa3((uniform float*)&tmp_binormals[bi], &b.x, &b.y, &b.z);
@@ -588,7 +626,8 @@ export void GenerateTangentsSoA(
         }
     }
 
-    for(uniform int bi=0; bi < num_vertices; bi += C) {
+    uniform int num_vertices_simd = num_vertices & ~(C - 1);
+    for(uniform int bi=0; bi < num_vertices_simd; bi += C) {
         float3 t, b, n;
         aos_to_soa3((uniform float*)&tmp_tangents[bi], &t.x, &t.y, &t.z);
         aos_to_soa3((uniform float*)&tmp_binormals[bi], &b.x, &b.y, &b.z);

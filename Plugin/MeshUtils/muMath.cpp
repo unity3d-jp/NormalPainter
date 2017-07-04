@@ -322,57 +322,38 @@ void GenerateNormalsTriangleSoA_Generic(float3 *dst,
 static inline void compute_triangle_tangent(
     const float3 vertices[3], const float2 uv[3], float3 dst_tangent[3], float3 dst_binormal[3])
 {
-    float p[] = { vertices[1].x - vertices[0].x, vertices[1].y - vertices[0].y, vertices[1].z - vertices[0].z };
-    float q[] = { vertices[2].x - vertices[0].x, vertices[2].y - vertices[0].y, vertices[2].z - vertices[0].z };
+    float3 p = vertices[1] - vertices[0];
+    float3 q = vertices[2] - vertices[0];
+    float2 s = { uv[1].x - uv[0].x, uv[2].x - uv[0].x };
+    float2 t = { uv[1].y - uv[0].y, uv[2].y - uv[0].y };
 
-    float s[] = { uv[1].x - uv[0].x, uv[2].x - uv[0].x };
-    float t[] = { uv[1].y - uv[0].y, uv[2].y - uv[0].y };
+    float div = s.x * t.y - s.y * t.x;
+    float area = abs(div);
+    float rdiv = 1.0f / div;
+    s *= rdiv;
+    t *= rdiv;
 
-    float div = s[0] * t[1] - s[1] * t[0];
-    float areaMult = std::abs(div);
+    float3 tangent = normalize({
+        t.y * p.x - t.x * q.x,
+        t.y * p.y - t.x * q.y,
+        t.y * p.z - t.x * q.z
+    }) * area;
 
-    float3 tangent, binormal;
-    if (areaMult >= 1e-8)
-    {
-        float r = 1.0f / div;
+    float3 binormal = normalize({
+        s.x * q.x - s.y * p.x,
+        s.x * q.y - s.y * p.y,
+        s.x * q.z - s.y * p.z
+    }) * area;
 
-        s[0] *= r;  t[0] *= r;
-        s[1] *= r;  t[1] *= r;
-
-        tangent = normalize({
-            t[1] * p[0] - t[0] * q[0],
-            t[1] * p[1] - t[0] * q[1],
-            t[1] * p[2] - t[0] * q[2]
-        }) * areaMult;
-
-        binormal = normalize({
-            s[0] * q[0] - s[1] * p[0],
-            s[0] * q[1] - s[1] * p[1],
-            s[0] * q[2] - s[1] * p[2]
-        }) * areaMult;
-    }
-    else {
-        tangent = binormal = float3::zero();
-    }
-
-    const int kNextIndex[][2] = { { 2, 1 },{ 0, 2 },{ 1, 0 } };
+    float angles[3] = {
+        angle_between(vertices[2], vertices[1], vertices[0]),
+        angle_between(vertices[0], vertices[2], vertices[1]),
+        angle_between(vertices[1], vertices[0], vertices[2]),
+    };
     for (int v = 0; v < 3; ++v)
     {
-        float3 edge1 = {
-            vertices[kNextIndex[v][0]].x - vertices[v].x,
-            vertices[kNextIndex[v][0]].y - vertices[v].y,
-            vertices[kNextIndex[v][0]].z - vertices[v].z
-        };
-        float3 edge2 = {
-            vertices[kNextIndex[v][1]].x - vertices[v].x,
-            vertices[kNextIndex[v][1]].y - vertices[v].y,
-            vertices[kNextIndex[v][1]].z - vertices[v].z
-        };
-        float angle = dot(normalize(edge1), normalize(edge2));
-        float w = std::acos(clamp11(angle));
-
-        dst_tangent[v] = tangent * w;
-        dst_binormal[v] = binormal * w;
+        dst_tangent[v] = tangent * angles[v];
+        dst_binormal[v] = binormal * angles[v];
     }
 }
 
