@@ -424,3 +424,117 @@ export uniform int PolyInsideSoAImpl(
     }
     return c;
 }
+
+
+export void GenerateTangentsIndexed(
+    uniform const float3 vertices[],
+    uniform const float2 uv[],
+    uniform const float3 normals[],
+    uniform const int indices[],
+
+    uniform const int num_triangles,
+    uniform const int num_vertices,
+
+    uniform float3 tmp_tangents[],
+    uniform float3 tmp_binormals[],
+    uniform float4 dst_tangents[])
+{
+    for(uniform int bi=0; bi < num_triangles; bi += C) {
+        int ti = bi+I;
+        float3 v[3] = {
+             vertices[indices[(bi + I) * 3  + 0]],
+             vertices[indices[(bi + I) * 3  + 1]],
+             vertices[indices[(bi + I) * 3  + 2]],
+        };
+        float2 u[3] = {
+             uv[indices[(bi + I) * 3  + 0]],
+             uv[indices[(bi + I) * 3  + 1]],
+             uv[indices[(bi + I) * 3  + 2]],
+        };
+        float3 t[3];
+        float3 b[3];
+        compute_triangle_tangents(v, u, t, b);
+
+        uniform float3 tagents_aos[C*3];
+        uniform float3 binormals_aos[C*3];
+        for(uniform int i=0; i<3; ++i) {
+            soa_to_aos3(t[i].x, t[i].y, t[i].z, (uniform float*)&tagents_aos[C*i]);
+            soa_to_aos3(b[i].x, b[i].y, b[i].z, (uniform float*)&binormals_aos[C*i]);
+        }
+        int ni = min(C*3, num_triangles * 3 - bi * 3);
+        for(uniform int i=0; i<ni; ++i) {
+            uniform int ati = bi * 3 + i;
+            tmp_tangents[indices[ati]] = tmp_tangents[indices[ati]] + tagents_aos[i];
+            tmp_binormals[indices[ati]] = tmp_binormals[indices[ati]] + binormals_aos[i];
+        }
+    }
+
+    for(uniform int bi=0; bi < num_vertices; bi += C) {
+        float3 t, b, n;
+        aos_to_soa3((uniform float*)&tmp_tangents[bi], &t.x, &t.y, &t.z);
+        aos_to_soa3((uniform float*)&tmp_binormals[bi], &b.x, &b.y, &b.z);
+        aos_to_soa3((uniform float*)&normals[bi], &n.x, &n.y, &n.z);
+
+        float4 result = orthogonalize_tangent(t, b, n);
+        soa_to_aos4(result.x, result.y, result.z, result.w, (uniform float*)&dst_tangents[bi]);
+    }
+}
+
+export void GenerateTangentsSoA(
+    uniform const float v1x[], uniform const float v1y[], uniform const float v1z[],
+    uniform const float v2x[], uniform const float v2y[], uniform const float v2z[],
+    uniform const float v3x[], uniform const float v3y[], uniform const float v3z[],
+
+    uniform const float u1x[], uniform const float u1y[],
+    uniform const float u2x[], uniform const float u2y[],
+    uniform const float u3x[], uniform const float u3y[],
+
+    uniform const int num_triangles,
+    uniform const int num_vertices,
+
+    uniform const int indices[],
+    uniform float3 tmp_tangents[],
+    uniform float3 tmp_binormals[],
+    uniform const float3 normals[],
+    uniform float4 dst_tangents[])
+{
+    for(uniform int bi=0; bi < num_triangles; bi += C) {
+        int ti = bi+I;
+        float3 vertices[3] = {
+            {v1x[ti], v1y[ti], v1z[ti]},
+            {v2x[ti], v2y[ti], v2z[ti]},
+            {v3x[ti], v3y[ti], v3z[ti]}
+        };
+        float2 uv[3] = {
+            {u1x[ti], u1y[ti]},
+            {u2x[ti], u2y[ti]},
+            {u3x[ti], u3y[ti]}
+        };
+        float3 tangents[3];
+        float3 binormals[3];
+        compute_triangle_tangents(vertices, uv, tangents, binormals);
+
+        uniform float3 tagents_aos[C*3];
+        uniform float3 binormals_aos[C*3];
+        for(uniform int i=0; i<3; ++i) {
+            soa_to_aos3(tangents[i].x, tangents[i].y, tangents[i].z, (uniform float*)&tagents_aos[C*i]);
+            soa_to_aos3(binormals[i].x, binormals[i].y, binormals[i].z, (uniform float*)&binormals_aos[C*i]);
+        }
+        int ni = min(C*3, num_triangles * 3 - bi * 3);
+        for(uniform int i=0; i<ni; ++i) {
+            uniform int ati = bi * 3 + i;
+            tmp_tangents[indices[ati]] = tmp_tangents[indices[ati]] + tagents_aos[i];
+            tmp_binormals[indices[ati]] = tmp_binormals[indices[ati]] + binormals_aos[i];
+        }
+    }
+
+    for(uniform int bi=0; bi < num_vertices; bi += C) {
+        float3 t, b, n;
+        aos_to_soa3((uniform float*)&tmp_tangents[bi], &t.x, &t.y, &t.z);
+        aos_to_soa3((uniform float*)&tmp_binormals[bi], &b.x, &b.y, &b.z);
+        aos_to_soa3((uniform float*)&normals[bi], &n.x, &n.y, &n.z);
+
+        float4 result = orthogonalize_tangent(t, b, n);
+        soa_to_aos4(result.x, result.y, result.z, result.w, (uniform float*)&dst_tangents[bi]);
+    }
+}
