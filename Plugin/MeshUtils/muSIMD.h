@@ -124,11 +124,11 @@ bool PolyInside_ISPC(const float2 poly[], int ngon, const float2 minp, const flo
 bool PolyInside_Generic(const float2 poly[], int ngon, const float2 pos);
 bool PolyInside_ISPC(const float2 poly[], int ngon, const float2 pos);
 
-void GenerateNormalsTrianglesIndexed_Generic(float3 *dst,
+void GenerateNormalsTriangleIndexed_Generic(float3 *dst,
     const float3 *vertices, const int *indices, int num_triangles, int num_vertices);
 void GenerateNormalsTriangleIndexed_ISPC(float3 *dst,
     const float3 *vertices, const int *indices, int num_triangles, int num_vertices);
-void GenerateNormalsTrianglesSoA_Generic(float3 *dst,
+void GenerateNormalsTriangleSoA_Generic(float3 *dst,
     const float *v1x, const float *v1y, const float *v1z,
     const float *v2x, const float *v2y, const float *v2z,
     const float *v3x, const float *v3y, const float *v3z,

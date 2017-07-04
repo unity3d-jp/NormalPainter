@@ -271,7 +271,7 @@ bool PolyInside_Generic(const float2 points[], int num_points, const float2 pos)
     return PolyInside_Generic(points, num_points, minp, maxp, pos);
 }
 
-void GenerateNormalsTrianglesIndexed_Generic(float3 *dst,
+void GenerateNormalsTriangleIndexed_Generic(float3 *dst,
     const float3 *vertices, const int *indices, int num_triangles, int num_vertices)
 {
     memset(dst, 0, sizeof(float3)*num_vertices);
@@ -282,6 +282,7 @@ void GenerateNormalsTrianglesIndexed_Generic(float3 *dst,
         float3 p1 = vertices[face[1]];
         float3 p2 = vertices[face[2]];
         float3 n = cross(p1 - p0, p2 - p0);
+
         for (int ci = 0; ci < 3; ++ci) {
             dst[face[ci]] += n;
         }
@@ -291,7 +292,7 @@ void GenerateNormalsTrianglesIndexed_Generic(float3 *dst,
     }
 }
 
-void GenerateNormalsTrianglesSoA_Generic(float3 *dst,
+void GenerateNormalsTriangleSoA_Generic(float3 *dst,
     const float *v1x, const float *v1y, const float *v1z,
     const float *v2x, const float *v2y, const float *v2z,
     const float *v3x, const float *v3y, const float *v3z,
@@ -305,6 +306,7 @@ void GenerateNormalsTrianglesSoA_Generic(float3 *dst,
         float3 p1 = { v2x[fi], v2y[fi], v2z[fi] };
         float3 p2 = { v3x[fi], v3y[fi], v3z[fi] };
         float3 n = cross(p1 - p0, p2 - p0);
+
         for (int ci = 0; ci < 3; ++ci) {
             dst[face[ci]] += n;
         }
@@ -446,11 +448,9 @@ void GenerateTangentsTriangleIndexed_Generic(float4 *dst,
     tangents.resize_with_zeroclear(num_vertices);
     binormals.resize_with_zeroclear(num_vertices);
 
-    int ic = num_triangles * 3;
-    int vc = num_vertices;
-
-    for (int ti = 0; ti < ic; ti += 3) {
-        int idx[] = { indices[ti + 0], indices[ti + 1], indices[ti + 2] };
+    for (int ti = 0; ti < num_triangles; ++ti) {
+        int ti3 = ti * 3;
+        int idx[] = { indices[ti3 + 0], indices[ti3 + 1], indices[ti3 + 2] };
         float3 v[3] = { vertices[idx[0]], vertices[idx[1]], vertices[idx[2]] };
         float2 u[3] = { uv[idx[0]], uv[idx[1]], uv[idx[2]] };
         float3 t[3];
@@ -463,8 +463,8 @@ void GenerateTangentsTriangleIndexed_Generic(float4 *dst,
         }
     }
 
-    for (int vi = 0; vi < vc; ++vc) {
-        dst[vc] = orthogonalize_tangent(tangents[vc], binormals[vc], normals[vc]);
+    for (int vi = 0; vi < num_vertices; ++vi) {
+        dst[vi] = orthogonalize_tangent(tangents[vi], binormals[vi], normals[vi]);
     }
 }
 
@@ -482,11 +482,9 @@ void GenerateTangentsTriangleSoA_Generic(float4 *dst,
     tangents.resize_with_zeroclear(num_vertices);
     binormals.resize_with_zeroclear(num_vertices);
 
-    int ic = num_triangles * 3;
-    int vc = num_vertices;
-
-    for (int ti = 0; ti < ic; ti += 3) {
-        int idx[] = { indices[ti + 0], indices[ti + 1], indices[ti + 2] };
+    for (int ti = 0; ti < num_triangles; ++ti) {
+        int ti3 = ti * 3;
+        int idx[] = { indices[ti3 + 0], indices[ti3 + 1], indices[ti3 + 2] };
         float3 v[3] = {
             { v1x[ti], v1y[ti], v1z[ti] },
             { v2x[ti], v2y[ti], v2z[ti] },
@@ -507,8 +505,8 @@ void GenerateTangentsTriangleSoA_Generic(float4 *dst,
         }
     }
 
-    for (int vi = 0; vi < vc; ++vc) {
-        dst[vc] = orthogonalize_tangent(tangents[vc], binormals[vc], normals[vc]);
+    for (int vi = 0; vi < num_vertices; ++vi) {
+        dst[vi] = orthogonalize_tangent(tangents[vi], binormals[vi], normals[vi]);
     }
 }
 

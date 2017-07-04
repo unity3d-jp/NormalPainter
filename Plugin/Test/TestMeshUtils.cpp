@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "Test.h"
+#include "MeshGenerator.h"
 using namespace mu;
 
 #ifdef EnableFbxExport
@@ -48,7 +49,7 @@ void Test_IndexedArrays()
 RegisterTestEntry(Test_IndexedArrays)
 
 
-void Test_GenNormals()
+void TestMeshRefiner()
 {
     RawVector<float3> points = {
         { 0.0f, 0.0f, 0.0f },{ 1.0f, 0.0f, 0.0f },{ 2.0f, 0.0f, 0.0f },
@@ -87,7 +88,132 @@ void Test_GenNormals()
     refiner.refine(false);
     refiner.genSubmesh(materialIDs);
 }
-RegisterTestEntry(Test_GenNormals)
+RegisterTestEntry(TestMeshRefiner)
+
+
+void TestNormalsAndTangents()
+{
+    RawVector<int> indices, counts;
+    RawVector<float3> points;
+    RawVector<float2> uv;
+    GenerateWaveMesh(counts, indices, points, uv, 1.0f, 0.25f, 250, 0.0f, true);
+
+    int num_points = (int)points.size();
+    int num_triangles = (int)indices.size() / 3;
+    RawVector<float3> normals[4];
+    RawVector<float4> tangents[4];
+    RawVector<float> psoa[9], usoa[6];
+
+    for (auto& v : normals) { v.resize(points.size()); }
+    for (auto& v : tangents) { v.resize(points.size()); }
+
+    // generate soa data
+    for (auto& v : psoa) { v.resize(num_triangles); }
+    for (auto& v : usoa) { v.resize(num_triangles); }
+    for (int ti = 0; ti < num_triangles; ++ti) {
+        float3 p[3] = {
+            points[indices[ti * 3 + 0]],
+            points[indices[ti * 3 + 1]],
+            points[indices[ti * 3 + 2]],
+        };
+        float2 u[3] = {
+            uv[indices[ti * 3 + 0]],
+            uv[indices[ti * 3 + 1]],
+            uv[indices[ti * 3 + 2]],
+        };
+
+        for (int i = 0; i < 9; ++i) {
+            psoa[i][ti] = ((float*)p)[i];
+        }
+        for (int i = 0; i < 6; ++i) {
+            usoa[i][ti] = ((float*)u)[i];
+        }
+    }
+
+    printf(
+        "    num_vertices: %d\n"
+        "    num_triangles: %d\n"
+        ,
+        (int)points.size(),
+        (int)indices.size() / 3);
+
+#define SoAPointsArgs\
+    psoa[0].data(), psoa[1].data(), psoa[2].data(),\
+    psoa[3].data(), psoa[4].data(), psoa[5].data(),\
+    psoa[6].data(), psoa[7].data(), psoa[8].data()
+
+#define SoAUVArgs\
+    usoa[0].data(), usoa[1].data(),\
+    usoa[2].data(), usoa[3].data(),\
+    usoa[4].data(), usoa[5].data()
+
+
+    {
+        auto s1b = Now();
+        GenerateNormalsTriangleIndexed_Generic(normals[0].data(), points.data(), indices.data(), num_triangles, num_points);
+        auto s1e = Now();
+
+        auto s2b = Now();
+        GenerateNormalsTriangleIndexed_ISPC(normals[1].data(), points.data(), indices.data(), num_triangles, num_points);
+        auto s2e = Now();
+
+        auto s3b = Now();
+        GenerateNormalsTriangleSoA_Generic(normals[2].data(), SoAPointsArgs, indices.data(), num_triangles, num_points);
+        auto s3e = Now();
+
+        auto s4b = Now();
+        GenerateNormalsTriangleSoA_ISPC(normals[3].data(), SoAPointsArgs, indices.data(), num_triangles, num_points);
+        auto s4e = Now();
+
+        printf(
+            "    GenerateNormalsTriangleIndexed_Generic: %f\n"
+            "    GenerateNormalsTriangleIndexed_ISPC: %f\n"
+            "    GenerateNormalsTriangleSoA_Generic: %f\n"
+            "    GenerateNormalsTriangleSoA_ISPC: %f\n"
+            ,
+            NS2MS(s1e - s1b),
+            NS2MS(s2e - s2b),
+            NS2MS(s3e - s3b),
+            NS2MS(s4e - s4b));
+    }
+
+    {
+        auto s1b = Now();
+        GenerateTangentsTriangleIndexed_Generic(tangents[0].data(),
+            points.data(), uv.data(), normals->data(), indices.data(), num_triangles, num_points);
+        auto s1e = Now();
+
+        auto s2b = Now();
+        GenerateTangentsTriangleIndexed_ISPC(tangents[1].data(),
+            points.data(), uv.data(), normals->data(), indices.data(), num_triangles, num_points);
+        auto s2e = Now();
+
+        auto s3b = Now();
+        GenerateTangentsTriangleSoA_Generic(tangents[2].data(),
+            SoAPointsArgs, SoAUVArgs, normals->data(), indices.data(), num_triangles, num_points);
+        auto s3e = Now();
+
+        auto s4b = Now();
+        GenerateTangentsTriangleSoA_ISPC(tangents[3].data(),
+            SoAPointsArgs, SoAUVArgs, normals->data(), indices.data(), num_triangles, num_points);
+        auto s4e = Now();
+
+        printf(
+            "    GenerateTangentsTrianglesIndexed_Generic: %f\n"
+            "    GenerateTangentsTrianglesIndexed_ISPC: %f\n"
+            "    GenerateTangentsTrianglesSoA_Generic: %f\n"
+            "    GenerateTangentsTrianglesSoA_ISPC: %f\n"
+            ,
+            NS2MS(s1e - s1b),
+            NS2MS(s2e - s2b),
+            NS2MS(s3e - s3b),
+            NS2MS(s4e - s4b));
+    }
+
+#undef SoAUVArgs
+#undef SoAPointsArgs
+}
+RegisterTestEntry(TestNormalsAndTangents)
 
 
 void TestMatrixSwapHandedness()
@@ -163,10 +289,10 @@ void TestMulPoints()
         "    %d %d\n",
         num_data,
         num_try,
-        float(s1_end - s1_begin) / 1000000.0f,
-        float(s2_end - s2_begin) / 1000000.0f,
-        float(s3_end - s3_begin) / 1000000.0f,
-        float(s4_end - s4_begin) / 1000000.0f,
+        NS2MS(s1_end - s1_begin),
+        NS2MS(s2_end - s2_begin),
+        NS2MS(s3_end - s3_begin),
+        NS2MS(s4_end - s4_begin),
         eq1, eq2);
 }
 RegisterTestEntry(TestMulPoints)
@@ -296,12 +422,12 @@ void TestRayTrianglesIntersection()
         "    RayTrianglesIntersection (SoA):       Generic %.2fms, ISPC %.2fms\n",
         num_triangles,
         num_try,
-        float(s1_end - s1_begin) / 1000000.0f,
-        float(s2_end - s2_begin) / 1000000.0f,
-        float(s3_end - s3_begin) / 1000000.0f,
-        float(s4_end - s4_begin) / 1000000.0f,
-        float(s5_end - s5_begin) / 1000000.0f,
-        float(s6_end - s6_begin) / 1000000.0f);
+        NS2MS(s1_end - s1_begin),
+        NS2MS(s2_end - s2_begin),
+        NS2MS(s3_end - s3_begin),
+        NS2MS(s4_end - s4_begin),
+        NS2MS(s5_end - s5_begin),
+        NS2MS(s6_end - s6_begin));
 }
 RegisterTestEntry(TestRayTrianglesIntersection)
 
@@ -345,7 +471,7 @@ void TestPolygonInside()
     }
     auto s1_end = Now();
 
-    printf("    Generic: %d (%.2fms)\n", num_inside, float(s1_end - s1_begin) / 1000000.0f);
+    printf("    Generic: %d (%.2fms)\n", num_inside, NS2MS(s1_end - s1_begin));
 
     auto s2_begin = Now();
     num_inside = 0;
@@ -360,7 +486,7 @@ void TestPolygonInside()
     }
     auto s2_end = Now();
 
-    printf("    Generic SoA: %d (%.2fms)\n", num_inside, float(s2_end - s2_begin) / 1000000.0f);
+    printf("    Generic SoA: %d (%.2fms)\n", num_inside, NS2MS(s2_end - s2_begin));
 
     auto s3_begin = Now();
     num_inside = 0;
@@ -375,7 +501,7 @@ void TestPolygonInside()
     }
     auto s3_end = Now();
 
-    printf("    ISPC: %d (%.2fms)\n", num_inside, float(s3_end - s3_begin) / 1000000.0f);
+    printf("    ISPC: %d (%.2fms)\n", num_inside, NS2MS(s3_end - s3_begin));
 
     auto s4_begin = Now();
     num_inside = 0;
@@ -390,7 +516,7 @@ void TestPolygonInside()
     }
     auto s4_end = Now();
 
-    printf("    ISPC SoA: %d (%.2fms)\n", num_inside, float(s4_end - s4_begin) / 1000000.0f);
+    printf("    ISPC SoA: %d (%.2fms)\n", num_inside, NS2MS(s4_end - s4_begin));
     printf("\n");
 }
 RegisterTestEntry(TestPolygonInside)

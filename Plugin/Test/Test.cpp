@@ -23,7 +23,7 @@ static void ExecuteTest(const TestEntry& v)
     auto begin = Now();
     v.body();
     auto end = Now();
-    printf("%s end (%fms)\n\n", v.name.c_str(), (end-begin)/1000000.0f);
+    printf("%s end (%fms)\n\n", v.name.c_str(), NS2MS(end-begin));
 }
 
 int main(int argc, char *argv[])

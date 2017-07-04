@@ -430,24 +430,22 @@ export void GenerateNormalsTriangleIndexed(uniform float3 dst[],
     uniform const float3 vertices[], uniform const int indices[],
     uniform const int num_triangles, uniform const int num_vertices)
 {
-    for(uniform int bi=0; bi < num_triangles; bi += C) {
+    uniform int num_triangles_simd = num_triangles & ~(C - 1);
+    for(uniform int bi=0; bi < num_triangles_simd; bi += C) {
         int ti = bi+I;
 
-        float3 v[3] = {
-             vertices[indices[ti * 3  + 0]],
-             vertices[indices[ti * 3  + 1]],
-             vertices[indices[ti * 3  + 2]],
-        };
-        float3 n = cross(v[1] - v[0], v[2] - v[0]);
+        float3 p0 = vertices[indices[ti * 3  + 0]];
+        float3 p1 = vertices[indices[ti * 3  + 1]];
+        float3 p2 = vertices[indices[ti * 3  + 2]];
+        float3 n = cross(p1 - p0, p2 - p0);
 
         uniform float3 n_aos[C];
-        soa_to_aos3(n.x, n.y, n.z, (uniform float*)&n_aos[bi]);
+        soa_to_aos3(n.x, n.y, n.z, (uniform float*)&n_aos[0]);
 
-        uniform int nt = min(C, num_triangles - bi);
-        for(uniform int i=0; i<nt; ++i) {
-            int i0 = indices[(bi + i) * 3 + 0];
-            int i1 = indices[(bi + i) * 3 + 1];
-            int i2 = indices[(bi + i) * 3 + 2];
+        for(uniform int i=0; i<C; ++i) {
+            uniform int i0 = indices[(bi + i) * 3 + 0];
+            uniform int i1 = indices[(bi + i) * 3 + 1];
+            uniform int i2 = indices[(bi + i) * 3 + 2];
             dst[i0] = dst[i0] + n_aos[i];
             dst[i1] = dst[i1] + n_aos[i];
             dst[i2] = dst[i2] + n_aos[i];
@@ -463,24 +461,22 @@ export void GenerateNormalsTriangleSoA(uniform float3 dst[],
     uniform const int indices[],
     uniform const int num_triangles, uniform const int num_vertices)
 {
-    for(uniform int bi=0; bi < num_triangles; bi += C) {
+    uniform int num_triangles_simd = num_triangles & ~(C - 1);
+    for(uniform int bi=0; bi < num_triangles_simd; bi += C) {
         int ti = bi+I;
 
-        float3 v[3] = {
-             {v1x[ti], v1y[ti], v1z[ti]},
-             {v2x[ti], v2y[ti], v2z[ti]},
-             {v3x[ti], v3y[ti], v3z[ti]},
-        };
-        float3 n = cross(v[1] - v[0], v[2] - v[0]);
+        float3 p0 = {v1x[ti], v1y[ti], v1z[ti]};
+        float3 p1 = {v2x[ti], v2y[ti], v2z[ti]};
+        float3 p2 = {v3x[ti], v3y[ti], v3z[ti]};
+        float3 n = cross(p1 - p0, p2 - p0);
 
         uniform float3 n_aos[C];
-        soa_to_aos3(n.x, n.y, n.z, (uniform float*)&n_aos[bi]);
+        soa_to_aos3(n.x, n.y, n.z, (uniform float*)&n_aos[0]);
 
-        uniform int nt = min(C, num_triangles - bi);
-        for(uniform int i=0; i<nt; ++i) {
-            int i0 = indices[(bi + i) * 3 + 0];
-            int i1 = indices[(bi + i) * 3 + 1];
-            int i2 = indices[(bi + i) * 3 + 2];
+        for(uniform int i=0; i<C; ++i) {
+            uniform int i0 = indices[(bi + i) * 3 + 0];
+            uniform int i1 = indices[(bi + i) * 3 + 1];
+            uniform int i2 = indices[(bi + i) * 3 + 2];
             dst[i0] = dst[i0] + n_aos[i];
             dst[i1] = dst[i1] + n_aos[i];
             dst[i2] = dst[i2] + n_aos[i];
@@ -503,7 +499,8 @@ export void GenerateTangentsIndexed(
     uniform float3 tmp_binormals[],
     uniform float4 dst_tangents[])
 {
-    for(uniform int bi=0; bi < num_triangles; bi += C) {
+    uniform int num_triangles_simd = num_triangles & ~(C - 1);
+    for(uniform int bi=0; bi < num_triangles_simd; bi += C) {
         int ti = bi+I;
         float3 v[3] = {
              vertices[indices[ti * 3  + 0]],
@@ -525,8 +522,7 @@ export void GenerateTangentsIndexed(
             soa_to_aos3(t[i].x, t[i].y, t[i].z, (uniform float*)&tagents_aos[C*i]);
             soa_to_aos3(b[i].x, b[i].y, b[i].z, (uniform float*)&binormals_aos[C*i]);
         }
-        int ni = min(C*3, num_triangles * 3 - bi * 3);
-        for(uniform int i=0; i<ni; ++i) {
+        for(uniform int i=0; i<C; ++i) {
             uniform int ati = bi * 3 + i;
             tmp_tangents[indices[ati]] = tmp_tangents[indices[ati]] + tagents_aos[i];
             tmp_binormals[indices[ati]] = tmp_binormals[indices[ati]] + binormals_aos[i];
@@ -562,7 +558,8 @@ export void GenerateTangentsSoA(
     uniform float3 tmp_tangents[],
     uniform float3 tmp_binormals[])
 {
-    for(uniform int bi=0; bi < num_triangles; bi += C) {
+    uniform int num_triangles_simd = num_triangles & ~(C - 1);
+    for(uniform int bi=0; bi < num_triangles_simd; bi += C) {
         int ti = bi+I;
         float3 vertices[3] = {
             {v1x[ti], v1y[ti], v1z[ti]},
@@ -584,8 +581,7 @@ export void GenerateTangentsSoA(
             soa_to_aos3(tangents[i].x, tangents[i].y, tangents[i].z, (uniform float*)&tagents_aos[C*i]);
             soa_to_aos3(binormals[i].x, binormals[i].y, binormals[i].z, (uniform float*)&binormals_aos[C*i]);
         }
-        int ni = min(C*3, num_triangles * 3 - bi * 3);
-        for(uniform int i=0; i<ni; ++i) {
+        for(uniform int i=0; i<C; ++i) {
             uniform int ati = bi * 3 + i;
             tmp_tangents[indices[ati]] = tmp_tangents[indices[ati]] + tagents_aos[i];
             tmp_binormals[indices[ati]] = tmp_binormals[indices[ati]] + binormals_aos[i];
