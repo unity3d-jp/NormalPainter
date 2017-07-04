@@ -114,38 +114,34 @@ namespace UTJ.NormalPainter
         GCHandle m_gch;
 
         #region dirty
-        static System.Reflection.FieldInfo s_itemsField;
-        static System.Reflection.FieldInfo s_sizeField;
 
-        static System.Reflection.FieldInfo GetItemsField()
+        class ListData
         {
-            if (s_itemsField == null)
-            {
-                s_itemsField = typeof(List<T>).GetField("_items",
-                    System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-            }
-            return s_itemsField;
+            public T[] items;
+            public int size;
         }
-        static System.Reflection.FieldInfo GetSizeField()
+
+        [StructLayout(LayoutKind.Explicit)]
+        struct Caster
         {
-            if (s_sizeField == null)
-            {
-                s_sizeField = typeof(List<T>).GetField("_size",
-                    System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-            }
-            return s_sizeField;
+            [FieldOffset(0)] public List<T> list;
+            [FieldOffset(0)] public ListData data;
         }
+
 
         public static T[] ListGetInternalArray(List<T> list)
         {
-            return (T[])GetItemsField().GetValue(list);
+            var caster = new Caster();
+            caster.list = list;
+            return caster.data.items;
         }
         public static List<T> ListCreateIntrusive(T[] data)
         {
             var ret = new List<T>();
-            // force assign existing array to internal data
-            GetItemsField().SetValue(ret, data);
-            GetSizeField().SetValue(ret, data.Length);
+            var caster = new Caster();
+            caster.list = ret;
+            caster.data.items = data;
+            caster.data.size = data.Length;
             return ret;
         }
         #endregion
@@ -188,6 +184,15 @@ namespace UTJ.NormalPainter
         public T[] Array { get { return m_data; } }
         public List<T> List { get { return m_list; } }
         public IntPtr Pointer { get { return m_gch.AddrOfPinnedObject(); } }
+
+        public void LockList(Action<List<T>> body)
+        {
+            if (m_gch.IsAllocated)
+                m_gch.Free();
+            body(m_list);
+            m_data = ListGetInternalArray(m_list);
+            m_gch = GCHandle.Alloc(m_data, GCHandleType.Pinned);
+        }
 
         public PinnedList<T> Clone() { return new PinnedList<T>(m_list, true); }
         public bool Assign(T[] source)
