@@ -480,3 +480,20 @@ static inline float4 orthogonalize_tangent(float3 tangent, float3 binormal, floa
     return float4_(tangent.x, tangent.y, tangent.z,
         dot(cross(normal, tangent), binormal) > 0.0f ? 1.0f : -1.0f);
 }
+
+
+static inline NormalizeImpl(uniform float3 dst[], uniform const int num)
+{
+    uniform int num_simd_blocks = num & ~(C - 1);
+
+    for (uniform int bi = 0; bi < num_simd_blocks; bi += C) {
+        float3 n;
+        aos_to_soa3((uniform float*)(&dst[bi]), &n.x, &n.y, &n.z);
+        n = normalize(n);
+        soa_to_aos3(n.x, n.y, n.z, (uniform float*)(&dst[bi]));
+    }
+
+    for (uniform int i = num_simd_blocks; i < num; ++i) {
+        dst[i] = normalize(dst[i]);
+    }
+}

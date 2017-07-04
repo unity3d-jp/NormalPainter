@@ -43,9 +43,17 @@ int RayTrianglesIntersectionSoA(float3 pos, float3 dir,
     const float *v3x, const float *v3y, const float *v3z,
     int num_triangles, int& tindex, float& distance);
 
-void GenerateTangentsIndexed(float4 *dst,
+void GenerateNormalsTrianglesIndexed(float3 *dst,
+    const float3 *vertices, const int *indices, int num_triangles, int num_vertices);
+void GenerateNormalsTrianglesSoA(float3 *dst,
+    const float *v1x, const float *v1y, const float *v1z,
+    const float *v2x, const float *v2y, const float *v2z,
+    const float *v3x, const float *v3y, const float *v3z,
+    const int *indices, int num_triangles, int num_vertices);
+
+void GenerateTangentsTrianglesIndexed(float4 *dst,
     const float3 *vertices, const float3 *normals, const float2 *uv, const int *indices, int num_triangles, int num_vertices);
-void GenerateTangentsSoA(float4 *dst,
+void GenerateTangentsTrianglesSoA(float4 *dst,
     const float *v1x, const float *v1y, const float *v1z,
     const float *v2x, const float *v2y, const float *v2z,
     const float *v3x, const float *v3y, const float *v3z,
@@ -116,12 +124,27 @@ bool PolyInside_ISPC(const float2 poly[], int ngon, const float2 minp, const flo
 bool PolyInside_Generic(const float2 poly[], int ngon, const float2 pos);
 bool PolyInside_ISPC(const float2 poly[], int ngon, const float2 pos);
 
-void GenerateTangentsIndexed_Generic(float4 *dst,
+void GenerateTangentsTrianglesIndexed_Generic(float4 *dst,
     const float3 *vertices, const float3 *normals, const float2 *uv, const int *indices, int num_triangles, int num_vertices);
-void GenerateTangentsIndexed_ISPC(float4 *dst,
+void GenerateTangentsTrianglesIndexed_ISPC(float4 *dst,
     const float3 *vertices, const float3 *normals, const float2 *uv, const int *indices, int num_triangles, int num_vertices);
 
-void GenerateTangentsSoA_Generic(float4 *dst,
+void GenerateNormalsTrianglesIndexed_Generic(float3 *dst,
+    const float3 *vertices, const int *indices, int num_triangles, int num_vertices);
+void GenerateNormalsTrianglesIndexed_ISPC(float3 *dst,
+    const float3 *vertices, const int *indices, int num_triangles, int num_vertices);
+void GenerateNormalsTrianglesSoA_Generic(float3 *dst,
+    const float *v1x, const float *v1y, const float *v1z,
+    const float *v2x, const float *v2y, const float *v2z,
+    const float *v3x, const float *v3y, const float *v3z,
+    const int *indices, int num_triangles, int num_vertices);
+void GenerateNormalsTrianglesSoA_ISPC(float3 *dst,
+    const float *v1x, const float *v1y, const float *v1z,
+    const float *v2x, const float *v2y, const float *v2z,
+    const float *v3x, const float *v3y, const float *v3z,
+    const int *indices, int num_triangles, int num_vertices);
+
+void GenerateTangentsTrianglesSoA_Generic(float4 *dst,
     const float *v1x, const float *v1y, const float *v1z,
     const float *v2x, const float *v2y, const float *v2z,
     const float *v3x, const float *v3y, const float *v3z,
@@ -130,7 +153,7 @@ void GenerateTangentsSoA_Generic(float4 *dst,
     const float *u3x, const float *u3y,
     const float3 *normals,
     const int *indices, int num_triangles, int num_vertices);
-void GenerateTangentsSoA_ISPC(float4 *dst,
+void GenerateTangentsTrianglesSoA_ISPC(float4 *dst,
     const float *v1x, const float *v1y, const float *v1z,
     const float *v2x, const float *v2y, const float *v2z,
     const float *v3x, const float *v3y, const float *v3z,

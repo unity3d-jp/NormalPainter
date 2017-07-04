@@ -1163,11 +1163,17 @@ inline bool poly_inside(const float2 points[], int num_points, const float2 pos)
     return poly_inside(points, num_points, minp, maxp, pos);
 }
 
+void generate_normals_triangle_indexed(float3 *dst,
+    const float3 *vertices, const int *indices, int num_triangles, int num_vertices);
+void generate_normals_triangle_soa(float3 *dst,
+    const float *v1x, const float *v1y, const float *v1z,
+    const float *v2x, const float *v2y, const float *v2z,
+    const float *v3x, const float *v3y, const float *v3z,
+    const int *indices, int num_triangles, int num_vertices);
 
-// assume faces are triangles
-void generate_tangents(float4 *dst,
+void generate_tangents_triangle_indexed(float4 *dst,
     const float3 *vertices, const float2 *uv, const float3 *normals, const int *indices, int num_triangles, int num_vertices);
-void generate_tangents_soa(float4 *dst,
+void generate_tangents_triangle_soa(float4 *dst,
     const float *v1x, const float *v1y, const float *v1z,
     const float *v2x, const float *v2y, const float *v2z,
     const float *v3x, const float *v3y, const float *v3z,

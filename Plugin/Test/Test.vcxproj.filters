@@ -4,9 +4,11 @@
     <ClCompile Include="pch.cpp" />
     <ClCompile Include="TestMeshUtils.cpp" />
     <ClCompile Include="Test.cpp" />
+    <ClCompile Include="MeshGenerator.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
     <ClInclude Include="Test.h" />
+    <ClInclude Include="MeshGenerator.h" />
   </ItemGroup>
 </Project>

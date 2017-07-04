@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "Test.h"
+#include "MeshGenerator.h"
 
 using namespace mu;
 

@@ -426,6 +426,70 @@ export uniform int PolyInsideSoAImpl(
 }
 
 
+export void GenerateNormalsTriangleIndexed(uniform float3 dst[],
+    uniform const float3 vertices[], uniform const int indices[],
+    uniform const int num_triangles, uniform const int num_vertices)
+{
+    for(uniform int bi=0; bi < num_triangles; bi += C) {
+        int ti = bi+I;
+
+        float3 v[3] = {
+             vertices[indices[ti * 3  + 0]],
+             vertices[indices[ti * 3  + 1]],
+             vertices[indices[ti * 3  + 2]],
+        };
+        float3 n = cross(v[1] - v[0], v[2] - v[0]);
+
+        uniform float3 n_aos[C];
+        soa_to_aos3(n.x, n.y, n.z, (uniform float*)&n_aos[bi]);
+
+        uniform int nt = min(C, num_triangles - bi);
+        for(uniform int i=0; i<nt; ++i) {
+            int i0 = indices[(bi + i) * 3 + 0];
+            int i1 = indices[(bi + i) * 3 + 1];
+            int i2 = indices[(bi + i) * 3 + 2];
+            dst[i0] = dst[i0] + n_aos[i];
+            dst[i1] = dst[i1] + n_aos[i];
+            dst[i2] = dst[i2] + n_aos[i];
+        }
+    }
+    NormalizeImpl(dst, num_vertices);
+}
+
+export void GenerateNormalsTriangleSoA(uniform float3 dst[],
+    uniform const float v1x[], uniform const float v1y[], uniform const float v1z[],
+    uniform const float v2x[], uniform const float v2y[], uniform const float v2z[],
+    uniform const float v3x[], uniform const float v3y[], uniform const float v3z[],
+    uniform const int indices[],
+    uniform const int num_triangles, uniform const int num_vertices)
+{
+    for(uniform int bi=0; bi < num_triangles; bi += C) {
+        int ti = bi+I;
+
+        float3 v[3] = {
+             {v1x[ti], v1y[ti], v1z[ti]},
+             {v2x[ti], v2y[ti], v2z[ti]},
+             {v3x[ti], v3y[ti], v3z[ti]},
+        };
+        float3 n = cross(v[1] - v[0], v[2] - v[0]);
+
+        uniform float3 n_aos[C];
+        soa_to_aos3(n.x, n.y, n.z, (uniform float*)&n_aos[bi]);
+
+        uniform int nt = min(C, num_triangles - bi);
+        for(uniform int i=0; i<nt; ++i) {
+            int i0 = indices[(bi + i) * 3 + 0];
+            int i1 = indices[(bi + i) * 3 + 1];
+            int i2 = indices[(bi + i) * 3 + 2];
+            dst[i0] = dst[i0] + n_aos[i];
+            dst[i1] = dst[i1] + n_aos[i];
+            dst[i2] = dst[i2] + n_aos[i];
+        }
+    }
+    NormalizeImpl(dst, num_vertices);
+}
+
+
 export void GenerateTangentsIndexed(
     uniform const float3 vertices[],
     uniform const float2 uv[],
@@ -442,14 +506,14 @@ export void GenerateTangentsIndexed(
     for(uniform int bi=0; bi < num_triangles; bi += C) {
         int ti = bi+I;
         float3 v[3] = {
-             vertices[indices[(bi + I) * 3  + 0]],
-             vertices[indices[(bi + I) * 3  + 1]],
-             vertices[indices[(bi + I) * 3  + 2]],
+             vertices[indices[ti * 3  + 0]],
+             vertices[indices[ti * 3  + 1]],
+             vertices[indices[ti * 3  + 2]],
         };
         float2 u[3] = {
-             uv[indices[(bi + I) * 3  + 0]],
-             uv[indices[(bi + I) * 3  + 1]],
-             uv[indices[(bi + I) * 3  + 2]],
+             uv[indices[ti * 3  + 0]],
+             uv[indices[ti * 3  + 1]],
+             uv[indices[ti * 3  + 2]],
         };
         float3 t[3];
         float3 b[3];

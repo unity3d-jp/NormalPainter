@@ -12,7 +12,7 @@ namespace mu {
 
 
 
-bool GenerateNormals(
+bool GenerateNormalsPoly(
     IArray<float3> dst, const IArray<float3> points,
     const IArray<int> counts, const IArray<int> offsets, const IArray<int> indices)
 {
@@ -117,7 +117,7 @@ struct TSpaceContext
     }
 };
 
-bool GenerateTangents(
+bool GenerateTangentsPoly(
     IArray<float4> dst, const IArray<float3> points, const IArray<float3> normals, const IArray<float2> uv,
     const IArray<int> counts, const IArray<int> offsets, const IArray<int> indices)
 {

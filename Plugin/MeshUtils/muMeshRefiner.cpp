@@ -139,7 +139,7 @@ void MeshRefiner::genNormalsWithSmoothAngle(float smooth_angle, bool flip)
 void MeshRefiner::genTangents()
 {
     tangents_tmp.resize(std::max<size_t>(normals.size(), uv.size()));
-    mu::GenerateTangents(tangents_tmp, points, normals, uv, counts, offsets, indices);
+    mu::GenerateTangentsPoly(tangents_tmp, points, normals, uv, counts, offsets, indices);
 }
 
 bool MeshRefiner::refine(bool optimize)

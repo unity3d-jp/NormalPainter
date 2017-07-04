@@ -11,7 +11,54 @@ const float Deg2Rad = PI / 180.0f;
 const float Rad2Deg = 1.0f / (PI / 180.0f);
 
 
-static inline void ComputeTriangleTangentBasis(
+
+void generate_normals_triangle_indexed(float3 *dst,
+    const float3 *vertices, const int *indices, int num_triangles, int num_vertices)
+{
+    memset(dst, 0, sizeof(float3)*num_vertices);
+
+    for (int fi = 0; fi < num_triangles; ++fi) {
+        const int *face = &indices[fi * 3];
+        float3 p0 = vertices[face[0]];
+        float3 p1 = vertices[face[1]];
+        float3 p2 = vertices[face[2]];
+        float3 n = cross(p1 - p0, p2 - p0);
+        for (int ci = 0; ci < 3; ++ci) {
+            dst[face[ci]] += n;
+        }
+    }
+    for (int vi = 0; vi < num_vertices; ++vi) {
+        dst[vi] = normalize(dst[vi]);
+    }
+}
+
+void generate_normals_triangle_soa(float3 *dst,
+    const float *v1x, const float *v1y, const float *v1z,
+    const float *v2x, const float *v2y, const float *v2z,
+    const float *v3x, const float *v3y, const float *v3z,
+    const int *indices, int num_triangles, int num_vertices)
+{
+    memset(dst, 0, sizeof(float3)*num_vertices);
+
+    for (int fi = 0; fi < num_triangles; ++fi) {
+        const int *face = &indices[fi * 3];
+        float3 p0 = { v1x[fi], v1y[fi], v1z[fi] };
+        float3 p1 = { v2x[fi], v2y[fi], v2z[fi] };
+        float3 p2 = { v3x[fi], v3y[fi], v3z[fi] };
+        float3 n = cross(p1 - p0, p2 - p0);
+        for (int ci = 0; ci < 3; ++ci) {
+            dst[face[ci]] += n;
+        }
+    }
+    for (int vi = 0; vi < num_vertices; ++vi) {
+        dst[vi] = normalize(dst[vi]);
+    }
+}
+
+
+// tangent calculation
+
+static inline void compute_triangle_tangent(
     const float3 vertices[3], const float2 uv[3], float3 dst_tangent[3], float3 dst_binormal[3])
 {
     float p[] = { vertices[1].x - vertices[0].x, vertices[1].y - vertices[0].y, vertices[1].z - vertices[0].z };
@@ -68,7 +115,7 @@ static inline void ComputeTriangleTangentBasis(
     }
 }
 
-static inline float4 OrthogonalizeTangent(float3 tangent, float3 binormal, float3 normal)
+static inline float4 orthogonalize_tangent(float3 tangent, float3 binormal, float3 normal)
 {
     float NdotT = dot(normal, tangent);
     tangent = {
@@ -133,8 +180,7 @@ static inline float4 OrthogonalizeTangent(float3 tangent, float3 binormal, float
         dot(cross(normal, tangent), binormal) > 0.0f ? 1.0f : -1.0f };
 }
 
-
-void generate_tangents(float4 *dst,
+void generate_tangents_triangle_indexed(float4 *dst,
     const float3 *vertices, const float2 *uv, const float3 *normals, const int *indices, int num_triangles, int num_vertices)
 {
     RawVector<float3> tangents, binormals;
@@ -148,10 +194,9 @@ void generate_tangents(float4 *dst,
         int idx[] = { indices[ti + 0], indices[ti + 1], indices[ti + 2] };
         float3 v[3] = { vertices[idx[0]], vertices[idx[1]], vertices[idx[2]] };
         float2 u[3] = { uv[idx[0]], uv[idx[1]], uv[idx[2]] };
-
         float3 t[3];
         float3 b[3];
-        ComputeTriangleTangentBasis(v, u, t, b);
+        compute_triangle_tangent(v, u, t, b);
 
         for (int i = 0; i < 3; ++i) {
             tangents[idx[i]] += t[i];
@@ -160,10 +205,11 @@ void generate_tangents(float4 *dst,
     }
 
     for (int vi = 0; vi < vc; ++vc) {
-        dst[vc] = OrthogonalizeTangent(tangents[vc], binormals[vc], normals[vc]);
+        dst[vc] = orthogonalize_tangent(tangents[vc], binormals[vc], normals[vc]);
     }
 }
-void generate_tangents_soa(float4 *dst,
+
+void generate_tangents_triangle_soa(float4 *dst,
     const float *v1x, const float *v1y, const float *v1z,
     const float *v2x, const float *v2y, const float *v2z,
     const float *v3x, const float *v3y, const float *v3z,
@@ -194,7 +240,7 @@ void generate_tangents_soa(float4 *dst,
         };
         float3 t[3];
         float3 b[3];
-        ComputeTriangleTangentBasis(v, u, t, b);
+        compute_triangle_tangent(v, u, t, b);
 
         for (int i = 0; i < 3; ++i) {
             tangents[idx[i]] += t[i];
@@ -203,7 +249,7 @@ void generate_tangents_soa(float4 *dst,
     }
 
     for (int vi = 0; vi < vc; ++vc) {
-        dst[vc] = OrthogonalizeTangent(tangents[vc], binormals[vc], normals[vc]);
+        dst[vc] = orthogonalize_tangent(tangents[vc], binormals[vc], normals[vc]);
     }
 }
 
