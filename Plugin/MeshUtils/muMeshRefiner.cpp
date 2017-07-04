@@ -58,8 +58,7 @@ void MeshRefiner::prepare(
 void MeshRefiner::genNormals(bool flip)
 {
     auto& p = points;
-    normals_tmp.resize(p.size());
-    normals_tmp.zeroclear();
+    normals_tmp.resize_with_zeroclear(p.size());
 
     size_t num_faces = counts.size();
     int i1 = flip ? 2 : 1;
@@ -91,8 +90,7 @@ void MeshRefiner::genNormalsWithSmoothAngle(float smooth_angle, bool flip)
     normals_tmp.resize(num_indices);
 
     // gen face normals
-    face_normals.resize(num_faces);
-    face_normals.zeroclear();
+    face_normals.resize_with_zeroclear(num_faces);
     int i1 = flip ? 2 : 1;
     int i2 = flip ? 1 : 2;
     for (size_t fi = 0; fi < num_faces; ++fi)

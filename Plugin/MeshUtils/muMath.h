@@ -1166,7 +1166,16 @@ inline bool poly_inside(const float2 points[], int num_points, const float2 pos)
 
 // assume faces are triangles
 void generate_tangents(float4 *dst,
-    const float3 *vertices, const float3 *normals, const float2 *uv, const int *indices, int num_triangles, int num_vertices);
+    const float3 *vertices, const float2 *uv, const float3 *normals, const int *indices, int num_triangles, int num_vertices);
+void generate_tangents_soa(float4 *dst,
+    const float *v1x, const float *v1y, const float *v1z,
+    const float *v2x, const float *v2y, const float *v2z,
+    const float *v3x, const float *v3y, const float *v3z,
+    const float *u1x, const float *u1y,
+    const float *u2x, const float *u2y,
+    const float *u3x, const float *u3y,
+    const float3 *normals,
+    const int *indices, int num_triangles, int num_vertices);
 
 
 

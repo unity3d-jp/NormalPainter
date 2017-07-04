@@ -210,7 +210,7 @@ void TestRayTrianglesIntersection()
 
     auto s1_begin = Now();
     for (int i = 0; i < num_try; ++i) {
-        num_hits = RayTrianglesIntersection_Generic(ray_pos, ray_dir, vertices.data(),
+        num_hits = RayTrianglesIntersectionIndexed_Generic(ray_pos, ray_dir, vertices.data(),
             indices.data(), num_triangles, tindex, distance);
     }
     auto s1_end = Now();
@@ -219,7 +219,7 @@ void TestRayTrianglesIntersection()
 
     auto s2_begin = Now();
     for (int i = 0; i < num_try; ++i) {
-        num_hits = RayTrianglesIntersection_ISPC(ray_pos, ray_dir, vertices.data(),
+        num_hits = RayTrianglesIntersectionIndexed_ISPC(ray_pos, ray_dir, vertices.data(),
             indices.data(), num_triangles, tindex, distance);
     }
     auto s2_end = Now();
@@ -228,7 +228,7 @@ void TestRayTrianglesIntersection()
 
     auto s3_begin = Now();
     for (int i = 0; i < num_try; ++i) {
-        num_hits = RayTrianglesIntersection_Generic(ray_pos, ray_dir, vertices_flattened.data(), num_triangles, tindex, distance);
+        num_hits = RayTrianglesIntersectionArray_Generic(ray_pos, ray_dir, vertices_flattened.data(), num_triangles, tindex, distance);
     }
     auto s3_end = Now();
 
@@ -236,7 +236,7 @@ void TestRayTrianglesIntersection()
 
     auto s4_begin = Now();
     for (int i = 0; i < num_try; ++i) {
-        num_hits = RayTrianglesIntersection_ISPC(ray_pos, ray_dir, vertices_flattened.data(), num_triangles, tindex, distance);
+        num_hits = RayTrianglesIntersectionArray_ISPC(ray_pos, ray_dir, vertices_flattened.data(), num_triangles, tindex, distance);
     }
     auto s4_end = Now();
 
@@ -244,7 +244,7 @@ void TestRayTrianglesIntersection()
 
     auto s5_begin = Now();
     for (int i = 0; i < num_try; ++i) {
-        num_hits = RayTrianglesIntersection_Generic(ray_pos, ray_dir,
+        num_hits = RayTrianglesIntersectionSoA_Generic(ray_pos, ray_dir,
             v1x.data(), v1y.data(), v1z.data(),
             v2x.data(), v2y.data(), v2z.data(),
             v3x.data(), v3y.data(), v3z.data(), num_triangles, tindex, distance);
@@ -255,7 +255,7 @@ void TestRayTrianglesIntersection()
 
     auto s6_begin = Now();
     for (int i = 0; i < num_try; ++i) {
-        num_hits = RayTrianglesIntersection_ISPC(ray_pos, ray_dir,
+        num_hits = RayTrianglesIntersectionSoA_ISPC(ray_pos, ray_dir,
             v1x.data(), v1y.data(), v1z.data(),
             v2x.data(), v2y.data(), v2z.data(),
             v3x.data(), v3y.data(), v3z.data(), num_triangles, tindex, distance);

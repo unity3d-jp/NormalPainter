@@ -25,9 +25,9 @@ bool NearEqual(const float3 *src1, const float3 *src2, size_t num, float eps = m
 void MulPoints(const float4x4& m, const float3 src[], float3 dst[], size_t num_data);
 void MulVectors(const float4x4& m, const float3 src[], float3 dst[], size_t num_data);
 
-int RayTrianglesIntersection(float3 pos, float3 dir, const float3 *vertices, const int *indices, int num_triangles, int& tindex, float& distance);
-int RayTrianglesIntersection(float3 pos, float3 dir, const float3 *vertices, int num_triangles, int& tindex, float& distance);
-int RayTrianglesIntersection(float3 pos, float3 dir,
+int RayTrianglesIntersectionIndexed(float3 pos, float3 dir, const float3 *vertices, const int *indices, int num_triangles, int& tindex, float& distance);
+int RayTrianglesIntersectionArray(float3 pos, float3 dir, const float3 *vertices, int num_triangles, int& tindex, float& distance);
+int RayTrianglesIntersectionSoA(float3 pos, float3 dir,
     const float *v1x, const float *v1y, const float *v1z,
     const float *v2x, const float *v2y, const float *v2z,
     const float *v3x, const float *v3y, const float *v3z,
@@ -37,9 +37,23 @@ bool PolyInside(const float px[], const float py[], int ngon, const float2 minp,
 bool PolyInside(const float2 poly[], int ngon, const float2 minp, const float2 maxp, const float2 pos);
 bool PolyInside(const float2 poly[], int ngon, const float2 pos);
 
-void GenerateTangents(float4 *dst,
-    const float3 *vertices, const float3 *normals, const float2 *uv, const int *indices, int num_triangles, int num_vertices);
+int RayTrianglesIntersectionSoA(float3 pos, float3 dir,
+    const float *v1x, const float *v1y, const float *v1z,
+    const float *v2x, const float *v2y, const float *v2z,
+    const float *v3x, const float *v3y, const float *v3z,
+    int num_triangles, int& tindex, float& distance);
 
+void GenerateTangentsIndexed(float4 *dst,
+    const float3 *vertices, const float3 *normals, const float2 *uv, const int *indices, int num_triangles, int num_vertices);
+void GenerateTangentsSoA(float4 *dst,
+    const float *v1x, const float *v1y, const float *v1z,
+    const float *v2x, const float *v2y, const float *v2z,
+    const float *v3x, const float *v3y, const float *v3z,
+    const float *u1x, const float *u1y,
+    const float *u2x, const float *u2y,
+    const float *u3x, const float *u3y,
+    const float3 *normals,
+    const int *indices, int num_triangles, int num_vertices);
 
 // ------------------------------------------------------------
 // internal (for test)
@@ -80,31 +94,50 @@ void MulPoints_ISPC(const float4x4& m, const float3 src[], float3 dst[], size_t 
 void MulVectors_Generic(const float4x4& m, const float3 src[], float3 dst[], size_t num_data);
 void MulVectors_ISPC(const float4x4& m, const float3 src[], float3 dst[], size_t num_data);
 
-int RayTrianglesIntersection_Generic(float3 pos, float3 dir, const float3 *vertices, const int *indices, int num_triangles, int& tindex, float& distance);
-int RayTrianglesIntersection_Generic(float3 pos, float3 dir, const float3 *vertices, int num_triangles, int& tindex, float& distance);
-int RayTrianglesIntersection_Generic(float3 pos, float3 dir,
+int RayTrianglesIntersectionIndexed_Generic(float3 pos, float3 dir, const float3 *vertices, const int *indices, int num_triangles, int& tindex, float& distance);
+int RayTrianglesIntersectionIndexed_ISPC(float3 pos, float3 dir, const float3 *vertices, const int *indices, int num_triangles, int& tindex, float& distance);
+int RayTrianglesIntersectionArray_Generic(float3 pos, float3 dir, const float3 *vertices, int num_triangles, int& tindex, float& distance);
+int RayTrianglesIntersectionArray_ISPC(float3 pos, float3 dir, const float3 *vertices, int num_triangles, int& tindex, float& distance);
+int RayTrianglesIntersectionSoA_Generic(float3 pos, float3 dir,
     const float *v1x, const float *v1y, const float *v1z,
     const float *v2x, const float *v2y, const float *v2z,
     const float *v3x, const float *v3y, const float *v3z,
     int num_triangles, int& tindex, float& distance);
-int RayTrianglesIntersection_ISPC(float3 pos, float3 dir, const float3 *vertices, const int *indices, int num_triangles, int& tindex, float& distance);
-int RayTrianglesIntersection_ISPC(float3 pos, float3 dir, const float3 *vertices, int num_triangles, int& tindex, float& distance);
-int RayTrianglesIntersection_ISPC(float3 pos, float3 dir,
+int RayTrianglesIntersectionSoA_ISPC(float3 pos, float3 dir,
     const float *v1x, const float *v1y, const float *v1z,
     const float *v2x, const float *v2y, const float *v2z,
     const float *v3x, const float *v3y, const float *v3z,
     int num_triangles, int& tindex, float& distance);
 
 bool PolyInside_Generic(const float px[], const float py[], int ngon, const float2 minp, const float2 maxp, const float2 pos);
-bool PolyInside_Generic(const float2 poly[], int ngon, const float2 minp, const float2 maxp, const float2 pos);
-bool PolyInside_Generic(const float2 poly[], int ngon, const float2 pos);
 bool PolyInside_ISPC(const float px[], const float py[], int ngon, const float2 minp, const float2 maxp, const float2 pos);
+bool PolyInside_Generic(const float2 poly[], int ngon, const float2 minp, const float2 maxp, const float2 pos);
 bool PolyInside_ISPC(const float2 poly[], int ngon, const float2 minp, const float2 maxp, const float2 pos);
+bool PolyInside_Generic(const float2 poly[], int ngon, const float2 pos);
 bool PolyInside_ISPC(const float2 poly[], int ngon, const float2 pos);
 
-void GenerateTangents_Generic(float4 *dst,
+void GenerateTangentsIndexed_Generic(float4 *dst,
     const float3 *vertices, const float3 *normals, const float2 *uv, const int *indices, int num_triangles, int num_vertices);
-void GenerateTangents_ISPC(float4 *dst,
+void GenerateTangentsIndexed_ISPC(float4 *dst,
     const float3 *vertices, const float3 *normals, const float2 *uv, const int *indices, int num_triangles, int num_vertices);
+
+void GenerateTangentsSoA_Generic(float4 *dst,
+    const float *v1x, const float *v1y, const float *v1z,
+    const float *v2x, const float *v2y, const float *v2z,
+    const float *v3x, const float *v3y, const float *v3z,
+    const float *u1x, const float *u1y,
+    const float *u2x, const float *u2y,
+    const float *u3x, const float *u3y,
+    const float3 *normals,
+    const int *indices, int num_triangles, int num_vertices);
+void GenerateTangentsSoA_ISPC(float4 *dst,
+    const float *v1x, const float *v1y, const float *v1z,
+    const float *v2x, const float *v2y, const float *v2z,
+    const float *v3x, const float *v3y, const float *v3z,
+    const float *u1x, const float *u1y,
+    const float *u2x, const float *u2y,
+    const float *u3x, const float *u3y,
+    const float3 *normals,
+    const int *indices, int num_triangles, int num_vertices);
 
 } // namespace mu

@@ -32,7 +32,7 @@ inline static int Raycast(
     float3 rpos = mul_p(itrans, pos);
     float3 rdir = normalize(mul_v(itrans, dir));
     float d;
-    int hit = RayTrianglesIntersection(rpos, rdir, model.vertices, model.indices, model.num_triangles, tindex, d);
+    int hit = RayTrianglesIntersectionIndexed(rpos, rdir, model.vertices, model.indices, model.num_triangles, tindex, d);
     if (hit) {
         float3 hpos = rpos + rdir * d;
         distance = length(mul_p(model.transform, hpos) - pos);
@@ -44,7 +44,7 @@ inline static int RaycastWithoutTransform(
     const npModelData& model, const float3 pos, const float3 dir, int& tindex, float& distance)
 {
     float d;
-    int hit = RayTrianglesIntersection(pos, dir, model.vertices, model.indices, model.num_triangles, tindex, d);
+    int hit = RayTrianglesIntersectionIndexed(pos, dir, model.vertices, model.indices, model.num_triangles, tindex, d);
     if (hit) {
         float3 hpos = pos + dir * d;
         distance = length(hpos - pos);
@@ -1018,7 +1018,7 @@ npAPI void npProjectNormals(
         float3 rdir = ray_dirs[vi];
         int ti;
         float distance;
-        int num_hit = RayTrianglesIntersection(rpos, rdir,
+        int num_hit = RayTrianglesIntersectionSoA(rpos, rdir,
             soa[0].data(), soa[1].data(), soa[2].data(),
             soa[3].data(), soa[4].data(), soa[5].data(),
             soa[6].data(), soa[7].data(), soa[8].data(),

@@ -118,24 +118,7 @@ void MulVectors_Generic(const float4x4& m, const float3 src[], float3 dst[], siz
     }
 }
 
-int RayTrianglesIntersection_Generic(float3 pos, float3 dir, const float3 *vertices, int num_triangles, int& tindex, float& distance)
-{
-    int num_hits = 0;
-    distance = FLT_MAX;
-
-    for (int i = 0; i < num_triangles; ++i) {
-        float d;
-        if (ray_triangle_intersection(pos, dir, vertices[i * 3 + 0], vertices[i * 3 + 1], vertices[i * 3 + 2], d)) {
-            ++num_hits;
-            if (d < distance) {
-                distance = d;
-                tindex = i;
-            }
-        }
-    }
-    return num_hits;
-}
-int RayTrianglesIntersection_Generic(float3 pos, float3 dir, const float3 *vertices, const int *indices, int num_triangles, int& tindex, float& distance)
+int RayTrianglesIntersectionIndexed_Generic(float3 pos, float3 dir, const float3 *vertices, const int *indices, int num_triangles, int& tindex, float& distance)
 {
     int num_hits = 0;
     distance = FLT_MAX;
@@ -152,7 +135,25 @@ int RayTrianglesIntersection_Generic(float3 pos, float3 dir, const float3 *verti
     }
     return num_hits;
 }
-int RayTrianglesIntersection_Generic(float3 pos, float3 dir,
+int RayTrianglesIntersectionArray_Generic(float3 pos, float3 dir, const float3 *vertices, int num_triangles, int& tindex, float& distance)
+{
+    int num_hits = 0;
+    distance = FLT_MAX;
+
+    for (int i = 0; i < num_triangles; ++i) {
+        float d;
+        if (ray_triangle_intersection(pos, dir, vertices[i * 3 + 0], vertices[i * 3 + 1], vertices[i * 3 + 2], d)) {
+            ++num_hits;
+            if (d < distance) {
+                distance = d;
+                tindex = i;
+            }
+        }
+    }
+    return num_hits;
+}
+
+int RayTrianglesIntersectionSoA_Generic(float3 pos, float3 dir,
     const float *v1x, const float *v1y, const float *v1z,
     const float *v2x, const float *v2y, const float *v2z,
     const float *v3x, const float *v3y, const float *v3z,
@@ -196,12 +197,26 @@ bool PolyInside_Generic(const float2 poly[], int ngon, const float2 pos)
     return poly_inside(poly, ngon, minp, maxp, pos);
 }
 
-void GenerateTangents_Generic(float4 *dst,
+void GenerateTangentsIndexed_Generic(float4 *dst,
     const float3 *vertices, const float3 *normals, const float2 *uv, const int *indices, int num_triangles, int num_vertices)
 {
-    generate_tangents(dst, vertices, normals, uv, indices, num_triangles, num_vertices);
+    generate_tangents(dst, vertices, uv, normals, indices, num_triangles, num_vertices);
 }
-
+void GenerateTangentsSoA_Generic(float4 *dst,
+    const float *v1x, const float *v1y, const float *v1z,
+    const float *v2x, const float *v2y, const float *v2z,
+    const float *v3x, const float *v3y, const float *v3z,
+    const float *u1x, const float *u1y,
+    const float *u2x, const float *u2y,
+    const float *u3x, const float *u3y,
+    const float3 *normals,
+    const int *indices, int num_triangles, int num_vertices)
+{
+    generate_tangents_soa(dst,
+        v1x, v1y, v1z, v2x, v2y, v2z, v3x, v3y, v3z,
+        u1x, u1y, u2x, u2y, u3x, u3y,
+        normals, indices, num_triangles, num_vertices);
+}
 
 
 #ifdef muEnableISPC
@@ -297,19 +312,19 @@ void MulVectors_ISPC(const float4x4& m, const float3 src[], float3 dst[], size_t
     ispc::MulVectors3((ispc::float4x4&)m, (ispc::float3*)src, (ispc::float3*)dst, (int)num_data);
 }
 
-int RayTrianglesIntersection_ISPC(
+int RayTrianglesIntersectionIndexed_ISPC(
     float3 pos, float3 dir, const float3 *vertices, const int *indices, int num_triangles, int& tindex, float& distance)
 {
     return ispc::RayTrianglesIntersectionIndexed(
         (ispc::float3&)pos, (ispc::float3&)dir, (ispc::float3*)vertices, indices, num_triangles, tindex, distance);
 }
-int RayTrianglesIntersection_ISPC(
+int RayTrianglesIntersectionArray_ISPC(
     float3 pos, float3 dir, const float3 *vertices, int num_triangles, int& tindex, float& distance)
 {
     return ispc::RayTrianglesIntersectionArray(
         (ispc::float3&)pos, (ispc::float3&)dir, (ispc::float3*)vertices, num_triangles, tindex, distance);
 }
-int RayTrianglesIntersection_ISPC(float3 pos, float3 dir,
+int RayTrianglesIntersectionSoA_ISPC(float3 pos, float3 dir,
     const float *v1x, const float *v1y, const float *v1z,
     const float *v2x, const float *v2y, const float *v2z,
     const float *v3x, const float *v3y, const float *v3z,
@@ -357,13 +372,11 @@ bool PolyInside_ISPC(const float2 poly[], int ngon, const float2 pos)
     return PolyInside_ISPC(poly, ngon, minp, maxp, pos);
 }
 
-void GenerateTangents_ISPC(float4 *dst,
+void GenerateTangentsIndexed_ISPC(float4 *dst,
     const float3 *vertices, const float3 *normals, const float2 *uv, const int *indices, int num_triangles, int num_vertices)
 {
-    RawVector<float> vsoa[9], usoa[6];
-    RawVector<float3> tmp_tangents, tmp_binormals;
-
     // make soa-nized data
+    RawVector<float> vsoa[9], usoa[6];
     for (auto& v : vsoa) { v.resize(num_triangles); }
     for (auto& v : usoa) { v.resize(num_triangles); }
     for (int ti = 0; ti < num_triangles; ++ti) {
@@ -381,10 +394,12 @@ void GenerateTangents_ISPC(float4 *dst,
         for (int i = 0; i < 6; ++i) { usoa[i][ti] = ((float*)u)[i]; }
     }
 
-    tmp_tangents.resize(num_vertices); tmp_tangents.zeroclear();
-    tmp_binormals.resize(num_vertices); tmp_binormals.zeroclear();
+    RawVector<float3> tmp_tangents, tmp_binormals;
+    tmp_tangents.resize_with_zeroclear(num_vertices);
+    tmp_binormals.resize_with_zeroclear(num_vertices);
 
     ispc::GenerateTangentsSoA(
+        (ispc::float4*)dst,
         vsoa[0].data(), vsoa[1].data(), vsoa[2].data(),
         vsoa[3].data(), vsoa[4].data(), vsoa[5].data(),
         vsoa[6].data(), vsoa[7].data(), vsoa[8].data(),
@@ -393,12 +408,40 @@ void GenerateTangents_ISPC(float4 *dst,
         usoa[2].data(), usoa[3].data(),
         usoa[4].data(), usoa[5].data(),
 
+        (ispc::float3*)normals,
         num_triangles, num_vertices,
         indices,
         (ispc::float3*)tmp_tangents.data(),
-        (ispc::float3*)tmp_binormals.data(),
+        (ispc::float3*)tmp_binormals.data());
+}
+
+void GenerateTangentsSoA_ISPC(float4 *dst,
+    const float *v1x, const float *v1y, const float *v1z,
+    const float *v2x, const float *v2y, const float *v2z,
+    const float *v3x, const float *v3y, const float *v3z,
+    const float *u1x, const float *u1y,
+    const float *u2x, const float *u2y,
+    const float *u3x, const float *u3y,
+    const float3 *normals,
+    const int *indices, int num_triangles, int num_vertices)
+{
+    RawVector<float3> tmp_tangents, tmp_binormals;
+    tmp_tangents.resize_with_zeroclear(num_vertices);
+    tmp_binormals.resize_with_zeroclear(num_vertices);
+
+    ispc::GenerateTangentsSoA(
+        (ispc::float4*)dst,
+        v1x, v1y, v1z,
+        v2x, v2y, v2z,
+        v3x, v3y, v3z,
+        u1x, u1y,
+        u2x, u2y,
+        u3x, u3y,
         (ispc::float3*)normals,
-        (ispc::float4*)dst);
+        num_triangles, num_vertices,
+        indices,
+        (ispc::float3*)tmp_tangents.data(),
+        (ispc::float3*)tmp_binormals.data());
 }
 
 
@@ -490,21 +533,21 @@ void MulVectors(const float4x4& m, const float3 src[], float3 dst[], size_t num_
     Forward(MulVectors, m, src, dst, num_data);
 }
 
-int RayTrianglesIntersection(float3 pos, float3 dir, const float3 *vertices, const int *indices, int num_triangles, int& tindex, float& result)
+int RayTrianglesIntersectionIndexed(float3 pos, float3 dir, const float3 *vertices, const int *indices, int num_triangles, int& tindex, float& result)
 {
-    return Forward(RayTrianglesIntersection, pos, dir, vertices, indices, num_triangles, tindex, result);
+    return Forward(RayTrianglesIntersectionIndexed, pos, dir, vertices, indices, num_triangles, tindex, result);
 }
-int RayTrianglesIntersection(float3 pos, float3 dir, const float3 *vertices, int num_triangles, int& tindex, float& result)
+int RayTrianglesIntersectionArray(float3 pos, float3 dir, const float3 *vertices, int num_triangles, int& tindex, float& result)
 {
-    return Forward(RayTrianglesIntersection, pos, dir, vertices, num_triangles, tindex, result);
+    return Forward(RayTrianglesIntersectionArray, pos, dir, vertices, num_triangles, tindex, result);
 }
-int RayTrianglesIntersection(float3 pos, float3 dir,
+int RayTrianglesIntersectionSoA(float3 pos, float3 dir,
     const float *v1x, const float *v1y, const float *v1z,
     const float *v2x, const float *v2y, const float *v2z,
     const float *v3x, const float *v3y, const float *v3z,
     int num_triangles, int& tindex, float& result)
 {
-    return Forward(RayTrianglesIntersection, pos, dir, v1x, v1y, v1z, v2x, v2y, v2z, v3x, v3y, v3z, num_triangles, tindex, result);
+    return Forward(RayTrianglesIntersectionSoA, pos, dir, v1x, v1y, v1z, v2x, v2y, v2z, v3x, v3y, v3z, num_triangles, tindex, result);
 }
 
 bool PolyInside(const float px[], const float py[], int ngon, const float2 minp, const float2 maxp, const float2 pos)
@@ -520,10 +563,25 @@ bool PolyInside(const float2 poly[], int ngon, const float2 pos)
     return Forward(PolyInside, poly, ngon, pos);
 }
 
-void GenerateTangents(float4 *dst,
+void GenerateTangentsIndexed(float4 *dst,
     const float3 *vertices, const float3 *normals, const float2 *uv, const int *indices, int num_triangles, int num_vertices)
 {
-    return Forward(GenerateTangents, dst, vertices, normals, uv, indices, num_triangles, num_vertices);
+    return Forward(GenerateTangentsIndexed, dst, vertices, normals, uv, indices, num_triangles, num_vertices);
+}
+void GenerateTangentsSoA(float4 *dst,
+    const float *v1x, const float *v1y, const float *v1z,
+    const float *v2x, const float *v2y, const float *v2z,
+    const float *v3x, const float *v3y, const float *v3z,
+    const float *u1x, const float *u1y,
+    const float *u2x, const float *u2y,
+    const float *u3x, const float *u3y,
+    const float3 *normals,
+    const int *indices, int num_triangles, int num_vertices)
+{
+    return Forward(GenerateTangentsSoA, dst,
+        v1x, v1y, v1z, v2x, v2y, v2z, v3x, v3y, v3z,
+        u1x, u1y, u2x, u2y, u3x, u3y,
+        normals, indices, num_triangles, num_vertices);
 }
 
 #undef Forward

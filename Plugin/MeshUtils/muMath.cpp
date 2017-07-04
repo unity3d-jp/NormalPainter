@@ -90,7 +90,7 @@ static inline float4 OrthogonalizeTangent(float3 tangent, float3 binormal, float
     binormal = binormal / magB;
 
 
-    const float kNormalizeEpsilon = 1e-6;
+    const float kNormalizeEpsilon = 1e-6f;
 
     if (magT <= kNormalizeEpsilon || magB <= kNormalizeEpsilon)
     {
@@ -135,13 +135,11 @@ static inline float4 OrthogonalizeTangent(float3 tangent, float3 binormal, float
 
 
 void generate_tangents(float4 *dst,
-    const float3 *vertices, const float3 *normals, const float2 *uv, const int *indices, int num_triangles, int num_vertices)
+    const float3 *vertices, const float2 *uv, const float3 *normals, const int *indices, int num_triangles, int num_vertices)
 {
     RawVector<float3> tangents, binormals;
-    tangents.resize(num_vertices);
-    binormals.resize(num_vertices);
-    tangents.zeroclear();
-    binormals.zeroclear();
+    tangents.resize_with_zeroclear(num_vertices);
+    binormals.resize_with_zeroclear(num_vertices);
 
     int ic = num_triangles * 3;
     int vc = num_vertices;
@@ -151,6 +149,49 @@ void generate_tangents(float4 *dst,
         float3 v[3] = { vertices[idx[0]], vertices[idx[1]], vertices[idx[2]] };
         float2 u[3] = { uv[idx[0]], uv[idx[1]], uv[idx[2]] };
 
+        float3 t[3];
+        float3 b[3];
+        ComputeTriangleTangentBasis(v, u, t, b);
+
+        for (int i = 0; i < 3; ++i) {
+            tangents[idx[i]] += t[i];
+            binormals[idx[i]] += b[i];
+        }
+    }
+
+    for (int vi = 0; vi < vc; ++vc) {
+        dst[vc] = OrthogonalizeTangent(tangents[vc], binormals[vc], normals[vc]);
+    }
+}
+void generate_tangents_soa(float4 *dst,
+    const float *v1x, const float *v1y, const float *v1z,
+    const float *v2x, const float *v2y, const float *v2z,
+    const float *v3x, const float *v3y, const float *v3z,
+    const float *u1x, const float *u1y,
+    const float *u2x, const float *u2y,
+    const float *u3x, const float *u3y,
+    const float3 *normals,
+    const int *indices, int num_triangles, int num_vertices)
+{
+    RawVector<float3> tangents, binormals;
+    tangents.resize_with_zeroclear(num_vertices);
+    binormals.resize_with_zeroclear(num_vertices);
+
+    int ic = num_triangles * 3;
+    int vc = num_vertices;
+
+    for (int ti = 0; ti < ic; ti += 3) {
+        int idx[] = { indices[ti + 0], indices[ti + 1], indices[ti + 2] };
+        float3 v[3] = {
+            { v1x[ti], v1y[ti], v1z[ti] },
+            { v2x[ti], v2y[ti], v2z[ti] },
+            { v3x[ti], v3y[ti], v3z[ti] },
+        };
+        float2 u[3] = {
+            { u1x[ti], u1y[ti] },
+            { u2x[ti], u2y[ti] },
+            { u3x[ti], u3y[ti] },
+        };
         float3 t[3];
         float3 b[3];
         ComputeTriangleTangentBasis(v, u, t, b);

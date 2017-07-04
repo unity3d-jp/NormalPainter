@@ -121,6 +121,12 @@ public:
         m_size = s;
     }
 
+    void resize_with_zeroclear(size_t s)
+    {
+        resize(s);
+        zeroclear();
+    }
+
     void resize(size_t s, const T& v)
     {
         size_t pos = size();

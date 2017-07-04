@@ -481,6 +481,7 @@ export void GenerateTangentsIndexed(
 }
 
 export void GenerateTangentsSoA(
+    uniform float4 dst_tangents[],
     uniform const float v1x[], uniform const float v1y[], uniform const float v1z[],
     uniform const float v2x[], uniform const float v2y[], uniform const float v2z[],
     uniform const float v3x[], uniform const float v3y[], uniform const float v3z[],
@@ -489,14 +490,13 @@ export void GenerateTangentsSoA(
     uniform const float u2x[], uniform const float u2y[],
     uniform const float u3x[], uniform const float u3y[],
 
+    uniform const float3 normals[],
     uniform const int num_triangles,
     uniform const int num_vertices,
 
     uniform const int indices[],
     uniform float3 tmp_tangents[],
-    uniform float3 tmp_binormals[],
-    uniform const float3 normals[],
-    uniform float4 dst_tangents[])
+    uniform float3 tmp_binormals[])
 {
     for(uniform int bi=0; bi < num_triangles; bi += C) {
         int ti = bi+I;

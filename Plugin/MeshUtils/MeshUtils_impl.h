@@ -44,8 +44,7 @@ inline void BuildConnection(
     connection.v2f_faces.resize(num_indices);
     connection.v2f_indices.resize(num_indices);
 
-    connection.v2f_counts.resize(num_points);
-    connection.v2f_counts.zeroclear();
+    connection.v2f_counts.resize_with_zeroclear(num_points);
     {
         int ii = 0;
         for (size_t fi = 0; fi < num_faces; ++fi) {
