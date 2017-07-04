@@ -15,3 +15,5 @@
 #include <atomic>
 
 #include "MeshUtils/MeshUtils.h"
+
+#define npImpl

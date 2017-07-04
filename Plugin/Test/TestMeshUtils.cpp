@@ -1,7 +1,31 @@
 #include "pch.h"
 #include "Test.h"
-
 using namespace mu;
+
+#ifdef EnableFbxExport
+#include "FbxExporter/FbxExporter.h"
+#pragma comment(lib, "FbxExporterCore.lib")
+
+void ExportFbxImpl(const char *path,
+    const RawVector<int>& indices, int ngon,
+    const RawVector<float3>& points, const RawVector<float3>& normals, const RawVector<float4>& tangents,
+    const RawVector<float3>& uv, const RawVector<float4>& colors)
+{
+    fbxe::ExportOptions opt;
+    auto ctx = fbxeCreateContext(&opt);
+    fbxeCreateScene(ctx, "TestScene");
+    auto node = fbxeCreateNode(ctx, nullptr, "Mesh");
+    fbxeAddMesh(ctx, node, points.size(),
+        (fbxe::float3*)points.data(), (fbxe::float3*)normals.data(), (fbxe::float4*)tangents.data(),
+        (fbxe::float2*)uv.data(), (fbxe::float4*)colors.data());
+    fbxeAddMeshSubmesh(ctx, node, (fbxe::Topology)(ngon-1), indices.size(), indices.data(), -1);
+    fbxeWrite(ctx, path, fbxe::Format::FbxBinary);
+    fbxeReleaseContext(ctx);
+}
+#define ExportFbx(...) ExportFbxImpl(__VA_ARGS__)
+#else // EnableFbxExport
+#define ExportFbx(...)
+#endif // EnableFbxExport
 
 
 void Test_IndexedArrays()

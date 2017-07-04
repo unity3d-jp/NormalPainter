@@ -22,3 +22,5 @@
 #ifdef muEnableHalf
     #include "half.h"
 #endif // muEnableHalf
+
+#define muImpl
