@@ -20,7 +20,7 @@ void ExportFbxImpl(const char *path,
         (fbxe::float3*)points.data(), (fbxe::float3*)normals.data(), (fbxe::float4*)tangents.data(),
         (fbxe::float2*)uv.data(), (fbxe::float4*)colors.data());
     fbxeAddMeshSubmesh(ctx, node, (fbxe::Topology)(ngon-1), indices.size(), indices.data(), -1);
-    fbxeWrite(ctx, path, fbxe::Format::FbxBinary);
+    fbxeWrite(ctx, path, fbxe::Format::FbxAscii);
     fbxeReleaseContext(ctx);
 }
 #define ExportFbx(...) ExportFbxImpl(__VA_ARGS__)
@@ -96,7 +96,7 @@ void TestNormalsAndTangents()
     RawVector<int> indices, counts;
     RawVector<float3> points;
     RawVector<float2> uv;
-    GenerateWaveMesh(counts, indices, points, uv, 5.0f, 0.25f, 250, 0.0f, true);
+    GenerateWaveMesh(counts, indices, points, uv, 5.0f, 0.25f, 50, 0.0f, true);
 
     int num_points = (int)points.size();
     int num_triangles = (int)indices.size() / 3;
@@ -199,10 +199,10 @@ void TestNormalsAndTangents()
         auto s4e = Now();
 
         printf(
-            "    GenerateTangentsTrianglesIndexed_Generic: %f\n"
-            "    GenerateTangentsTrianglesIndexed_ISPC: %f\n"
-            "    GenerateTangentsTrianglesSoA_Generic: %f\n"
-            "    GenerateTangentsTrianglesSoA_ISPC: %f\n"
+            "    GenerateTangentsTriangleIndexed_Generic: %f\n"
+            "    GenerateTangentsTriangleIndexed_ISPC: %f\n"
+            "    GenerateTangentsTriangleSoA_Generic: %f\n"
+            "    GenerateTangentsTriangleSoA_ISPC: %f\n"
             ,
             NS2MS(s1e - s1b),
             NS2MS(s2e - s2b),

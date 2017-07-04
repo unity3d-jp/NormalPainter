@@ -174,11 +174,13 @@ export uniform int RayTrianglesIntersectionIndexed(
     // SIMD pass
     uniform int num_triangles_simd = num_triangles & ~(C - 1);
     for(uniform int bi=0; bi < num_triangles_simd; bi += C) {
+        int ti = bi + I;
+        int ti3 = ti * 3;
         float3 p1, p2, p3;
         // this emits warnings but performace is acceptable.
-        p1 = vertices[indices[(bi + I) * 3  + 0]];
-        p2 = vertices[indices[(bi + I) * 3  + 1]];
-        p3 = vertices[indices[(bi + I) * 3  + 2]];
+        p1 = vertices[indices[ti3  + 0]];
+        p2 = vertices[indices[ti3  + 1]];
+        p3 = vertices[indices[ti3  + 2]];
 
         float d;
         bool hit = ray_triangle_intersection(pos, dir, p1, p2, p3, d);
@@ -199,9 +201,10 @@ export uniform int RayTrianglesIntersectionIndexed(
 
     // non-SIMD pass
     for(uniform int ti = num_triangles_simd; ti < num_triangles; ++ti) {
-        uniform float3 p1 = vertices[indices[ti * 3 + 0]];
-        uniform float3 p2 = vertices[indices[ti * 3 + 1]];
-        uniform float3 p3 = vertices[indices[ti * 3 + 2]];
+        uniform int ti3 = ti * 3;
+        uniform float3 p1 = vertices[indices[ti3 + 0]];
+        uniform float3 p2 = vertices[indices[ti3 + 1]];
+        uniform float3 p3 = vertices[indices[ti3 + 2]];
 
         uniform float d;
         uniform bool hit = ray_triangle_intersection(pos, dir, p1, p2, p3, d);
@@ -228,11 +231,13 @@ export uniform int RayTrianglesIntersectionArray(
     // SIMD pass
     uniform int num_triangles_simd = num_triangles & ~(C - 1);
     for(uniform int bi=0; bi < num_triangles_simd; bi += C) {
+        int ti = bi + I;
+        int ti3 = ti * 3;
         float3 p1, p2, p3;
         // this emits warnings but performace is acceptable.
-        p1 = vertices[(bi + I) * 3  + 0];
-        p2 = vertices[(bi + I) * 3  + 1];
-        p3 = vertices[(bi + I) * 3  + 2];
+        p1 = vertices[ti3  + 0];
+        p2 = vertices[ti3  + 1];
+        p3 = vertices[ti3  + 2];
 
         float d;
         bool hit = ray_triangle_intersection(pos, dir, p1, p2, p3, d);
@@ -253,9 +258,10 @@ export uniform int RayTrianglesIntersectionArray(
 
     // non-SIMD pass
     for(uniform int ti = num_triangles_simd; ti < num_triangles; ++ti) {
-        uniform float3 p1 = vertices[ti * 3 + 0];
-        uniform float3 p2 = vertices[ti * 3 + 1];
-        uniform float3 p3 = vertices[ti * 3 + 2];
+        uniform int ti3 = ti * 3;
+        uniform float3 p1 = vertices[ti + 0];
+        uniform float3 p2 = vertices[ti + 1];
+        uniform float3 p3 = vertices[ti + 2];
 
         uniform float d;
         uniform bool hit = ray_triangle_intersection(pos, dir, p1, p2, p3, d);
@@ -537,17 +543,21 @@ export void GenerateTangentsIndexed(
     uniform float4 dst_tangents[])
 {
     uniform int num_triangles_simd = num_triangles & ~(C - 1);
+    uniform int num_vertices_simd = num_vertices & ~(C - 1);
+
+    // SIMD pass
     for(uniform int bi=0; bi < num_triangles_simd; bi += C) {
         int ti = bi+I;
+        int ti3 = ti*3;
         float3 v[3] = {
-             vertices[indices[ti * 3  + 0]],
-             vertices[indices[ti * 3  + 1]],
-             vertices[indices[ti * 3  + 2]],
+             vertices[indices[ti3  + 0]],
+             vertices[indices[ti3  + 1]],
+             vertices[indices[ti3  + 2]],
         };
         float2 u[3] = {
-             uv[indices[ti * 3  + 0]],
-             uv[indices[ti * 3  + 1]],
-             uv[indices[ti * 3  + 2]],
+             uv[indices[ti3  + 0]],
+             uv[indices[ti3  + 1]],
+             uv[indices[ti3  + 2]],
         };
         float3 t[3];
         float3 b[3];
@@ -560,13 +570,38 @@ export void GenerateTangentsIndexed(
             soa_to_aos3(b[i].x, b[i].y, b[i].z, (uniform float*)&binormals_aos[C*i]);
         }
         for(uniform int i=0; i<C; ++i) {
-            uniform int ati = bi * 3 + i;
-            tmp_tangents[indices[ati]] = tmp_tangents[indices[ati]] + tagents_aos[i];
-            tmp_binormals[indices[ati]] = tmp_binormals[indices[ati]] + binormals_aos[i];
+            uniform int i0 = indices[bi * 3 + i];
+            tmp_tangents[i0] = tmp_tangents[i0] + tagents_aos[i];
+            tmp_binormals[i0] = tmp_binormals[i0] + binormals_aos[i];
         }
     }
 
-    uniform int num_vertices_simd = num_vertices & ~(C - 1);
+    // non-SIMD pass
+    for(uniform int ti=num_triangles_simd; ti < num_triangles; ++ti) {
+        uniform int ti3 = ti*3;
+        uniform float3 v[3] = {
+             vertices[indices[ti3  + 0]],
+             vertices[indices[ti3  + 1]],
+             vertices[indices[ti3  + 2]],
+        };
+        uniform float2 u[3] = {
+             uv[indices[ti3  + 0]],
+             uv[indices[ti3  + 1]],
+             uv[indices[ti3  + 2]],
+        };
+        uniform float3 t[3];
+        uniform float3 b[3];
+        compute_triangle_tangents(v, u, t, b);
+
+        for(uniform int i=0; i<3; ++i) {
+            uniform int i0 = indices[ti3 + i];
+            tmp_tangents[i0] = tmp_tangents[i0] + t[i];
+            tmp_binormals[i0] = tmp_binormals[i0] + b[i];
+        }
+    }
+
+
+    // SIMD pass
     for(uniform int bi=0; bi < num_vertices_simd; bi += C) {
         float3 t, b, n;
         aos_to_soa3((uniform float*)&tmp_tangents[bi], &t.x, &t.y, &t.z);
@@ -575,6 +610,11 @@ export void GenerateTangentsIndexed(
 
         float4 result = orthogonalize_tangent(t, b, n);
         soa_to_aos4(result.x, result.y, result.z, result.w, (uniform float*)&dst_tangents[bi]);
+    }
+
+    // non-SIMD pass
+    for(uniform int vi=num_vertices_simd; vi < num_vertices; ++vi) {
+        dst_tangents[vi] = orthogonalize_tangent(tmp_tangents[vi], tmp_binormals[vi], normals[vi]);
     }
 }
 
@@ -597,6 +637,9 @@ export void GenerateTangentsSoA(
     uniform float3 tmp_binormals[])
 {
     uniform int num_triangles_simd = num_triangles & ~(C - 1);
+    uniform int num_vertices_simd = num_vertices & ~(C - 1);
+
+    // SIMD pass
     for(uniform int bi=0; bi < num_triangles_simd; bi += C) {
         int ti = bi+I;
         float3 vertices[3] = {
@@ -620,13 +663,37 @@ export void GenerateTangentsSoA(
             soa_to_aos3(binormals[i].x, binormals[i].y, binormals[i].z, (uniform float*)&binormals_aos[C*i]);
         }
         for(uniform int i=0; i<C; ++i) {
-            uniform int ati = bi * 3 + i;
-            tmp_tangents[indices[ati]] = tmp_tangents[indices[ati]] + tagents_aos[i];
-            tmp_binormals[indices[ati]] = tmp_binormals[indices[ati]] + binormals_aos[i];
+            uniform int i0 = indices[bi * 3 + i];
+            tmp_tangents[i0] = tmp_tangents[i0] + tagents_aos[i];
+            tmp_binormals[i0] = tmp_binormals[i0] + binormals_aos[i];
+        }
+    }
+    
+    // non-SIMD pass
+    for(uniform int ti=num_triangles_simd; ti < num_triangles; ++ti) {
+        uniform int ti3 = ti*3;
+        uniform float3 v[3] = {
+            {v1x[ti], v1y[ti], v1z[ti]},
+            {v2x[ti], v2y[ti], v2z[ti]},
+            {v3x[ti], v3y[ti], v3z[ti]}
+        };
+        uniform float2 u[3] = {
+            {u1x[ti], u1y[ti]},
+            {u2x[ti], u2y[ti]},
+            {u3x[ti], u3y[ti]}
+        };
+        uniform float3 t[3];
+        uniform float3 b[3];
+        compute_triangle_tangents(v, u, t, b);
+
+        for(uniform int i=0; i<3; ++i) {
+            uniform int i0 = indices[ti3 + i];
+            tmp_tangents[i0] = tmp_tangents[i0] + t[i];
+            tmp_binormals[i0] = tmp_binormals[i0] + b[i];
         }
     }
 
-    uniform int num_vertices_simd = num_vertices & ~(C - 1);
+    // SIMD pass
     for(uniform int bi=0; bi < num_vertices_simd; bi += C) {
         float3 t, b, n;
         aos_to_soa3((uniform float*)&tmp_tangents[bi], &t.x, &t.y, &t.z);
@@ -635,5 +702,10 @@ export void GenerateTangentsSoA(
 
         float4 result = orthogonalize_tangent(t, b, n);
         soa_to_aos4(result.x, result.y, result.z, result.w, (uniform float*)&dst_tangents[bi]);
+    }
+
+    // non-SIMD pass
+    for(uniform int vi=num_vertices_simd; vi < num_vertices; ++vi) {
+        dst_tangents[vi] = orthogonalize_tangent(tmp_tangents[vi], tmp_binormals[vi], normals[vi]);
     }
 }

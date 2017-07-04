@@ -379,7 +379,8 @@ static inline uniform float ray_point_distance(uniform float3 pos, uniform float
 
 
 static inline void compute_triangle_tangents(
-    const float3 (&vertices)[3], const float2 (&uv)[3], float3 (&dst_tangent)[3], float3 (&dst_binormal)[3])
+    const float3 (&vertices)[3], const float2 (&uv)[3],
+    float3 (&dst_tangent)[3], float3 (&dst_binormal)[3])
 {
     float3 p = vertices[1] - vertices[0];
     float3 q = vertices[2] - vertices[0];
@@ -409,8 +410,44 @@ static inline void compute_triangle_tangents(
         angle_between(vertices[0], vertices[2], vertices[1]),
         angle_between(vertices[1], vertices[0], vertices[2]),
     };
-    for (int v = 0; v < 3; ++v)
-    {
+    for (int v = 0; v < 3; ++v) {
+        dst_tangent[v] = tangent * angles[v];
+        dst_binormal[v] = binormal * angles[v];
+    }
+}
+static inline void compute_triangle_tangents(
+    uniform const float3(&vertices)[3], uniform const float2(&uv)[3],
+    uniform float3(&dst_tangent)[3], uniform float3(&dst_binormal)[3])
+{
+    uniform float3 p = vertices[1] - vertices[0];
+    uniform float3 q = vertices[2] - vertices[0];
+    uniform float2 s = { uv[1].x - uv[0].x, uv[2].x - uv[0].x };
+    uniform float2 t = { uv[1].y - uv[0].y, uv[2].y - uv[0].y };
+
+    uniform float div = s.x * t.y - s.y * t.x;
+    uniform float area = abs(div);
+    uniform float rdiv = 1.0f / div;
+    s = s * rdiv;
+    t = t * rdiv;
+
+    uniform float3 tangent = normalize(float3_(
+        t.y * p.x - t.x * q.x,
+        t.y * p.y - t.x * q.y,
+        t.y * p.z - t.x * q.z
+    )) * area;
+
+    uniform float3 binormal = normalize(float3_(
+        s.x * q.x - s.y * p.x,
+        s.x * q.y - s.y * p.y,
+        s.x * q.z - s.y * p.z
+    )) * area;
+
+    uniform float angles[3] = {
+        angle_between(vertices[2], vertices[1], vertices[0]),
+        angle_between(vertices[0], vertices[2], vertices[1]),
+        angle_between(vertices[1], vertices[0], vertices[2]),
+    };
+    for (uniform int v = 0; v < 3; ++v) {
         dst_tangent[v] = tangent * angles[v];
         dst_binormal[v] = binormal * angles[v];
     }
@@ -437,52 +474,87 @@ static inline float4 orthogonalize_tangent(float3 tangent, float3 binormal, floa
     float magB = length(binormal);
     binormal = binormal / magB;
 
+    float dpXN = abs(dot(float3_(1.0f, 0.0f, 0.0f), normal));
+    float dpYN = abs(dot(float3_(0.0f, 1.0f, 0.0f), normal));
+    float dpZN = abs(dot(float3_(0.0f, 0.0f, 1.0f), normal));
 
-    const float kNormalizeEpsilon = 1e-6;
+    bool a1x = dpXN <= dpYN && dpXN <= dpZN;
+    bool a1y = dpYN <= dpXN && dpYN <= dpZN;
+    bool a1z = dpZN <= dpXN && dpZN <= dpYN;
+    bool a2x = (a1y && dpXN <= dpZN) || (a1z && dpXN <= dpYN);
+    bool a2y = (a1x && dpYN <= dpZN) || (a1z && dpXN > dpYN);
+    bool a2z = (a1x && dpYN >  dpZN) || (a1y && dpXN > dpZN);
 
-    if (magT <= kNormalizeEpsilon || magB <= kNormalizeEpsilon)
-    {
-        float3 axis1, axis2;
+    float3 axis1 = {
+        select(a1x, 1.0f, 0.0f),
+        select(a1y, 1.0f, 0.0f),
+        select(a1z, 1.0f, 0.0f),
+    };
+    float3 axis2 = {
+        select(a2x, 1.0f, 0.0f),
+        select(a2y, 1.0f, 0.0f),
+        select(a2z, 1.0f, 0.0f),
+    };
 
-        float dpXN = abs(dot(float3_(1.0f, 0.0f, 0.0f), normal));
-        float dpYN = abs(dot(float3_(0.0f, 1.0f, 0.0f), normal));
-        float dpZN = abs(dot(float3_(0.0f, 0.0f, 1.0f), normal));
+    tangent = normalize(axis1 - normal * dot(normal, axis1));
+    binormal = normalize(axis2 - normal * dot(normal, axis2) - normalize(tangent) * dot(tangent, axis2));
 
-        if (dpXN <= dpYN && dpXN <= dpZN)
-        {
-            axis1 = float3_(1.0f, 0.0f, 0.0f);
-            if (dpYN <= dpZN)
-                axis2 = float3_(0.0f, 1.0f, 0.0f);
-            else
-                axis2 = float3_(0.0f, 0.0f, 1.0f);
-        }
-        else if (dpYN <= dpXN && dpYN <= dpZN)
-        {
-            axis1 = float3_(0.0f, 1.0f, 0.0f);
-            if (dpXN <= dpZN)
-                axis2 = float3_(1.0f, 0.0f, 0.0f);
-            else
-                axis2 = float3_(0.0f, 0.0f, 1.0f);
-        }
-        else
-        {
-            axis1 = float3_(0.0f, 0.0f, 1.0f);
-            if (dpXN <= dpYN)
-                axis2 = float3_(1.0f, 0.0f, 0.0f);
-            else
-                axis2 = float3_(0.0f, 1.0f, 0.0f);
-        }
+    return float4_(tangent.x, tangent.y, tangent.z,
+        dot(cross(normal, tangent), binormal) > 0.0f ? 1.0f : -1.0f);
+}
+static inline uniform float4 orthogonalize_tangent(
+    uniform float3 tangent, uniform float3 binormal, uniform float3 normal)
+{
+    uniform float NdotT = dot(normal, tangent);
+    tangent = float3_(
+        tangent.x - NdotT * normal.x,
+        tangent.y - NdotT * normal.y,
+        tangent.z - NdotT * normal.z
+    );
+    uniform float magT = length(tangent);
+    tangent = tangent / magT;
 
-        tangent = normalize(axis1 - normal * dot(normal, axis1));
-        binormal = normalize(axis2 - normal * dot(normal, axis2) - normalize(tangent) * dot(tangent, axis2));
-    }
+    uniform float NdotB = dot(normal, binormal);
+    uniform float TdotB = dot(tangent, binormal) * magT;
+    binormal = float3_(
+        binormal.x - NdotB * normal.x - TdotB * tangent.x,
+        binormal.y - NdotB * normal.y - TdotB * tangent.y,
+        binormal.z - NdotB * normal.z - TdotB * tangent.z
+    );
+    uniform float magB = length(binormal);
+    binormal = binormal / magB;
+
+    uniform float dpXN = abs(dot(float3_(1.0f, 0.0f, 0.0f), normal));
+    uniform float dpYN = abs(dot(float3_(0.0f, 1.0f, 0.0f), normal));
+    uniform float dpZN = abs(dot(float3_(0.0f, 0.0f, 1.0f), normal));
+
+    uniform bool a1x = dpXN <= dpYN && dpXN <= dpZN;
+    uniform bool a1y = dpYN <= dpXN && dpYN <= dpZN;
+    uniform bool a1z = dpZN <= dpXN && dpZN <= dpYN;
+    uniform bool a2x = (a1y && dpXN <= dpZN) || (a1z && dpXN <= dpYN);
+    uniform bool a2y = (a1x && dpYN <= dpZN) || (a1z && dpXN > dpYN);
+    uniform bool a2z = (a1x && dpYN > dpZN) || (a1y && dpXN > dpZN);
+
+    uniform float3 axis1 = {
+        select(a1x, 1.0f, 0.0f),
+        select(a1y, 1.0f, 0.0f),
+        select(a1z, 1.0f, 0.0f),
+    };
+    uniform float3 axis2 = {
+        select(a2x, 1.0f, 0.0f),
+        select(a2y, 1.0f, 0.0f),
+        select(a2z, 1.0f, 0.0f),
+    };
+
+    tangent = normalize(axis1 - normal * dot(normal, axis1));
+    binormal = normalize(axis2 - normal * dot(normal, axis2) - normalize(tangent) * dot(tangent, axis2));
 
     return float4_(tangent.x, tangent.y, tangent.z,
         dot(cross(normal, tangent), binormal) > 0.0f ? 1.0f : -1.0f);
 }
 
 
-static inline NormalizeImpl(uniform float3 dst[], uniform const int num)
+static inline void NormalizeImpl(uniform float3 dst[], uniform const int num)
 {
     uniform int num_simd_blocks = num & ~(C - 1);
 
