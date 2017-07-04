@@ -5,237 +5,6 @@
 
 namespace mu {
 
-#ifdef muEnableHalf
-void FloatToHalf_Generic(half *dst, const float *src, size_t num)
-{
-    for (size_t i = 0; i < num; ++i) {
-        dst[i] = src[i];
-    }
-}
-void HalfToFloat_Generic(float *dst, const half *src, size_t num)
-{
-    for (size_t i = 0; i < num; ++i) {
-        dst[i] = src[i];
-    }
-}
-#endif // muEnableHalf
-
-void InvertX_Generic(float3 *dst, size_t num)
-{
-    for (size_t i = 0; i < num; ++i) {
-        dst[i].x *= -1.0f;
-    }
-}
-void InvertX_Generic(float4 *dst, size_t num)
-{
-    for (size_t i = 0; i < num; ++i) {
-        dst[i].x *= -1.0f;
-    }
-}
-
-void InvertV(float2 *dst, size_t num)
-{
-    for (size_t i = 0; i < num; ++i) {
-        dst[i].y = 1.0f - dst[i].y;
-    }
-}
-
-
-void Scale_Generic(float *dst, float s, size_t num)
-{
-    for (size_t i = 0; i < num; ++i) {
-        dst[i] *= s;
-    }
-}
-void Scale_Generic(float3 *dst, float s, size_t num)
-{
-    for (size_t i = 0; i < num; ++i) {
-        dst[i] *= s;
-    }
-}
-
-void Normalize_Generic(float3 *dst, size_t num)
-{
-    for (size_t i = 0; i < num; ++i) {
-        dst[i] = normalize(dst[i]);
-    }
-}
-
-void Lerp_Generic(float *dst, const float *src1, const float *src2, size_t num, float w)
-{
-    const float iw = 1.0f - w;
-    for (size_t i = 0; i < num; ++i) {
-        dst[i] = src1[i] * w + src2[i] * iw;
-    }
-}
-
-void MinMax_Generic(const float2 *src, size_t num, float2& dst_min, float2& dst_max)
-{
-    if (num == 0) { return; }
-    float2 rmin = src[0];
-    float2 rmax = src[0];
-    for (size_t i = 1; i < num; ++i) {
-        rmin = min(rmin, src[i]);
-        rmax = max(rmax, src[i]);
-    }
-    dst_min = rmin;
-    dst_max = rmax;
-}
-
-void MinMax_Generic(const float3 *src, size_t num, float3& dst_min, float3& dst_max)
-{
-    if (num == 0) { return; }
-    float3 rmin = src[0];
-    float3 rmax = src[0];
-    for (size_t i = 1; i < num; ++i) {
-        rmin = min(rmin, src[i]);
-        rmax = max(rmax, src[i]);
-    }
-    dst_min = rmin;
-    dst_max = rmax;
-}
-
-bool NearEqual_Generic(const float *src1, const float *src2, size_t num, float eps)
-{
-    for (size_t i = 0; i < num; ++i) {
-        if (!near_equal(src1[i], src2[i], eps)) {
-            return false;
-        }
-    }
-    return true;
-}
-
-void MulPoints_Generic(const float4x4& m, const float3 src[], float3 dst[], size_t num_data)
-{
-    for (int i = 0; i < num_data; ++i) {
-        dst[i] = mul_p(m, src[i]);
-    }
-}
-void MulVectors_Generic(const float4x4& m, const float3 src[], float3 dst[], size_t num_data)
-{
-    for (int i = 0; i < num_data; ++i) {
-        dst[i] = mul_v(m, src[i]);
-    }
-}
-
-int RayTrianglesIntersectionIndexed_Generic(float3 pos, float3 dir, const float3 *vertices, const int *indices, int num_triangles, int& tindex, float& distance)
-{
-    int num_hits = 0;
-    distance = FLT_MAX;
-
-    for (int i = 0; i < num_triangles; ++i) {
-        float d;
-        if (ray_triangle_intersection(pos, dir, vertices[indices[i * 3 + 0]], vertices[indices[i * 3 + 1]], vertices[indices[i * 3 + 2]], d)) {
-            ++num_hits;
-            if (d < distance) {
-                distance = d;
-                tindex = i;
-            }
-        }
-    }
-    return num_hits;
-}
-int RayTrianglesIntersectionArray_Generic(float3 pos, float3 dir, const float3 *vertices, int num_triangles, int& tindex, float& distance)
-{
-    int num_hits = 0;
-    distance = FLT_MAX;
-
-    for (int i = 0; i < num_triangles; ++i) {
-        float d;
-        if (ray_triangle_intersection(pos, dir, vertices[i * 3 + 0], vertices[i * 3 + 1], vertices[i * 3 + 2], d)) {
-            ++num_hits;
-            if (d < distance) {
-                distance = d;
-                tindex = i;
-            }
-        }
-    }
-    return num_hits;
-}
-
-int RayTrianglesIntersectionSoA_Generic(float3 pos, float3 dir,
-    const float *v1x, const float *v1y, const float *v1z,
-    const float *v2x, const float *v2y, const float *v2z,
-    const float *v3x, const float *v3y, const float *v3z,
-    int num_triangles, int& tindex, float& distance)
-{
-    int num_hits = 0;
-    distance = FLT_MAX;
-
-    for (int i = 0; i < num_triangles; ++i) {
-        float d;
-        if (ray_triangle_intersection(pos, dir,
-            { v1x[i], v1y[i], v1z[i] },
-            { v2x[i], v2y[i], v2z[i] },
-            { v3x[i], v3y[i], v3z[i] }, d))
-        {
-            ++num_hits;
-            if (d < distance) {
-                distance = d;
-                tindex = i;
-            }
-        }
-    }
-    return num_hits;
-}
-
-
-bool PolyInside_Generic(const float px[], const float py[], int ngon, const float2 minp, const float2 maxp, const float2 pos)
-{
-    return poly_inside(px, py, ngon, minp, maxp, pos);
-}
-
-bool PolyInside_Generic(const float2 poly[], int ngon, const float2 minp, const float2 maxp, const float2 pos)
-{
-    return poly_inside(poly, ngon, minp, maxp, pos);
-}
-
-bool PolyInside_Generic(const float2 poly[], int ngon, const float2 pos)
-{
-    float2 minp, maxp;
-    poly_minmax(poly, ngon, minp, maxp);
-    return poly_inside(poly, ngon, minp, maxp, pos);
-}
-
-void GenerateNormalsTrianglesIndexed_Generic(float3 *dst,
-    const float3 *vertices, const int *indices, int num_triangles, int num_vertices)
-{
-    generate_normals_triangle_indexed(dst, vertices, indices, num_triangles, num_vertices);
-}
-
-void GenerateNormalsTrianglesSoA_Generic(float3 *dst,
-    const float *v1x, const float *v1y, const float *v1z,
-    const float *v2x, const float *v2y, const float *v2z,
-    const float *v3x, const float *v3y, const float *v3z,
-    const int *indices, int num_triangles, int num_vertices)
-{
-    generate_normals_triangle_soa(dst,
-        v1x, v1y, v1z, v2x, v2y, v2z, v3x, v3y, v3z,
-        indices, num_triangles, num_vertices);
-}
-
-void GenerateTangentsTrianglesIndexed_Generic(float4 *dst,
-    const float3 *vertices, const float3 *normals, const float2 *uv, const int *indices, int num_triangles, int num_vertices)
-{
-    generate_tangents_triangle_indexed(dst, vertices, uv, normals, indices, num_triangles, num_vertices);
-}
-
-void GenerateTangentsTrianglesSoA_Generic(float4 *dst,
-    const float *v1x, const float *v1y, const float *v1z,
-    const float *v2x, const float *v2y, const float *v2z,
-    const float *v3x, const float *v3y, const float *v3z,
-    const float *u1x, const float *u1y,
-    const float *u2x, const float *u2y,
-    const float *u3x, const float *u3y,
-    const float3 *normals,
-    const int *indices, int num_triangles, int num_vertices)
-{
-    generate_tangents_triangle_soa(dst,
-        v1x, v1y, v1z, v2x, v2y, v2z, v3x, v3y, v3z,
-        u1x, u1y, u2x, u2y, u3x, u3y,
-        normals, indices, num_triangles, num_vertices);
-}
-
 
 #ifdef muEnableISPC
 #include "MeshUtilsCore.h"
@@ -390,14 +159,14 @@ bool PolyInside_ISPC(const float2 poly[], int ngon, const float2 pos)
     return PolyInside_ISPC(poly, ngon, minp, maxp, pos);
 }
 
-void GenerateNormalsTrianglesIndexed_ISPC(float3 *dst,
+void GenerateNormalsTriangleIndexed_ISPC(float3 *dst,
     const float3 *vertices, const int *indices, int num_triangles, int num_vertices)
 {
     memset(dst, 0, sizeof(float3)*num_vertices);
     ispc::GenerateNormalsTriangleIndexed((ispc::float3*)dst, (ispc::float3*)vertices, indices, num_triangles, num_vertices);
 }
 
-void GenerateNormalsTrianglesSoA_ISPC(float3 *dst,
+void GenerateNormalsTriangleSoA_ISPC(float3 *dst,
     const float *v1x, const float *v1y, const float *v1z,
     const float *v2x, const float *v2y, const float *v2z,
     const float *v3x, const float *v3y, const float *v3z,
@@ -409,8 +178,8 @@ void GenerateNormalsTrianglesSoA_ISPC(float3 *dst,
         indices, num_triangles, num_vertices);
 }
 
-void GenerateTangentsTrianglesIndexed_ISPC(float4 *dst,
-    const float3 *vertices, const float3 *normals, const float2 *uv, const int *indices, int num_triangles, int num_vertices)
+void GenerateTangentsTriangleIndexed_ISPC(float4 *dst,
+    const float3 *vertices, const float2 *uv, const float3 *normals, const int *indices, int num_triangles, int num_vertices)
 {
     // make soa-nized data
     RawVector<float> vsoa[9], usoa[6];
@@ -452,7 +221,7 @@ void GenerateTangentsTrianglesIndexed_ISPC(float4 *dst,
         (ispc::float3*)tmp_binormals.data());
 }
 
-void GenerateTangentsTrianglesSoA_ISPC(float4 *dst,
+void GenerateTangentsTriangleSoA_ISPC(float4 *dst,
     const float *v1x, const float *v1y, const float *v1z,
     const float *v2x, const float *v2y, const float *v2z,
     const float *v3x, const float *v3y, const float *v3z,
@@ -476,8 +245,6 @@ void GenerateTangentsTrianglesSoA_ISPC(float4 *dst,
         (ispc::float3*)tmp_tangents.data(),
         (ispc::float3*)tmp_binormals.data());
 }
-
-
 #endif
 
 
@@ -597,29 +364,29 @@ bool PolyInside(const float2 poly[], int ngon, const float2 pos)
 }
 
 
-void GenerateNormalsTrianglesIndexed(float3 *dst,
+void GenerateNormalsTriangleIndexed(float3 *dst,
     const float3 *vertices, const int *indices, int num_triangles, int num_vertices)
 {
-    return Forward(GenerateNormalsTrianglesIndexed, dst, vertices, indices, num_triangles, num_vertices);
+    return Forward(GenerateNormalsTriangleIndexed, dst, vertices, indices, num_triangles, num_vertices);
 }
-void GenerateNormalsTrianglesSoA(float3 *dst,
+void GenerateNormalsTriangleSoA(float3 *dst,
     const float *v1x, const float *v1y, const float *v1z,
     const float *v2x, const float *v2y, const float *v2z,
     const float *v3x, const float *v3y, const float *v3z,
     const int *indices, int num_triangles, int num_vertices)
 {
-    return Forward(GenerateNormalsTrianglesSoA, dst,
+    return Forward(GenerateNormalsTriangleSoA, dst,
         v1x, v1y, v1z, v2x, v2y, v2z, v3x, v3y, v3z,
         indices, num_triangles, num_vertices);
 }
 
 
-void GenerateTangentsTrianglesIndexed(float4 *dst,
-    const float3 *vertices, const float3 *normals, const float2 *uv, const int *indices, int num_triangles, int num_vertices)
+void GenerateTangentsTriangleIndexed(float4 *dst,
+    const float3 *vertices, const float2 *uv, const float3 *normals, const int *indices, int num_triangles, int num_vertices)
 {
-    return Forward(GenerateTangentsTrianglesIndexed, dst, vertices, normals, uv, indices, num_triangles, num_vertices);
+    return Forward(GenerateTangentsTriangleIndexed, dst, vertices, uv, normals, indices, num_triangles, num_vertices);
 }
-void GenerateTangentsTrianglesSoA(float4 *dst,
+void GenerateTangentsTriangleSoA(float4 *dst,
     const float *v1x, const float *v1y, const float *v1z,
     const float *v2x, const float *v2y, const float *v2z,
     const float *v3x, const float *v3y, const float *v3z,
@@ -629,7 +396,7 @@ void GenerateTangentsTrianglesSoA(float4 *dst,
     const float3 *normals,
     const int *indices, int num_triangles, int num_vertices)
 {
-    return Forward(GenerateTangentsTrianglesSoA, dst,
+    return Forward(GenerateTangentsTriangleSoA, dst,
         v1x, v1y, v1z, v2x, v2y, v2z, v3x, v3y, v3z,
         u1x, u1y, u2x, u2y, u3x, u3y,
         normals, indices, num_triangles, num_vertices);
