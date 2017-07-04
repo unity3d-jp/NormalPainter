@@ -99,7 +99,8 @@ vs_out vert_normals(ia_out v)
 vs_out vert_tangents(ia_out v)
 {
     float3 pos = (mul(_Transform, float4(_Points[v.instanceID], 1.0))).xyz;
-    float3 dir = normalize((mul(_Transform, float4(_Tangents[v.instanceID].xyz, 0.0))).xyz);
+    float4 tangent = _Tangents[v.instanceID];
+    float3 dir = normalize((mul(_Transform, float4(tangent.xyz * tangent.w, 0.0))).xyz);
 
     float s = _OnlySelected ? _Selection[v.instanceID] : 1.0f;
     float4 vertex = v.vertex;
@@ -116,7 +117,8 @@ vs_out vert_tangents(ia_out v)
 vs_out vert_binormals(ia_out v)
 {
     float3 pos = (mul(_Transform, float4(_Points[v.instanceID], 1.0))).xyz;
-    float3 binormal = normalize(cross(_Normals[v.instanceID], _Tangents[v.instanceID].xyz) * _Tangents[v.instanceID].w);
+    float4 tangent = _Tangents[v.instanceID];
+    float3 binormal = normalize(cross(_Normals[v.instanceID], tangent.xyz * tangent.w));
     float3 dir = normalize((mul(_Transform, float4(binormal, 0.0))).xyz);
 
     float s = _OnlySelected ? _Selection[v.instanceID] : 1.0f;
