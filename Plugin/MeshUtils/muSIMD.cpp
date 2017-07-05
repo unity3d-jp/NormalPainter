@@ -315,6 +315,10 @@ bool NearEqual(const float3 *src1, const float3 *src2, size_t num, float eps)
 {
     return NearEqual((const float*)src1, (const float*)src2, num * 3, eps);
 }
+bool NearEqual(const float4 *src1, const float4 *src2, size_t num, float eps)
+{
+    return NearEqual((const float*)src1, (const float*)src2, num * 4, eps);
+}
 
 void MulPoints(const float4x4& m, const float3 src[], float3 dst[], size_t num_data)
 {

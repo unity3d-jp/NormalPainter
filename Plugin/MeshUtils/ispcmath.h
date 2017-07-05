@@ -494,7 +494,7 @@ static inline float4 orthogonalize_tangent(float3 tangent, float3 binormal, floa
     }
 
     return float4_(tangent.x, tangent.y, tangent.z,
-        dot(cross(normal, tangent), binormal) > 0.0f ? 1.0f : -1.0f);
+        select(dot(cross(normal, tangent), binormal) > 0.0f, 1.0f, -1.0f) );
 }
 
 static inline uniform float4 orthogonalize_tangent(
@@ -539,7 +539,7 @@ static inline uniform float4 orthogonalize_tangent(
     }
 
     return float4_(tangent.x, tangent.y, tangent.z,
-        dot(cross(normal, tangent), binormal) > 0.0f ? 1.0f : -1.0f);
+        select(dot(cross(normal, tangent), binormal) > 0.0f, 1.0f, -1.0f) );
 }
 
 

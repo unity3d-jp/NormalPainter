@@ -21,6 +21,7 @@ void MinMax(const float2 *src, size_t num, float2& dst_min, float2& dst_max);
 bool NearEqual(const float *src1, const float *src2, size_t num, float eps = muEpsilon);
 bool NearEqual(const float2 *src1, const float2 *src2, size_t num, float eps = muEpsilon);
 bool NearEqual(const float3 *src1, const float3 *src2, size_t num, float eps = muEpsilon);
+bool NearEqual(const float4 *src1, const float4 *src2, size_t num, float eps = muEpsilon);
 
 void MulPoints(const float4x4& m, const float3 src[], float3 dst[], size_t num_data);
 void MulVectors(const float4x4& m, const float3 src[], float3 dst[], size_t num_data);
@@ -58,6 +59,7 @@ void GenerateNormalsTriangleSoA(float3 *dst,
 void GenerateTangentsTriangleIndexed(float4 *dst,
     const float3 *vertices, const float2 *uv, const float3 *normals, const int *indices,
     int num_triangles, int num_vertices);
+// vertices and uv must be flattened, * normals must not be flattened *
 void GenerateTangentsTriangleFlattened(float4 *dst,
     const float3 *vertices, const float2 *uv, const float3 *normals, const int *indices,
     int num_triangles, int num_vertices);

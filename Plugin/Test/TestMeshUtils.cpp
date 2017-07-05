@@ -96,18 +96,29 @@ void TestNormalsAndTangents()
     RawVector<int> indices, counts;
     RawVector<float3> points;
     RawVector<float2> uv;
-    GenerateWaveMesh(counts, indices, points, uv, 10.0f, 0.25f, 300, 0.0f, true);
+    GenerateWaveMesh(counts, indices, points, uv, 10.0f, 0.25f, 250, 0.0f, true);
 
+    int num_try = 1;
     int num_points = (int)points.size();
     int num_triangles = (int)indices.size() / 3;
-    RawVector<float3> normals[4];
-    RawVector<float4> tangents[4];
+    RawVector<float3> points_f;
+    RawVector<float2> uv_f;
+    RawVector<float3> normals[6];
+    RawVector<float4> tangents[6];
     RawVector<float> psoa[9], usoa[6];
 
-    for (auto& v : normals) { v.resize(points.size()); }
-    for (auto& v : tangents) { v.resize(points.size()); }
+
+    // generate flattened data
+    points_f.resize(indices.size());
+    uv_f.resize(indices.size());
+    for (size_t i = 0; i < indices.size(); ++i) {
+        points_f[i] = points[indices[i]];
+        uv_f[i] = uv[indices[i]];
+    }
 
     // generate soa data
+    for (auto& v : normals) { v.resize(points.size()); }
+    for (auto& v : tangents) { v.resize(points.size()); }
     for (auto& v : psoa) { v.resize(num_triangles); }
     for (auto& v : usoa) { v.resize(num_triangles); }
     for (int ti = 0; ti < num_triangles; ++ti) {
@@ -130,6 +141,7 @@ void TestNormalsAndTangents()
         }
     }
 
+
     printf(
         "    num_vertices: %d\n"
         "    num_triangles: %d\n"
@@ -147,73 +159,123 @@ void TestNormalsAndTangents()
     usoa[2].data(), usoa[3].data(),\
     usoa[4].data(), usoa[5].data()
 
-
     {
         auto s1b = Now();
-        GenerateNormalsTriangleIndexed_Generic(normals[0].data(), points.data(), indices.data(), num_triangles, num_points);
+        for (int i = 0; i < num_try; ++i)
+            GenerateNormalsTriangleIndexed_Generic(normals[0].data(), points.data(), indices.data(), num_triangles, num_points);
         auto s1e = Now();
 
         auto s2b = Now();
-        GenerateNormalsTriangleIndexed_ISPC(normals[1].data(), points.data(), indices.data(), num_triangles, num_points);
+        for (int i = 0; i < num_try; ++i)
+            GenerateNormalsTriangleIndexed_ISPC(normals[1].data(), points.data(), indices.data(), num_triangles, num_points);
         auto s2e = Now();
 
         auto s3b = Now();
-        GenerateNormalsTriangleSoA_Generic(normals[2].data(), SoAPointsArgs, indices.data(), num_triangles, num_points);
+        for (int i = 0; i < num_try; ++i)
+            GenerateNormalsTriangleFlattened_Generic(normals[2].data(), points_f.data(), indices.data(), num_triangles, num_points);
         auto s3e = Now();
 
         auto s4b = Now();
-        GenerateNormalsTriangleSoA_ISPC(normals[3].data(), SoAPointsArgs, indices.data(), num_triangles, num_points);
+        for (int i = 0; i < num_try; ++i)
+            GenerateNormalsTriangleFlattened_ISPC(normals[3].data(), points_f.data(), indices.data(), num_triangles, num_points);
         auto s4e = Now();
 
+        auto s5b = Now();
+        for (int i = 0; i < num_try; ++i)
+            GenerateNormalsTriangleSoA_Generic(normals[4].data(), SoAPointsArgs, indices.data(), num_triangles, num_points);
+        auto s5e = Now();
+
+        auto s6b = Now();
+        for (int i = 0; i < num_try; ++i)
+            GenerateNormalsTriangleSoA_ISPC(normals[5].data(), SoAPointsArgs, indices.data(), num_triangles, num_points);
+        auto s6e = Now();
+
         printf(
-            "    GenerateNormals indexed-C++: %.2fms\n"
-            "    GenerateNormals indexed-ISPC: %.2fms\n"
-            "    GenerateNormals SoA-C++: %.2fms\n"
-            "    GenerateNormals SoA-ISPC: %.2fms\n"
+            "    GenerateNormals indexed C++: %.2fms\n"
+            "    GenerateNormals indexed ISPC: %.2fms\n"
+            "    GenerateNormals flattened C++: %.2fms\n"
+            "    GenerateNormals flattened ISPC: %.2fms\n"
+            "    GenerateNormals SoA C++: %.2fms\n"
+            "    GenerateNormals SoA ISPC: %.2fms\n"
             ,
-            NS2MS(s1e - s1b),
-            NS2MS(s2e - s2b),
-            NS2MS(s3e - s3b),
-            NS2MS(s4e - s4b));
+            NS2MS(s1e - s1b) / num_try,
+            NS2MS(s2e - s2b) / num_try,
+            NS2MS(s3e - s3b) / num_try,
+            NS2MS(s4e - s4b) / num_try,
+            NS2MS(s5e - s5b) / num_try,
+            NS2MS(s6e - s6b) / num_try);
     }
 
     {
         auto s1b = Now();
-        GenerateTangentsTriangleIndexed_Generic(tangents[0].data(),
-            points.data(), uv.data(), normals[0].data(), indices.data(), num_triangles, num_points);
+        for (int i = 0; i < num_try; ++i)
+            GenerateTangentsTriangleIndexed_Generic(tangents[0].data(),
+                points.data(), uv.data(), normals[0].data(), indices.data(), num_triangles, num_points);
         auto s1e = Now();
 
         auto s2b = Now();
-        GenerateTangentsTriangleIndexed_ISPC(tangents[1].data(),
-            points.data(), uv.data(), normals[1].data(), indices.data(), num_triangles, num_points);
+        for (int i = 0; i < num_try; ++i)
+            GenerateTangentsTriangleIndexed_ISPC(tangents[1].data(),
+                points.data(), uv.data(), normals[1].data(), indices.data(), num_triangles, num_points);
         auto s2e = Now();
 
         auto s3b = Now();
-        GenerateTangentsTriangleSoA_Generic(tangents[2].data(),
-            SoAPointsArgs, SoAUVArgs, normals[2].data(), indices.data(), num_triangles, num_points);
+        for (int i = 0; i < num_try; ++i)
+            GenerateTangentsTriangleFlattened_Generic(tangents[2].data(),
+                points_f.data(), uv_f.data(), normals[2].data(), indices.data(), num_triangles, num_points);
         auto s3e = Now();
 
         auto s4b = Now();
-        GenerateTangentsTriangleSoA_ISPC(tangents[3].data(),
-            SoAPointsArgs, SoAUVArgs, normals[3].data(), indices.data(), num_triangles, num_points);
+        for (int i = 0; i < num_try; ++i)
+            GenerateTangentsTriangleFlattened_ISPC(tangents[3].data(),
+                points_f.data(), uv_f.data(), normals[3].data(), indices.data(), num_triangles, num_points);
         auto s4e = Now();
 
+        auto s5b = Now();
+        for (int i = 0; i < num_try; ++i)
+            GenerateTangentsTriangleSoA_Generic(tangents[4].data(),
+                SoAPointsArgs, SoAUVArgs, normals[4].data(), indices.data(), num_triangles, num_points);
+        auto s5e = Now();
+
+        auto s6b = Now();
+        for (int i = 0; i < num_try; ++i)
+            GenerateTangentsTriangleSoA_ISPC(tangents[5].data(),
+                SoAPointsArgs, SoAUVArgs, normals[5].data(), indices.data(), num_triangles, num_points);
+        auto s6e = Now();
+
         printf(
-            "    GenerateTangents indexed-C++: %.2fms\n"
-            "    GenerateTangents indexed-ISPC: %.2fms\n"
-            "    GenerateTangents SoA-C++: %.2fms\n"
-            "    GenerateTangents SoA-ISPC: %.2fms\n"
+            "    GenerateTangents indexed C++: %.2fms\n"
+            "    GenerateTangents indexed ISPC: %.2fms\n"
+            "    GenerateTangents flattened C++: %.2fms\n"
+            "    GenerateTangents flattened ISPC: %.2fms\n"
+            "    GenerateTangents SoA C++: %.2fms\n"
+            "    GenerateTangents SoA ISPC: %.2fms\n"
             ,
-            NS2MS(s1e - s1b),
-            NS2MS(s2e - s2b),
-            NS2MS(s3e - s3b),
-            NS2MS(s4e - s4b));
+            NS2MS(s1e - s1b) / num_try,
+            NS2MS(s2e - s2b) / num_try,
+            NS2MS(s3e - s3b) / num_try,
+            NS2MS(s4e - s4b) / num_try,
+            NS2MS(s5e - s5b) / num_try,
+            NS2MS(s6e - s6b) / num_try);
+    }
+
+    for (int i = 1; i < countof(normals); ++i) {
+        if (!NearEqual(normals[0].data(), normals[i].data(), normals[0].size(), 0.02f)) {
+            printf("    *** validation failed: normals %d ***\n", i);
+        }
+    }
+    for (int i = 1; i < countof(tangents); ++i) {
+        if (!NearEqual(tangents[0].data(), tangents[i].data(), tangents[0].size(), 0.05f)) {
+            printf("    *** validation failed: tangents %d ***\n", i);
+        }
     }
 
     ExportFbx("Wave_IndexedCpp.fbx", indices, 3, points, normals[0], tangents[0], uv, {});
     ExportFbx("Wave_IndexedISPC.fbx", indices, 3, points, normals[1], tangents[1], uv, {});
-    ExportFbx("Wave_SoACpp.fbx", indices, 3, points, normals[2], tangents[2], uv, {});
-    ExportFbx("Wave_SoAISPC.fbx", indices, 3, points, normals[3], tangents[3], uv, {});
+    ExportFbx("Wave_FlattenedCpp.fbx", indices, 3, points, normals[2], tangents[2], uv, {});
+    ExportFbx("Wave_FlattenedISPC.fbx", indices, 3, points, normals[3], tangents[3], uv, {});
+    ExportFbx("Wave_SoACpp.fbx", indices, 3, points, normals[4], tangents[4], uv, {});
+    ExportFbx("Wave_SoAISPC.fbx", indices, 3, points, normals[5], tangents[5], uv, {});
 
 #undef SoAUVArgs
 #undef SoAPointsArgs

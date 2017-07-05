@@ -461,7 +461,7 @@ void GenerateTangentsTriangleIndexed_Generic(float4 *dst,
     }
 }
 
-void GenerateTangentsTriangleIndexed_Flattened(float4 *dst,
+void GenerateTangentsTriangleFlattened_Generic(float4 *dst,
     const float3 *vertices, const float2 *uv, const float3 *normals, const int *indices,
     int num_triangles, int num_vertices)
 {

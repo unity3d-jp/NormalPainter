@@ -510,14 +510,14 @@ export void GenerateNormalsTriangleFlattened(uniform float3 dst[],
     // non-SIMD pass
     for(uniform int ti=num_triangles_simd; ti < num_triangles; ++ti) {
         uniform int ti3 = ti * 3;
+        uniform float3 p0 = vertices[ti3 + 0];
+        uniform float3 p1 = vertices[ti3 + 1];
+        uniform float3 p2 = vertices[ti3 + 2];
+        uniform float3 n = cross(p1 - p0, p2 - p0);
+
         uniform int i0 = indices[ti3 + 0];
         uniform int i1 = indices[ti3 + 1];
         uniform int i2 = indices[ti3 + 2];
-        uniform float3 p0 = vertices[i0];
-        uniform float3 p1 = vertices[i1];
-        uniform float3 p2 = vertices[i2];
-        uniform float3 n = cross(p1 - p0, p2 - p0);
-
         dst[i0] = dst[i0] + n;
         dst[i1] = dst[i1] + n;
         dst[i2] = dst[i2] + n;
