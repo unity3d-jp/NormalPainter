@@ -602,16 +602,18 @@ export void GenerateTangentsIndexed(uniform float4 dst[],
         float3 b[3];
         compute_triangle_tangents(v, u, t, b);
 
-        uniform float3 tagents_aos[C*3];
-        uniform float3 binormals_aos[C*3];
+        uniform float3 t_aos[3][C];
+        uniform float3 b_aos[3][C];
         for(uniform int i=0; i<3; ++i) {
-            soa_to_aos3(t[i].x, t[i].y, t[i].z, (uniform float*)&tagents_aos[C*i]);
-            soa_to_aos3(b[i].x, b[i].y, b[i].z, (uniform float*)&binormals_aos[C*i]);
+            soa_to_aos3(t[i].x, t[i].y, t[i].z, (uniform float*)&t_aos[i][0]);
+            soa_to_aos3(b[i].x, b[i].y, b[i].z, (uniform float*)&b_aos[i][0]);
         }
-        for(uniform int i=0; i<C; ++i) {
-            uniform int i0 = indices[bi * 3 + i];
-            tmp_tangents[i0] = tmp_tangents[i0] + tagents_aos[i];
-            tmp_binormals[i0] = tmp_binormals[i0] + binormals_aos[i];
+        for(uniform int ci=0; ci<C; ++ci) {
+            for(uniform int i=0; i<3; ++i) {
+                uniform int i0 = indices[(bi+ci)*3 + i];
+                tmp_tangents[i0] = tmp_tangents[i0] + t_aos[i][ci];
+                tmp_binormals[i0] = tmp_binormals[i0] + b_aos[i][ci];
+            }
         }
     }
 
@@ -683,16 +685,18 @@ export void GenerateTangentsFlattened(uniform float4 dst[],
         float3 b[3];
         compute_triangle_tangents(v, u, t, b);
 
-        uniform float3 tagents_aos[C*3];
-        uniform float3 binormals_aos[C*3];
+        uniform float3 t_aos[3][C];
+        uniform float3 b_aos[3][C];
         for(uniform int i=0; i<3; ++i) {
-            soa_to_aos3(t[i].x, t[i].y, t[i].z, (uniform float*)&tagents_aos[C*i]);
-            soa_to_aos3(b[i].x, b[i].y, b[i].z, (uniform float*)&binormals_aos[C*i]);
+            soa_to_aos3(t[i].x, t[i].y, t[i].z, (uniform float*)&t_aos[i][0]);
+            soa_to_aos3(b[i].x, b[i].y, b[i].z, (uniform float*)&b_aos[i][0]);
         }
-        for(uniform int i=0; i<C; ++i) {
-            uniform int i0 = indices[bi * 3 + i];
-            tmp_tangents[i0] = tmp_tangents[i0] + tagents_aos[i];
-            tmp_binormals[i0] = tmp_binormals[i0] + binormals_aos[i];
+        for(uniform int ci=0; ci<C; ++ci) {
+            for(uniform int i=0; i<3; ++i) {
+                uniform int i0 = indices[(bi+ci)*3 + i];
+                tmp_tangents[i0] = tmp_tangents[i0] + t_aos[i][ci];
+                tmp_binormals[i0] = tmp_binormals[i0] + b_aos[i][ci];
+            }
         }
     }
 
@@ -762,30 +766,32 @@ export void GenerateTangentsSoA(
     // SIMD pass
     for(uniform int bi=0; bi < num_triangles_simd; bi += C) {
         int ti = bi+I;
-        float3 vertices[3] = {
+        float3 v[3] = {
             {v1x[ti], v1y[ti], v1z[ti]},
             {v2x[ti], v2y[ti], v2z[ti]},
             {v3x[ti], v3y[ti], v3z[ti]}
         };
-        float2 uv[3] = {
+        float2 u[3] = {
             {u1x[ti], u1y[ti]},
             {u2x[ti], u2y[ti]},
             {u3x[ti], u3y[ti]}
         };
-        float3 tangents[3];
-        float3 binormals[3];
-        compute_triangle_tangents(vertices, uv, tangents, binormals);
+        float3 t[3];
+        float3 b[3];
+        compute_triangle_tangents(v, u, t, b);
 
-        uniform float3 tagents_aos[C*3];
-        uniform float3 binormals_aos[C*3];
+        uniform float3 t_aos[3][C];
+        uniform float3 b_aos[3][C];
         for(uniform int i=0; i<3; ++i) {
-            soa_to_aos3(tangents[i].x, tangents[i].y, tangents[i].z, (uniform float*)&tagents_aos[C*i]);
-            soa_to_aos3(binormals[i].x, binormals[i].y, binormals[i].z, (uniform float*)&binormals_aos[C*i]);
+            soa_to_aos3(t[i].x, t[i].y, t[i].z, (uniform float*)&t_aos[i][0]);
+            soa_to_aos3(b[i].x, b[i].y, b[i].z, (uniform float*)&b_aos[i][0]);
         }
-        for(uniform int i=0; i<C; ++i) {
-            uniform int i0 = indices[bi * 3 + i];
-            tmp_tangents[i0] = tmp_tangents[i0] + tagents_aos[i];
-            tmp_binormals[i0] = tmp_binormals[i0] + binormals_aos[i];
+        for(uniform int ci=0; ci<C; ++ci) {
+            for(uniform int i=0; i<3; ++i) {
+                uniform int i0 = indices[(bi+ci)*3 + i];
+                tmp_tangents[i0] = tmp_tangents[i0] + t_aos[i][ci];
+                tmp_binormals[i0] = tmp_binormals[i0] + b_aos[i][ci];
+            }
         }
     }
     

@@ -393,6 +393,9 @@ static inline float4 orthogonalize_tangent(float3 tangent, float3 binormal, floa
     float magB = length(binormal);
     binormal = binormal / magB;
 
+#if 0
+    const float epsilon = 1e-6f;
+    if (magT <= epsilon || magB <= epsilon)
     {
         float3 axis1, axis2;
 
@@ -424,10 +427,10 @@ static inline float4 orthogonalize_tangent(float3 tangent, float3 binormal, floa
             else
                 axis2 = { 0.0f, 1.0f, 0.0f };
         }
-
         tangent = normalize(axis1 - normal * dot(normal, axis1));
         binormal = normalize(axis2 - normal * dot(normal, axis2) - normalize(tangent) * dot(tangent, axis2));
     }
+#endif
 
     return { tangent.x, tangent.y, tangent.z,
         dot(cross(normal, tangent), binormal) > 0.0f ? 1.0f : -1.0f };

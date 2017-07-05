@@ -240,29 +240,6 @@ static inline uniform float  rcp_estimate(uniform float  v) { return rcp(v); }
 static inline uniform float2 rcp_estimate(uniform float2 v) { return rcp(v); }
 static inline uniform float3 rcp_estimate(uniform float3 v) { return rcp(v); }
 
-static inline float  div_precise(float  a, float  b) { return a / b; }
-static inline float2 div_precise(float2 a, float  b) { return a / b; }
-static inline float2 div_precise(float2 a, float2 b) { return a / b; }
-static inline float3 div_precise(float3 a, float  b) { return a / b; }
-static inline float3 div_precise(float3 a, float3 b) { return a / b; }
-static inline uniform float  div_precise(uniform float  a, uniform float  b) { a / b; }
-static inline uniform float2 div_precise(uniform float2 a, uniform float  b) { a / b; }
-static inline uniform float2 div_precise(uniform float2 a, uniform float2 b) { a / b; }
-static inline uniform float3 div_precise(uniform float3 a, uniform float  b) { a / b; }
-static inline uniform float3 div_precise(uniform float3 a, uniform float3 b) { a / b; }
-
-static inline float  div_estimate(float  a, float  b) { return a * rcp(b); }
-static inline float2 div_estimate(float2 a, float  b) { return a * rcp(b); }
-static inline float2 div_estimate(float2 a, float2 b) { return a * rcp(b); }
-static inline float3 div_estimate(float3 a, float  b) { return a * rcp(b); }
-static inline float3 div_estimate(float3 a, float3 b) { return a * rcp(b); }
-static inline uniform float  div_estimate(uniform float  a, uniform float  b) { a * rcp(b); }
-static inline uniform float2 div_estimate(uniform float2 a, uniform float  b) { a * rcp(b); }
-static inline uniform float2 div_estimate(uniform float2 a, uniform float2 b) { a * rcp(b); }
-static inline uniform float3 div_estimate(uniform float3 a, uniform float  b) { a * rcp(b); }
-static inline uniform float3 div_estimate(uniform float3 a, uniform float3 b) { a * rcp(b); }
-
-
 static inline float length_sq(float2 v) { return dot(v, v); }
 static inline float length_sq(float3 v) { return dot(v, v); }
 static inline uniform float length_sq(uniform float2 v) { return dot(v, v); }
@@ -272,7 +249,6 @@ static inline float length(float2 v) { return sqrt(length_sq(v)); }
 static inline float length(float3 v) { return sqrt(length_sq(v)); }
 static inline uniform float length(uniform float2 v) { return sqrt(length_sq(v)); }
 static inline uniform float length(uniform float3 v) { return sqrt(length_sq(v)); }
-
 
 static inline float2 normalize_precise(float2 v) { return v / length(v); }
 static inline float3 normalize_precise(float3 v) { return v / length(v); }
@@ -328,12 +304,10 @@ static inline uniform float3 lerp(uniform float3 a, uniform float3 b, uniform fl
 
 #ifdef ispcmathEstimate
     #define rcp rcp_estimate
-    #define div div_estimate
     #define normalize normalize_estimate
     #define angle_between2 angle_between2_estimate
 #else
     #define rcp rcp_precise
-    #define div div_precise
     #define normalize normalize_precise
     #define angle_between2 angle_between2_precise
 #endif
@@ -479,14 +453,17 @@ static inline float4 orthogonalize_tangent(float3 tangent, float3 binormal, floa
     float NdotT = dot(normal, tangent);
     tangent = tangent - normal * NdotT;
     float magT = length(tangent);
-    tangent = div(tangent, magT);
+    tangent = tangent / magT;
 
     float NdotB = dot(normal, binormal);
     float TdotB = dot(tangent, binormal) * magT;
     binormal = binormal - normal * NdotB - tangent * TdotB;
     float magB = length(binormal);
-    binormal = div(binormal, magB);
+    binormal = binormal / magB;
 
+#if 0
+    const float epsilon = 1e-6f;
+    if (magT <= epsilon || magB <= epsilon)
     {
         float dpXN = abs(dot(float3_(1.0f, 0.0f, 0.0f), normal));
         float dpYN = abs(dot(float3_(0.0f, 1.0f, 0.0f), normal));
@@ -509,11 +486,10 @@ static inline float4 orthogonalize_tangent(float3 tangent, float3 binormal, floa
             select(a2y, 1.0f, 0.0f),
             select(a2z, 1.0f, 0.0f),
         };
-
         tangent = normalize(axis1 - normal * dot(normal, axis1));
         binormal = normalize(axis2 - normal * dot(normal, axis2) - normalize(tangent) * dot(tangent, axis2));
     }
-
+#endif
     return float4_(tangent.x, tangent.y, tangent.z,
         select(dot(cross(normal, tangent), binormal) > 0.0f, 1.0f, -1.0f) );
 }
@@ -524,14 +500,17 @@ static inline uniform float4 orthogonalize_tangent(
     uniform float NdotT = dot(normal, tangent);
     tangent = tangent - normal * NdotT;
     uniform float magT = length(tangent);
-    tangent = div(tangent, magT);
+    tangent = tangent / magT;
 
     uniform float NdotB = dot(normal, binormal);
     uniform float TdotB = dot(tangent, binormal) * magT;
     binormal = binormal - normal * NdotB - tangent * TdotB;
     uniform float magB = length(binormal);
-    binormal = div(binormal, magB);
+    binormal = binormal / magB;
 
+#if 0
+    uniform const float epsilon = 1e-6f;
+    if (magT <= epsilon || magB <= epsilon)
     {
         uniform float dpXN = abs(dot(float3_(1.0f, 0.0f, 0.0f), normal));
         uniform float dpYN = abs(dot(float3_(0.0f, 1.0f, 0.0f), normal));
@@ -554,13 +533,12 @@ static inline uniform float4 orthogonalize_tangent(
             select(a2y, 1.0f, 0.0f),
             select(a2z, 1.0f, 0.0f),
         };
-
         tangent = normalize(axis1 - normal * dot(normal, axis1));
         binormal = normalize(axis2 - normal * dot(normal, axis2) - normalize(tangent) * dot(tangent, axis2));
     }
-
+#endif
     return float4_(tangent.x, tangent.y, tangent.z,
-        select(dot(cross(normal, tangent), binormal) > 0.0f, 1.0f, -1.0f) );
+        select(dot(cross(normal, tangent), binormal) > 0.0f, 1.0f, -1.0f));
 }
 
 

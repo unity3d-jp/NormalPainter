@@ -548,10 +548,9 @@ inline float length_sq(float3 v) { return dot(v, v); }
 inline float length(float2 v) { return sqrt(length_sq(v)); }
 inline float length(float3 v) { return sqrt(length_sq(v)); }
 
-inline float3 normalize(const float3& l)
+inline float3 normalize(const float3& v)
 {
-    float d = 1.0f / std::sqrt(dot(l, l));
-    return l * d;
+    return v / length(v);
 }
 
 inline float3 cross(const float3& l, const float3& r)
