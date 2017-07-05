@@ -96,7 +96,7 @@ void TestNormalsAndTangents()
     RawVector<int> indices, counts;
     RawVector<float3> points;
     RawVector<float2> uv;
-    GenerateWaveMesh(counts, indices, points, uv, 5.0f, 0.25f, 50, 0.0f, true);
+    GenerateWaveMesh(counts, indices, points, uv, 5.0f, 0.25f, 250, 0.0f, true);
 
     int num_points = (int)points.size();
     int num_triangles = (int)indices.size() / 3;

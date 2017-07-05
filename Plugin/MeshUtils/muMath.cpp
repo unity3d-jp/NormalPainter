@@ -360,28 +360,16 @@ static inline void compute_triangle_tangent(
 static inline float4 orthogonalize_tangent(float3 tangent, float3 binormal, float3 normal)
 {
     float NdotT = dot(normal, tangent);
-    tangent = {
-        tangent.x - NdotT * normal.x,
-        tangent.y - NdotT * normal.y,
-        tangent.z - NdotT * normal.z
-    };
+    tangent -= normal * NdotT;
     float magT = length(tangent);
     tangent = tangent / magT;
 
     float NdotB = dot(normal, binormal);
     float TdotB = dot(tangent, binormal) * magT;
-    binormal = {
-        binormal.x - NdotB * normal.x - TdotB * tangent.x,
-        binormal.y - NdotB * normal.y - TdotB * tangent.y,
-        binormal.z - NdotB * normal.z - TdotB * tangent.z
-    };
+    binormal -= normal * NdotB - tangent * TdotB;;
     float magB = length(binormal);
     binormal = binormal / magB;
 
-
-    const float kNormalizeEpsilon = 1e-6f;
-
-    if (magT <= kNormalizeEpsilon || magB <= kNormalizeEpsilon)
     {
         float3 axis1, axis2;
 
