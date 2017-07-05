@@ -181,42 +181,13 @@ void GenerateNormalsTriangleSoA_ISPC(float3 *dst,
 void GenerateTangentsTriangleIndexed_ISPC(float4 *dst,
     const float3 *vertices, const float2 *uv, const float3 *normals, const int *indices, int num_triangles, int num_vertices)
 {
-    // make soa-nized data
-    RawVector<float> vsoa[9], usoa[6];
-    for (auto& v : vsoa) { v.resize(num_triangles); }
-    for (auto& v : usoa) { v.resize(num_triangles); }
-    for (int ti = 0; ti < num_triangles; ++ti) {
-        float3 v[] = {
-            vertices[indices[ti * 3 + 0]],
-            vertices[indices[ti * 3 + 1]],
-            vertices[indices[ti * 3 + 2]],
-        };
-        float2 u[] = {
-            uv[indices[ti * 3 + 0]],
-            uv[indices[ti * 3 + 1]],
-            uv[indices[ti * 3 + 2]],
-        };
-        for (int i = 0; i < 9; ++i) { vsoa[i][ti] = ((float*)v)[i]; }
-        for (int i = 0; i < 6; ++i) { usoa[i][ti] = ((float*)u)[i]; }
-    }
-
     RawVector<float3> tmp_tangents, tmp_binormals;
     tmp_tangents.resize_with_zeroclear(num_vertices);
     tmp_binormals.resize_with_zeroclear(num_vertices);
 
-    ispc::GenerateTangentsSoA(
-        (ispc::float4*)dst,
-        vsoa[0].data(), vsoa[1].data(), vsoa[2].data(),
-        vsoa[3].data(), vsoa[4].data(), vsoa[5].data(),
-        vsoa[6].data(), vsoa[7].data(), vsoa[8].data(),
-
-        usoa[0].data(), usoa[1].data(),
-        usoa[2].data(), usoa[3].data(),
-        usoa[4].data(), usoa[5].data(),
-
-        (ispc::float3*)normals,
+    ispc::GenerateTangentsIndexed((ispc::float4*)dst,
+        (ispc::float3*)vertices, (ispc::float2*)uv, (ispc::float3*)normals, indices,
         num_triangles, num_vertices,
-        indices,
         (ispc::float3*)tmp_tangents.data(),
         (ispc::float3*)tmp_binormals.data());
 }
@@ -240,8 +211,8 @@ void GenerateTangentsTriangleSoA_ISPC(float4 *dst,
         v1x, v1y, v1z, v2x, v2y, v2z, v3x, v3y, v3z,
         u1x, u1y, u2x, u2y, u3x, u3y,
         (ispc::float3*)normals,
-        num_triangles, num_vertices,
         indices,
+        num_triangles, num_vertices,
         (ispc::float3*)tmp_tangents.data(),
         (ispc::float3*)tmp_binormals.data());
 }

@@ -529,18 +529,10 @@ export void GenerateNormalsTriangleSoA(uniform float3 dst[],
 }
 
 
-export void GenerateTangentsIndexed(
-    uniform const float3 vertices[],
-    uniform const float2 uv[],
-    uniform const float3 normals[],
-    uniform const int indices[],
-
-    uniform const int num_triangles,
-    uniform const int num_vertices,
-
-    uniform float3 tmp_tangents[],
-    uniform float3 tmp_binormals[],
-    uniform float4 dst_tangents[])
+export void GenerateTangentsIndexed(uniform float4 dst[],
+    uniform const float3 vertices[], uniform const float2 uv[], uniform const float3 normals[], uniform const int indices[],
+    uniform const int num_triangles, uniform const int num_vertices,
+    uniform float3 tmp_tangents[], uniform float3 tmp_binormals[])
 {
     uniform int num_triangles_simd = num_triangles & ~(C - 1);
     uniform int num_vertices_simd = num_vertices & ~(C - 1);
@@ -609,17 +601,17 @@ export void GenerateTangentsIndexed(
         aos_to_soa3((uniform float*)&normals[bi], &n.x, &n.y, &n.z);
 
         float4 result = orthogonalize_tangent(t, b, n);
-        soa_to_aos4(result.x, result.y, result.z, result.w, (uniform float*)&dst_tangents[bi]);
+        soa_to_aos4(result.x, result.y, result.z, result.w, (uniform float*)&dst[bi]);
     }
 
     // non-SIMD pass
     for(uniform int vi=num_vertices_simd; vi < num_vertices; ++vi) {
-        dst_tangents[vi] = orthogonalize_tangent(tmp_tangents[vi], tmp_binormals[vi], normals[vi]);
+        dst[vi] = orthogonalize_tangent(tmp_tangents[vi], tmp_binormals[vi], normals[vi]);
     }
 }
 
 export void GenerateTangentsSoA(
-    uniform float4 dst_tangents[],
+    uniform float4 dst[],
     uniform const float v1x[], uniform const float v1y[], uniform const float v1z[],
     uniform const float v2x[], uniform const float v2y[], uniform const float v2z[],
     uniform const float v3x[], uniform const float v3y[], uniform const float v3z[],
@@ -629,10 +621,10 @@ export void GenerateTangentsSoA(
     uniform const float u3x[], uniform const float u3y[],
 
     uniform const float3 normals[],
+    uniform const int indices[],
     uniform const int num_triangles,
     uniform const int num_vertices,
 
-    uniform const int indices[],
     uniform float3 tmp_tangents[],
     uniform float3 tmp_binormals[])
 {
@@ -701,11 +693,11 @@ export void GenerateTangentsSoA(
         aos_to_soa3((uniform float*)&normals[bi], &n.x, &n.y, &n.z);
 
         float4 result = orthogonalize_tangent(t, b, n);
-        soa_to_aos4(result.x, result.y, result.z, result.w, (uniform float*)&dst_tangents[bi]);
+        soa_to_aos4(result.x, result.y, result.z, result.w, (uniform float*)&dst[bi]);
     }
 
     // non-SIMD pass
     for(uniform int vi=num_vertices_simd; vi < num_vertices; ++vi) {
-        dst_tangents[vi] = orthogonalize_tangent(tmp_tangents[vi], tmp_binormals[vi], normals[vi]);
+        dst[vi] = orthogonalize_tangent(tmp_tangents[vi], tmp_binormals[vi], normals[vi]);
     }
 }
