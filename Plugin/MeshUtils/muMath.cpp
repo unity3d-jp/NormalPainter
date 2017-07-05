@@ -343,7 +343,7 @@ void GenerateNormalsTriangleSoA_Generic(float3 *dst,
 // tangent calculation
 
 static inline void compute_triangle_tangent(
-    const float3 vertices[3], const float2 uv[3], float3 dst_tangent[3], float3 dst_binormal[3])
+    const float3 (&vertices)[3], const float2 (&uv)[3], float3 (&dst_tangent)[3], float3 (&dst_binormal)[3])
 {
     float3 p = vertices[1] - vertices[0];
     float3 q = vertices[2] - vertices[0];
@@ -369,9 +369,9 @@ static inline void compute_triangle_tangent(
     }) * area;
 
     float angles[3] = {
-        angle_between(vertices[2], vertices[1], vertices[0]),
-        angle_between(vertices[0], vertices[2], vertices[1]),
-        angle_between(vertices[1], vertices[0], vertices[2]),
+        angle_between2(vertices[2], vertices[1], vertices[0]),
+        angle_between2(vertices[0], vertices[2], vertices[1]),
+        angle_between2(vertices[1], vertices[0], vertices[2]),
     };
     for (int v = 0; v < 3; ++v)
     {

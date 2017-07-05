@@ -143,7 +143,7 @@ inline bool OnEdgeImpl(const Indices& indices, const Counts& counts, const Offse
         float3 v0 = vertices[indices[c * fi + f0]];
         float3 v1 = vertices[indices[c * fi + f1]];
         float3 v2 = vertices[indices[c * fi + f2]];
-        angle += angle_between(v1, v2, v0);
+        angle += angle_between2(v1, v2, v0);
     }
     // angle_between's precision seems very low on Mac.. it can be like 357.9f on closed edge
     return angle < 357.0f * Deg2Rad;

@@ -567,7 +567,7 @@ inline float angle_between(float3 a, float3 b)
 {
     return std::acos(dot(a, b));
 }
-inline float angle_between(float3 pos1, float3 pos2, float3 center)
+inline float angle_between2(float3 pos1, float3 pos2, float3 center)
 {
     return angle_between(
         normalize(pos1 - center),
