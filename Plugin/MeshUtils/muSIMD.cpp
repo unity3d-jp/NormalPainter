@@ -105,10 +105,10 @@ int RayTrianglesIntersectionIndexed_ISPC(
     return ispc::RayTrianglesIntersectionIndexed(
         (ispc::float3&)pos, (ispc::float3&)dir, (ispc::float3*)vertices, indices, num_triangles, tindex, distance);
 }
-int RayTrianglesIntersectionArray_ISPC(
+int RayTrianglesIntersectionFlattened_ISPC(
     float3 pos, float3 dir, const float3 *vertices, int num_triangles, int& tindex, float& distance)
 {
-    return ispc::RayTrianglesIntersectionArray(
+    return ispc::RayTrianglesIntersectionFlattened(
         (ispc::float3&)pos, (ispc::float3&)dir, (ispc::float3*)vertices, num_triangles, tindex, distance);
 }
 int RayTrianglesIntersectionSoA_ISPC(float3 pos, float3 dir,
@@ -166,6 +166,13 @@ void GenerateNormalsTriangleIndexed_ISPC(float3 *dst,
     ispc::GenerateNormalsTriangleIndexed((ispc::float3*)dst, (ispc::float3*)vertices, indices, num_triangles, num_vertices);
 }
 
+void GenerateNormalsTriangleFlattened_ISPC(float3 *dst,
+    const float3 *vertices, const int *indices, int num_triangles, int num_vertices)
+{
+    memset(dst, 0, sizeof(float3)*num_vertices);
+    ispc::GenerateNormalsTriangleFlattened((ispc::float3*)dst, (ispc::float3*)vertices, indices, num_triangles, num_vertices);
+}
+
 void GenerateNormalsTriangleSoA_ISPC(float3 *dst,
     const float *v1x, const float *v1y, const float *v1z,
     const float *v2x, const float *v2y, const float *v2z,
@@ -186,6 +193,20 @@ void GenerateTangentsTriangleIndexed_ISPC(float4 *dst,
     tmp_binormals.resize_with_zeroclear(num_vertices);
 
     ispc::GenerateTangentsIndexed((ispc::float4*)dst,
+        (ispc::float3*)vertices, (ispc::float2*)uv, (ispc::float3*)normals, indices,
+        num_triangles, num_vertices,
+        (ispc::float3*)tmp_tangents.data(),
+        (ispc::float3*)tmp_binormals.data());
+}
+
+void GenerateTangentsTriangleFlattened_ISPC(float4 *dst,
+    const float3 *vertices, const float2 *uv, const float3 *normals, const int *indices, int num_triangles, int num_vertices)
+{
+    RawVector<float3> tmp_tangents, tmp_binormals;
+    tmp_tangents.resize_with_zeroclear(num_vertices);
+    tmp_binormals.resize_with_zeroclear(num_vertices);
+
+    ispc::GenerateTangentsFlattened((ispc::float4*)dst,
         (ispc::float3*)vertices, (ispc::float2*)uv, (ispc::float3*)normals, indices,
         num_triangles, num_vertices,
         (ispc::float3*)tmp_tangents.data(),
@@ -308,9 +329,9 @@ int RayTrianglesIntersectionIndexed(float3 pos, float3 dir, const float3 *vertic
 {
     return Forward(RayTrianglesIntersectionIndexed, pos, dir, vertices, indices, num_triangles, tindex, result);
 }
-int RayTrianglesIntersectionArray(float3 pos, float3 dir, const float3 *vertices, int num_triangles, int& tindex, float& result)
+int RayTrianglesIntersectionFlattened(float3 pos, float3 dir, const float3 *vertices, int num_triangles, int& tindex, float& result)
 {
-    return Forward(RayTrianglesIntersectionArray, pos, dir, vertices, num_triangles, tindex, result);
+    return Forward(RayTrianglesIntersectionFlattened, pos, dir, vertices, num_triangles, tindex, result);
 }
 int RayTrianglesIntersectionSoA(float3 pos, float3 dir,
     const float *v1x, const float *v1y, const float *v1z,
@@ -340,6 +361,12 @@ void GenerateNormalsTriangleIndexed(float3 *dst,
 {
     return Forward(GenerateNormalsTriangleIndexed, dst, vertices, indices, num_triangles, num_vertices);
 }
+void GenerateNormalsTriangleFlattened(float3 *dst,
+    const float3 *vertices, const int *indices,
+    int num_triangles, int num_vertices)
+{
+    return Forward(GenerateNormalsTriangleFlattened, dst, vertices, indices, num_triangles, num_vertices);
+}
 void GenerateNormalsTriangleSoA(float3 *dst,
     const float *v1x, const float *v1y, const float *v1z,
     const float *v2x, const float *v2y, const float *v2z,
@@ -353,9 +380,16 @@ void GenerateNormalsTriangleSoA(float3 *dst,
 
 
 void GenerateTangentsTriangleIndexed(float4 *dst,
-    const float3 *vertices, const float2 *uv, const float3 *normals, const int *indices, int num_triangles, int num_vertices)
+    const float3 *vertices, const float2 *uv, const float3 *normals, const int *indices,
+    int num_triangles, int num_vertices)
 {
     return Forward(GenerateTangentsTriangleIndexed, dst, vertices, uv, normals, indices, num_triangles, num_vertices);
+}
+void GenerateTangentsTriangleFlattened(float4 *dst,
+    const float3 *vertices, const float2 *uv, const float3 *normals, const int *indices,
+    int num_triangles, int num_vertices)
+{
+    return Forward(GenerateTangentsTriangleFlattened, dst, vertices, uv, normals, indices, num_triangles, num_vertices);
 }
 void GenerateTangentsTriangleSoA(float4 *dst,
     const float *v1x, const float *v1y, const float *v1z,

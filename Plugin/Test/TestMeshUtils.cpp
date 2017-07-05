@@ -96,7 +96,7 @@ void TestNormalsAndTangents()
     RawVector<int> indices, counts;
     RawVector<float3> points;
     RawVector<float2> uv;
-    GenerateWaveMesh(counts, indices, points, uv, 5.0f, 0.25f, 250, 0.0f, true);
+    GenerateWaveMesh(counts, indices, points, uv, 10.0f, 0.25f, 300, 0.0f, true);
 
     int num_points = (int)points.size();
     int num_triangles = (int)indices.size() / 3;
@@ -166,10 +166,10 @@ void TestNormalsAndTangents()
         auto s4e = Now();
 
         printf(
-            "    GenerateNormalsTriangleIndexed_Generic: %f\n"
-            "    GenerateNormalsTriangleIndexed_ISPC: %f\n"
-            "    GenerateNormalsTriangleSoA_Generic: %f\n"
-            "    GenerateNormalsTriangleSoA_ISPC: %f\n"
+            "    GenerateNormals indexed-C++: %.2fms\n"
+            "    GenerateNormals indexed-ISPC: %.2fms\n"
+            "    GenerateNormals SoA-C++: %.2fms\n"
+            "    GenerateNormals SoA-ISPC: %.2fms\n"
             ,
             NS2MS(s1e - s1b),
             NS2MS(s2e - s2b),
@@ -199,10 +199,10 @@ void TestNormalsAndTangents()
         auto s4e = Now();
 
         printf(
-            "    GenerateTangentsTriangleIndexed_Generic: %f\n"
-            "    GenerateTangentsTriangleIndexed_ISPC: %f\n"
-            "    GenerateTangentsTriangleSoA_Generic: %f\n"
-            "    GenerateTangentsTriangleSoA_ISPC: %f\n"
+            "    GenerateTangents indexed-C++: %.2fms\n"
+            "    GenerateTangents indexed-ISPC: %.2fms\n"
+            "    GenerateTangents SoA-C++: %.2fms\n"
+            "    GenerateTangents SoA-ISPC: %.2fms\n"
             ,
             NS2MS(s1e - s1b),
             NS2MS(s2e - s2b),
@@ -383,7 +383,7 @@ void TestRayTrianglesIntersection()
 
     auto s3_begin = Now();
     for (int i = 0; i < num_try; ++i) {
-        num_hits = RayTrianglesIntersectionArray_Generic(ray_pos, ray_dir, vertices_flattened.data(), num_triangles, tindex, distance);
+        num_hits = RayTrianglesIntersectionFlattened_Generic(ray_pos, ray_dir, vertices_flattened.data(), num_triangles, tindex, distance);
     }
     auto s3_end = Now();
 
@@ -391,7 +391,7 @@ void TestRayTrianglesIntersection()
 
     auto s4_begin = Now();
     for (int i = 0; i < num_try; ++i) {
-        num_hits = RayTrianglesIntersectionArray_ISPC(ray_pos, ray_dir, vertices_flattened.data(), num_triangles, tindex, distance);
+        num_hits = RayTrianglesIntersectionFlattened_ISPC(ray_pos, ray_dir, vertices_flattened.data(), num_triangles, tindex, distance);
     }
     auto s4_end = Now();
 

@@ -220,7 +220,7 @@ export uniform int RayTrianglesIntersectionIndexed(
     return total_hit;
 }
 
-export uniform int RayTrianglesIntersectionArray(
+export uniform int RayTrianglesIntersectionFlattened(
     uniform const float3& pos, uniform const float3& dir,
     uniform const float3 vertices[], uniform const int num_triangles,
     uniform int& tindex, uniform float& distance)
@@ -441,10 +441,10 @@ export void GenerateNormalsTriangleIndexed(uniform float3 dst[],
     // SIMD pass
     for(uniform int bi=0; bi < num_triangles_simd; bi += C) {
         int ti = bi+I;
-
-        float3 p0 = vertices[indices[ti * 3  + 0]];
-        float3 p1 = vertices[indices[ti * 3  + 1]];
-        float3 p2 = vertices[indices[ti * 3  + 2]];
+        int ti3 = ti * 3;
+        float3 p0 = vertices[indices[ti3  + 0]];
+        float3 p1 = vertices[indices[ti3  + 1]];
+        float3 p2 = vertices[indices[ti3  + 2]];
         float3 n = cross(p1 - p0, p2 - p0);
 
         uniform float3 n_aos[C];
@@ -462,10 +462,57 @@ export void GenerateNormalsTriangleIndexed(uniform float3 dst[],
 
     // non-SIMD pass
     for(uniform int ti=num_triangles_simd; ti < num_triangles; ++ti) {
-        uniform int i0 = indices[ti * 3 + 0];
-        uniform int i1 = indices[ti * 3 + 1];
-        uniform int i2 = indices[ti * 3 + 2];
+        uniform int ti3 = ti * 3;
+        uniform int i0 = indices[ti3 + 0];
+        uniform int i1 = indices[ti3 + 1];
+        uniform int i2 = indices[ti3 + 2];
+        uniform float3 p0 = vertices[i0];
+        uniform float3 p1 = vertices[i1];
+        uniform float3 p2 = vertices[i2];
+        uniform float3 n = cross(p1 - p0, p2 - p0);
 
+        dst[i0] = dst[i0] + n;
+        dst[i1] = dst[i1] + n;
+        dst[i2] = dst[i2] + n;
+    }
+
+    NormalizeImpl(dst, num_vertices);
+}
+
+export void GenerateNormalsTriangleFlattened(uniform float3 dst[],
+    uniform const float3 vertices[], uniform const int indices[],
+    uniform const int num_triangles, uniform const int num_vertices)
+{
+    uniform int num_triangles_simd = num_triangles & ~(C - 1);
+
+    // SIMD pass
+    for(uniform int bi=0; bi < num_triangles_simd; bi += C) {
+        int ti = bi+I;
+        int ti3 = ti * 3;
+        float3 p0 = vertices[ti3  + 0];
+        float3 p1 = vertices[ti3  + 1];
+        float3 p2 = vertices[ti3  + 2];
+        float3 n = cross(p1 - p0, p2 - p0);
+
+        uniform float3 n_aos[C];
+        soa_to_aos3(n.x, n.y, n.z, (uniform float*)&n_aos[0]);
+
+        for(uniform int i=0; i<C; ++i) {
+            uniform int i0 = indices[(bi + i) * 3 + 0];
+            uniform int i1 = indices[(bi + i) * 3 + 1];
+            uniform int i2 = indices[(bi + i) * 3 + 2];
+            dst[i0] = dst[i0] + n_aos[i];
+            dst[i1] = dst[i1] + n_aos[i];
+            dst[i2] = dst[i2] + n_aos[i];
+        }
+    }
+
+    // non-SIMD pass
+    for(uniform int ti=num_triangles_simd; ti < num_triangles; ++ti) {
+        uniform int ti3 = ti * 3;
+        uniform int i0 = indices[ti3 + 0];
+        uniform int i1 = indices[ti3 + 1];
+        uniform int i2 = indices[ti3 + 2];
         uniform float3 p0 = vertices[i0];
         uniform float3 p1 = vertices[i1];
         uniform float3 p2 = vertices[i2];
@@ -491,7 +538,6 @@ export void GenerateNormalsTriangleSoA(uniform float3 dst[],
     // SIMD pass
     for(uniform int bi=0; bi < num_triangles_simd; bi += C) {
         int ti = bi+I;
-
         float3 p0 = {v1x[ti], v1y[ti], v1z[ti]};
         float3 p1 = {v2x[ti], v2y[ti], v2z[ti]};
         float3 p2 = {v3x[ti], v3y[ti], v3z[ti]};
@@ -512,14 +558,15 @@ export void GenerateNormalsTriangleSoA(uniform float3 dst[],
 
     // non-SIMD pass
     for(uniform int ti=num_triangles_simd; ti < num_triangles; ++ti) {
+        uniform int ti3 = ti * 3;
         uniform float3 p0 = {v1x[ti], v1y[ti], v1z[ti]};
         uniform float3 p1 = {v2x[ti], v2y[ti], v2z[ti]};
         uniform float3 p2 = {v3x[ti], v3y[ti], v3z[ti]};
         uniform float3 n = cross(p1 - p0, p2 - p0);
 
-        uniform int i0 = indices[ti * 3 + 0];
-        uniform int i1 = indices[ti * 3 + 1];
-        uniform int i2 = indices[ti * 3 + 2];
+        uniform int i0 = indices[ti3 + 0];
+        uniform int i1 = indices[ti3 + 1];
+        uniform int i2 = indices[ti3 + 2];
         dst[i0] = dst[i0] + n;
         dst[i1] = dst[i1] + n;
         dst[i2] = dst[i2] + n;
@@ -580,6 +627,87 @@ export void GenerateTangentsIndexed(uniform float4 dst[],
              uv[indices[ti3  + 0]],
              uv[indices[ti3  + 1]],
              uv[indices[ti3  + 2]],
+        };
+        uniform float3 t[3];
+        uniform float3 b[3];
+        compute_triangle_tangents(v, u, t, b);
+
+        for(uniform int i=0; i<3; ++i) {
+            uniform int i0 = indices[ti3 + i];
+            tmp_tangents[i0] = tmp_tangents[i0] + t[i];
+            tmp_binormals[i0] = tmp_binormals[i0] + b[i];
+        }
+    }
+
+
+    // SIMD pass
+    for(uniform int bi=0; bi < num_vertices_simd; bi += C) {
+        float3 t, b, n;
+        aos_to_soa3((uniform float*)&tmp_tangents[bi], &t.x, &t.y, &t.z);
+        aos_to_soa3((uniform float*)&tmp_binormals[bi], &b.x, &b.y, &b.z);
+        aos_to_soa3((uniform float*)&normals[bi], &n.x, &n.y, &n.z);
+
+        float4 result = orthogonalize_tangent(t, b, n);
+        soa_to_aos4(result.x, result.y, result.z, result.w, (uniform float*)&dst[bi]);
+    }
+
+    // non-SIMD pass
+    for(uniform int vi=num_vertices_simd; vi < num_vertices; ++vi) {
+        dst[vi] = orthogonalize_tangent(tmp_tangents[vi], tmp_binormals[vi], normals[vi]);
+    }
+}
+
+export void GenerateTangentsFlattened(uniform float4 dst[],
+    uniform const float3 vertices[], uniform const float2 uv[], uniform const float3 normals[], uniform const int indices[],
+    uniform const int num_triangles, uniform const int num_vertices,
+    uniform float3 tmp_tangents[], uniform float3 tmp_binormals[])
+{
+    uniform int num_triangles_simd = num_triangles & ~(C - 1);
+    uniform int num_vertices_simd = num_vertices & ~(C - 1);
+
+    // SIMD pass
+    for(uniform int bi=0; bi < num_triangles_simd; bi += C) {
+        int ti = bi+I;
+        int ti3 = ti*3;
+        float3 v[3] = {
+             vertices[ti3  + 0],
+             vertices[ti3  + 1],
+             vertices[ti3  + 2],
+        };
+        float2 u[3] = {
+             uv[ti3  + 0],
+             uv[ti3  + 1],
+             uv[ti3  + 2],
+        };
+        float3 t[3];
+        float3 b[3];
+        compute_triangle_tangents(v, u, t, b);
+
+        uniform float3 tagents_aos[C*3];
+        uniform float3 binormals_aos[C*3];
+        for(uniform int i=0; i<3; ++i) {
+            soa_to_aos3(t[i].x, t[i].y, t[i].z, (uniform float*)&tagents_aos[C*i]);
+            soa_to_aos3(b[i].x, b[i].y, b[i].z, (uniform float*)&binormals_aos[C*i]);
+        }
+        for(uniform int i=0; i<C; ++i) {
+            uniform int i0 = indices[bi * 3 + i];
+            tmp_tangents[i0] = tmp_tangents[i0] + tagents_aos[i];
+            tmp_binormals[i0] = tmp_binormals[i0] + binormals_aos[i];
+        }
+    }
+
+    // non-SIMD pass
+    for(uniform int ti=num_triangles_simd; ti < num_triangles; ++ti) {
+        uniform int ti3 = ti*3;
+        uniform float3 v[3] = {
+             vertices[ti3  + 0],
+             vertices[ti3  + 1],
+             vertices[ti3  + 2],
+        };
+        uniform float2 u[3] = {
+             uv[ti3  + 0],
+             uv[ti3  + 1],
+             uv[ti3  + 2],
         };
         uniform float3 t[3];
         uniform float3 b[3];
