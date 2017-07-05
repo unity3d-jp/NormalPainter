@@ -8,6 +8,8 @@ struct npModelData
     int         *indices = nullptr;
     float3      *vertices = nullptr;
     float3      *normals = nullptr;
+    float4      *tangents = nullptr;
+    float2      *uv = nullptr;
     float       *selection = nullptr;
     int         num_vertices = 0;
     int         num_triangles = 0;
@@ -1120,6 +1122,21 @@ npAPI void npApplyReverseSkinning(
     SkinningImpl(skin->num_vertices, poses, skin->weights, ipoints, inormals, itangents, opoints, onormals, otangents);
 }
 
+
+npAPI void npGenerateNormals(npModelData *model, float3 dst[])
+{
+    if (!dst) dst = model->normals;
+    if (!dst || !model->vertices || !model->indices) return;
+    GenerateNormalsTriangleIndexed(dst, model->vertices, model->indices, model->num_triangles, model->num_vertices);
+}
+
+npAPI void npGenerateTangents(npModelData *model, float4 dst[])
+{
+    if (!dst) dst = model->tangents;
+    if (!dst || !model->vertices || !model->uv || !model->normals || !model->indices) return;
+    GenerateTangentsTriangleIndexed(dst,
+        model->vertices, model->uv, model->normals, model->indices, model->num_triangles, model->num_vertices);
+}
 
 
 float g_pen_pressure = 1.0f;

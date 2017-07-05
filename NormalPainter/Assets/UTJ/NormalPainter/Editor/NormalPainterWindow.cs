@@ -562,8 +562,8 @@ namespace UTJ.NormalPainter
                 }
 
                 EditorGUILayout.Space();
-                settings.tangentsAutoUpdate = EditorGUILayout.Toggle("Auto Update Tangents", settings.tangentsAutoUpdate);
-                if (!settings.tangentsAutoUpdate)
+                settings.tangentsMode = (TangentsUpdateMode)EditorGUILayout.EnumPopup("Tangents Update", settings.tangentsMode);
+                if (settings.tangentsMode == TangentsUpdateMode.Manual)
                 {
                     EditorGUILayout.BeginHorizontal();
                     EditorGUILayout.BeginVertical(GUILayout.Width(indentSize));

@@ -57,6 +57,7 @@ namespace UTJ.NormalPainter
         PinnedList<Vector3>     m_points, m_pointsPredeformed;
         PinnedList<Vector3>     m_normals, m_normalsPredeformed, m_normalsBase, m_normalsBasePredeformed;
         PinnedList<Vector4>     m_tangents, m_tangentsPredeformed, m_tangentsBase, m_tangentsBasePredeformed;
+        PinnedList<Vector2>     m_uv;
         PinnedList<int>         m_indices;
         PinnedList<int>         m_mirrorRelation;
         PinnedList<float>       m_selection;
@@ -225,6 +226,8 @@ namespace UTJ.NormalPainter
                 m_points = new PinnedList<Vector3>(m_meshTarget.vertices);
                 m_pointsPredeformed = m_points;
 
+                m_uv = new PinnedList<Vector2>(m_meshTarget.uv);
+
                 m_normals = new PinnedList<Vector3>(m_meshTarget.normals);
                 if (m_normals.Length == 0)
                 {
@@ -263,6 +266,8 @@ namespace UTJ.NormalPainter
                 m_npModelData.indices = m_indices;
                 m_npModelData.vertices = m_points;
                 m_npModelData.normals = m_normals;
+                m_npModelData.tangents = m_tangents;
+                m_npModelData.uv = m_uv;
                 m_npModelData.selection = m_selection;
 
                 var smr = GetComponent<SkinnedMeshRenderer>();

@@ -98,7 +98,7 @@ void TestNormalsAndTangents()
     RawVector<float2> uv;
     GenerateWaveMesh(counts, indices, points, uv, 10.0f, 0.25f, 250, 0.0f, true);
 
-    int num_try = 100;
+    int num_try = 1;
     int num_points = (int)points.size();
     int num_triangles = (int)indices.size() / 3;
     RawVector<float3> points_f;
@@ -260,12 +260,12 @@ void TestNormalsAndTangents()
     }
 
     for (int i = 1; i < countof(normals); ++i) {
-        if (!NearEqual(normals[0].data(), normals[i].data(), normals[0].size(), 0.02f)) {
+        if (!NearEqual(normals[0].data(), normals[i].data(), normals[0].size(), 0.01f)) {
             printf("    *** validation failed: normals %d ***\n", i);
         }
     }
     for (int i = 1; i < countof(tangents); ++i) {
-        if (!NearEqual(tangents[0].data(), tangents[i].data(), tangents[0].size(), 0.05f)) {
+        if (!NearEqual(tangents[0].data(), tangents[i].data(), tangents[0].size(), 0.01f)) {
             printf("    *** validation failed: tangents %d ***\n", i);
         }
     }

@@ -63,7 +63,7 @@ namespace UTJ.NormalPainter
             set { m_data[i] = value; }
         }
         public T[] Array { get { return m_data; } }
-        public IntPtr Pointer { get { return m_gch.AddrOfPinnedObject(); } }
+        public IntPtr Pointer { get { return m_data.Length == 0 ? IntPtr.Zero : m_gch.AddrOfPinnedObject(); } }
 
         public PinnedArray<T> Clone() { return new PinnedArray<T>((T[])m_data.Clone()); }
         public bool Assign(T[] source)
@@ -100,8 +100,8 @@ namespace UTJ.NormalPainter
             return GetEnumerator();
         }
 
-        public static implicit operator IntPtr(PinnedArray<T> v) { return v.Pointer; }
-        public static implicit operator T[](PinnedArray<T> v) { return v.Array; }
+        public static implicit operator IntPtr(PinnedArray<T> v) { return v == null ? IntPtr.Zero : v.Pointer; }
+        public static implicit operator T[](PinnedArray<T> v) { return v == null ? null : v.Array; }
     }
 
 
@@ -183,7 +183,7 @@ namespace UTJ.NormalPainter
         }
         public T[] Array { get { return m_data; } }
         public List<T> List { get { return m_list; } }
-        public IntPtr Pointer { get { return m_gch.AddrOfPinnedObject(); } }
+        public IntPtr Pointer { get { return m_data.Length == 0 ? IntPtr.Zero : m_gch.AddrOfPinnedObject(); } }
 
         public void LockList(Action<List<T>> body)
         {
@@ -229,9 +229,9 @@ namespace UTJ.NormalPainter
             return GetEnumerator();
         }
 
-        public static implicit operator IntPtr(PinnedList<T> v) { return v.Pointer; }
-        public static implicit operator T[] (PinnedList<T> v) { return v.Array; }
-        public static implicit operator List<T> (PinnedList<T> v) { return v.List; }
+        public static implicit operator IntPtr(PinnedList<T> v) { return v == null ? IntPtr.Zero : v.Pointer; }
+        public static implicit operator T[] (PinnedList<T> v) { return v == null ? null : v.Array; }
+        public static implicit operator List<T> (PinnedList<T> v) { return v == null ? null : v.List; }
     }
 
 }

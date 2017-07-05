@@ -76,7 +76,7 @@ namespace UTJ.NormalPainter
             public float[] selection;
         }
 
-        public bool tangentsAutoUpdate = true;
+        public TangentsUpdateMode tangentsMode = TangentsUpdateMode.Auto;
 
         // edit options
         public EditMode editMode = EditMode.Select;

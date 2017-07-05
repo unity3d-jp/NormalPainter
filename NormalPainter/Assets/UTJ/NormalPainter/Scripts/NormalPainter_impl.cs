@@ -51,6 +51,13 @@ namespace UTJ.NormalPainter
         DownToUp,
     }
 
+    public enum TangentsUpdateMode
+    {
+        Manual,
+        Auto,
+        Realtime,
+    }
+
     public enum ImageFormat
     {
         PNG,
@@ -275,7 +282,7 @@ namespace UTJ.NormalPainter
                 else
                     m_history.normals = (Vector3[])normals.Clone();
 
-                if (m_settings.tangentsAutoUpdate)
+                if (m_settings.tangentsMode == TangentsUpdateMode.Auto)
                     RecalculateTangents();
             }
 
@@ -296,7 +303,7 @@ namespace UTJ.NormalPainter
                     Array.Copy(m_history.normals, m_normals, m_normals.Length);
                     UpdateNormals(false);
 
-                    if (m_settings.tangentsAutoUpdate)
+                    if (m_settings.tangentsMode == TangentsUpdateMode.Auto)
                         RecalculateTangents();
                 }
 
@@ -384,6 +391,9 @@ namespace UTJ.NormalPainter
                 m_meshTarget.SetNormals(m_normals);
             }
 
+            if (m_settings.tangentsMode == TangentsUpdateMode.Realtime)
+                RecalculateTangents();
+
             m_meshTarget.UploadMeshData(false);
             if (m_cbNormals != null)
                 m_cbNormals.SetData(m_normals);
@@ -414,15 +424,38 @@ namespace UTJ.NormalPainter
             }
         }
 
-        public void RecalculateTangents()
+        public void RecalculateTangents(bool precise = false)
         {
-            m_meshTarget.RecalculateTangents();
-            m_tangentsPredeformed.Assign(m_meshTarget.tangents);
+            if (precise)
+            {
+                m_meshTarget.RecalculateTangents();
+                m_tangentsPredeformed.LockList(l => {
+                    m_meshTarget.GetTangents(l);
+                });
 
-            if(m_skinned)
-                npApplySkinning(ref m_npSkinData,
-                    null, null, m_tangentsPredeformed,
-                    null, null, m_tangents);
+                if (m_skinned)
+                    npApplySkinning(ref m_npSkinData,
+                        null, null, m_tangentsPredeformed,
+                        null, null, m_tangents);
+            }
+            else
+            {
+                if (m_skinned)
+                {
+                    npModelData tmp = m_npModelData;
+                    tmp.vertices = m_pointsPredeformed;
+                    tmp.normals = m_normalsPredeformed;
+                    npGenerateTangents(ref tmp, m_tangentsPredeformed);
+                    npApplySkinning(ref m_npSkinData,
+                        null, null, m_tangentsPredeformed,
+                        null, null, m_tangents);
+                }
+                else
+                {
+                    npGenerateTangents(ref m_npModelData, m_tangents);
+                }
+                m_meshTarget.SetTangents(m_tangentsPredeformed);
+            }
 
             if (m_cbTangents != null)
                 m_cbTangents.SetData(m_tangents);
@@ -1058,6 +1091,8 @@ namespace UTJ.NormalPainter
             public IntPtr indices;
             public IntPtr vertices;
             public IntPtr normals;
+            public IntPtr tangents;
+            public IntPtr uv;
             public IntPtr selection;
             public int num_vertices;
             public int num_triangles;
@@ -1167,6 +1202,11 @@ namespace UTJ.NormalPainter
             ref npSkinData skin,
             Vector3[] ipoints, Vector3[] inormals, Vector4[] itangents,
             Vector3[] opoints, Vector3[] onormals, Vector4[] otangents);
+        
+        [DllImport("NormalPainterCore")] static extern int npGenerateNormals(
+            ref npModelData model, Vector3[] dst);
+        [DllImport("NormalPainterCore")] static extern int npGenerateTangents(
+            ref npModelData model, Vector4[] dst);
 
         [DllImport("NormalPainterCore")] static extern void npInitializePenInput();
 #endif
