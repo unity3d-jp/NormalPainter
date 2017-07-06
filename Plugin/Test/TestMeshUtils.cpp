@@ -166,8 +166,10 @@ void TestNormalsAndTangents()
         auto s1e = Now();
 
         auto s2b = Now();
+#ifdef muSIMD_GenerateNormalsTriangleIndexed
         for (int i = 0; i < num_try; ++i)
             GenerateNormalsTriangleIndexed_ISPC(normals[1].data(), points.data(), indices.data(), num_triangles, num_points);
+#endif
         auto s2e = Now();
 
         auto s3b = Now();
@@ -176,8 +178,10 @@ void TestNormalsAndTangents()
         auto s3e = Now();
 
         auto s4b = Now();
+#ifdef muSIMD_GenerateNormalsTriangleFlattened
         for (int i = 0; i < num_try; ++i)
             GenerateNormalsTriangleFlattened_ISPC(normals[3].data(), points_f.data(), indices.data(), num_triangles, num_points);
+#endif
         auto s4e = Now();
 
         auto s5b = Now();
@@ -186,8 +190,10 @@ void TestNormalsAndTangents()
         auto s5e = Now();
 
         auto s6b = Now();
+#ifdef muSIMD_GenerateNormalsTriangleSoA
         for (int i = 0; i < num_try; ++i)
             GenerateNormalsTriangleSoA_ISPC(normals[5].data(), SoAPointsArgs, indices.data(), num_triangles, num_points);
+#endif
         auto s6e = Now();
 
         printf(
@@ -214,9 +220,11 @@ void TestNormalsAndTangents()
         auto s1e = Now();
 
         auto s2b = Now();
+#ifdef muSIMD_GenerateTangentsTriangleIndexed
         for (int i = 0; i < num_try; ++i)
             GenerateTangentsTriangleIndexed_ISPC(tangents[1].data(),
                 points.data(), uv.data(), normals[1].data(), indices.data(), num_triangles, num_points);
+#endif
         auto s2e = Now();
 
         auto s3b = Now();
@@ -226,9 +234,11 @@ void TestNormalsAndTangents()
         auto s3e = Now();
 
         auto s4b = Now();
+#ifdef muSIMD_GenerateTangentsTriangleFlattened
         for (int i = 0; i < num_try; ++i)
             GenerateTangentsTriangleFlattened_ISPC(tangents[3].data(),
                 points_f.data(), uv_f.data(), normals[3].data(), indices.data(), num_triangles, num_points);
+#endif
         auto s4e = Now();
 
         auto s5b = Now();
@@ -238,9 +248,11 @@ void TestNormalsAndTangents()
         auto s5e = Now();
 
         auto s6b = Now();
+#ifdef muSIMD_GenerateTangentsTriangleSoA
         for (int i = 0; i < num_try; ++i)
             GenerateTangentsTriangleSoA_ISPC(tangents[5].data(),
                 SoAPointsArgs, SoAUVArgs, normals[5].data(), indices.data(), num_triangles, num_points);
+#endif
         auto s6e = Now();
 
         printf(
@@ -325,9 +337,11 @@ void TestMulPoints()
     auto s1_end = Now();
 
     auto s2_begin = Now();
+#ifdef muSIMD_MulPoints3
     for (int i = 0; i < num_try; ++i) {
         MulPoints_ISPC(matrix, src.data(), dst2.data(), num_data);
     }
+#endif
     auto s2_end = Now();
 
     int eq1 = NearEqual(dst1.data(), dst2.data(), num_data);
@@ -340,9 +354,11 @@ void TestMulPoints()
     auto s3_end = Now();
 
     auto s4_begin = Now();
+#ifdef muSIMD_MulVectors3
     for (int i = 0; i < num_try; ++i) {
         MulVectors_ISPC(matrix, src.data(), dst2.data(), num_data);
     }
+#endif
     auto s4_end = Now();
 
     int eq2 = NearEqual(dst1.data(), dst2.data(), num_data);
@@ -435,10 +451,12 @@ void TestRayTrianglesIntersection()
     print();
 
     auto s2_begin = Now();
+#ifdef muSIMD_RayTrianglesIntersectionIndexed
     for (int i = 0; i < num_try; ++i) {
         num_hits = RayTrianglesIntersectionIndexed_ISPC(ray_pos, ray_dir, vertices.data(),
             indices.data(), num_triangles, tindex, distance);
     }
+#endif
     auto s2_end = Now();
 
     print();
@@ -452,9 +470,11 @@ void TestRayTrianglesIntersection()
     print();
 
     auto s4_begin = Now();
+#ifdef muSIMD_RayTrianglesIntersectionFlattened
     for (int i = 0; i < num_try; ++i) {
         num_hits = RayTrianglesIntersectionFlattened_ISPC(ray_pos, ray_dir, vertices_flattened.data(), num_triangles, tindex, distance);
     }
+#endif
     auto s4_end = Now();
 
     print();
@@ -471,12 +491,14 @@ void TestRayTrianglesIntersection()
     print();
 
     auto s6_begin = Now();
+#ifdef muSIMD_RayTrianglesIntersectionSoA
     for (int i = 0; i < num_try; ++i) {
         num_hits = RayTrianglesIntersectionSoA_ISPC(ray_pos, ray_dir,
             v1x.data(), v1y.data(), v1z.data(),
             v2x.data(), v2y.data(), v2z.data(),
             v3x.data(), v3y.data(), v3z.data(), num_triangles, tindex, distance);
     }
+#endif
     auto s6_end = Now();
 
     print();
@@ -556,6 +578,7 @@ void TestPolygonInside()
     printf("    Generic SoA: %d (%.2fms)\n", num_inside, NS2MS(s2_end - s2_begin));
 
     auto s3_begin = Now();
+#ifdef muSIMD_PolyInside
     num_inside = 0;
     pmin = pmax = float2::zero();
     for (int ti = 0; ti < num_try; ++ti) {
@@ -566,11 +589,13 @@ void TestPolygonInside()
             }
         }
     }
+#endif
     auto s3_end = Now();
 
     printf("    ISPC: %d (%.2fms)\n", num_inside, NS2MS(s3_end - s3_begin));
 
     auto s4_begin = Now();
+#ifdef muSIMD_PolyInsideSoA
     num_inside = 0;
     pmin = pmax = float2::zero();
     for (int ti = 0; ti < num_try; ++ti) {
@@ -581,6 +606,7 @@ void TestPolygonInside()
             }
         }
     }
+#endif
     auto s4_end = Now();
 
     printf("    ISPC SoA: %d (%.2fms)\n", num_inside, NS2MS(s4_end - s4_begin));

@@ -1,4 +1,5 @@
 #pragma once
+#include "muSIMDConfig.h"
 
 namespace mu {
 
@@ -33,16 +34,15 @@ int RayTrianglesIntersectionSoA(float3 pos, float3 dir,
     const float *v2x, const float *v2y, const float *v2z,
     const float *v3x, const float *v3y, const float *v3z,
     int num_triangles, int& tindex, float& distance);
-
-bool PolyInside(const float px[], const float py[], int ngon, const float2 minp, const float2 maxp, const float2 pos);
-bool PolyInside(const float2 poly[], int ngon, const float2 minp, const float2 maxp, const float2 pos);
-bool PolyInside(const float2 poly[], int ngon, const float2 pos);
-
 int RayTrianglesIntersectionSoA(float3 pos, float3 dir,
     const float *v1x, const float *v1y, const float *v1z,
     const float *v2x, const float *v2y, const float *v2z,
     const float *v3x, const float *v3y, const float *v3z,
     int num_triangles, int& tindex, float& distance);
+
+bool PolyInside(const float px[], const float py[], int ngon, const float2 minp, const float2 maxp, const float2 pos);
+bool PolyInside(const float2 poly[], int ngon, const float2 minp, const float2 maxp, const float2 pos);
+bool PolyInside(const float2 poly[], int ngon, const float2 pos);
 
 void GenerateNormalsTriangleIndexed(float3 *dst,
     const float3 *vertices, const int *indices,
@@ -72,6 +72,7 @@ void GenerateTangentsTriangleSoA(float4 *dst,
     const float *u3x, const float *u3y,
     const float3 *normals, const int *indices,
     int num_triangles, int num_vertices);
+
 
 // ------------------------------------------------------------
 // internal (for test)

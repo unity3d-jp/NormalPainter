@@ -2,6 +2,7 @@
 #define I programIndex
 #define FLT_MAX 3.402823466e+38F
 
+#include "muSIMDConfig.h"
 //#define ispcmathEstimate
 
 typedef unsigned int16 half;

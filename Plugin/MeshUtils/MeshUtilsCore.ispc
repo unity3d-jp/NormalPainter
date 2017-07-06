@@ -1,5 +1,6 @@
 #include "ispcmath.h"
 
+#ifdef muSIMD_FloatToHalf
 export void FloatToHalf(
     uniform half dst[],
     uniform const float src[],
@@ -9,7 +10,9 @@ export void FloatToHalf(
         dst[i] = float_to_half(src[i]);
     }
 }
+#endif
 
+#ifdef muSIMD_HalfToFloat
 export void HalfToFloat(
     uniform float dst[],
     uniform const half src[],
@@ -19,10 +22,11 @@ export void HalfToFloat(
         dst[i] = half_to_float(src[i]);
     }
 }
+#endif
 
 
-// invert every x elements of float3 array
-export void InvertXF3(uniform float3 dst[], uniform const int num)
+#ifdef muSIMD_InvertX3
+export void InvertX3(uniform float3 dst[], uniform const int num)
 {
     const uniform int num_loops = num / C;
 
@@ -45,9 +49,10 @@ export void InvertXF3(uniform float3 dst[], uniform const int num)
         dst[i].x *= -1.0f;
     }
 }
+#endif
 
-// invert every x elements of float4 array
-export void InvertXF4(uniform float4 dst[], uniform const int num)
+#ifdef muSIMD_InvertX4
+export void InvertX4(uniform float4 dst[], uniform const int num)
 {
     const uniform int num_loops = num / (C/4);
 
@@ -65,10 +70,11 @@ export void InvertXF4(uniform float4 dst[], uniform const int num)
         dst[i].x *= -1.0f;
     }
 }
+#endif
 
 
-// apply scale to every elements
-export void ScaleF(uniform float dst[], uniform const float scale, uniform const int num)
+#ifdef muSIMD_Scale
+export void Scale(uniform float dst[], uniform const float scale, uniform const int num)
 {
     const uniform int num_loops = num / (C*4);
 
@@ -87,7 +93,9 @@ export void ScaleF(uniform float dst[], uniform const float scale, uniform const
         dst[i] *= scale;
     }
 }
+#endif
 
+#ifdef muSIMD_Normalize
 export void Normalize(
     uniform float3 dst[],
     uniform const int num)
@@ -115,8 +123,10 @@ export void Normalize(
         dst[i] = t;
     }
 }
+#endif
 
 
+#ifdef muSIMD_Lerp
 export void Lerp(uniform float dst[], uniform const float src1[], uniform const float src2[], uniform const int num, uniform float w)
 {
     uniform float iw = 1.0f - w;
@@ -124,7 +134,9 @@ export void Lerp(uniform float dst[], uniform const float src1[], uniform const 
         dst[i] = src1[i]*w + src2[i]*iw;
     }
 }
+#endif
 
+#ifdef muSIMD_NearEqual
 export uniform bool NearEqual(
     uniform const float src1[], uniform const float src2[], uniform const int num, uniform const float eps)
 {
@@ -134,62 +146,5 @@ export uniform bool NearEqual(
     }
     return reduce_max(tdiff) < eps;
 }
-
-
-
-export uniform int RayTrianglesIntersectionSoA(
-    uniform const float3& pos, uniform const float3& dir,
-    uniform const float v1x[], uniform const float v1y[], uniform const float v1z[],
-    uniform const float v2x[], uniform const float v2y[], uniform const float v2z[],
-    uniform const float v3x[], uniform const float v3y[], uniform const float v3z[],
-    uniform const int num_triangles,
-    uniform int& tindex, uniform float& distance)
-{
-    uniform int total_hit = 0;
-    distance = FLT_MAX;
-
-    // SIMD pass
-    uniform int num_triangles_simd = num_triangles & ~(C - 1);
-    for(uniform int bi=0; bi < num_triangles_simd; bi += C) {
-        float3 p1 = {v1x[bi+I], v1y[bi+I], v1z[bi+I]};
-        float3 p2 = {v2x[bi+I], v2y[bi+I], v2z[bi+I]};
-        float3 p3 = {v3x[bi+I], v3y[bi+I], v3z[bi+I]};
-
-        float d;
-        bool hit = ray_triangle_intersection(pos, dir, p1, p2, p3, d);
-        if(any(hit)) {
-            uniform int hita[C]; hita[I] = hit;
-            uniform float da[C]; da[I] = d;
-            for(uniform int i = 0; i < C; ++i) {
-                if(hita[i]) {
-                    total_hit++;
-                    if(da[i] < distance) {
-                        tindex = bi + i;
-                        distance = da[i];
-                    }
-                }
-            }
-        }
-    }
-
-    // non-SIMD pass
-    for(uniform int ti = num_triangles_simd; ti < num_triangles; ++ti) {
-        uniform float3 p1 = {v1x[ti], v1y[ti], v1z[ti]};
-        uniform float3 p2 = {v2x[ti], v2y[ti], v2z[ti]};
-        uniform float3 p3 = {v3x[ti], v3y[ti], v3z[ti]};
-
-        uniform float d;
-        uniform bool hit = ray_triangle_intersection(pos, dir, p1, p2, p3, d);
-        if(hit) {
-            total_hit++;
-            if(d < distance) {
-                tindex = ti;
-                distance = d;
-            }
-        }
-    }
-
-    return total_hit;
-}
-
+#endif
 

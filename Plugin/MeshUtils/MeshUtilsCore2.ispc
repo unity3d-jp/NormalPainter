@@ -3,6 +3,7 @@
 // functions that have gather/scatter operations need to be written in this compile unit.
 // (--opt=force-aligned-memory is disabled)
 
+#ifdef muSIMD_MulVectors3
 export void MulVectors3(uniform const float4x4& m_, uniform const float3 src[], uniform float3 dst[], uniform int num_data)
 {
     uniform float4x4 m = m_;
@@ -30,7 +31,9 @@ export void MulVectors3(uniform const float4x4& m_, uniform const float3 src[], 
         dst[i] = r;
     }
 }
+#endif
 
+#ifdef muSIMD_MulPoints3
 export void MulPoints3(uniform const float4x4& m_, uniform const float3 src[], uniform float3 dst[], uniform int num_data)
 {
     uniform float4x4 m = m_;
@@ -58,7 +61,9 @@ export void MulPoints3(uniform const float4x4& m_, uniform const float3 src[], u
         dst[i] = r;
     }
 }
+#endif
 
+#ifdef muSIMD_MinMax3
 export void MinMax3(
     uniform const float3 src[], uniform const int num,
     uniform float3& dst_min, uniform float3& dst_max)
@@ -118,7 +123,9 @@ export void MinMax3(
     dst_min = rmin;
     dst_max = rmax;
 }
+#endif
 
+#ifdef muSIMD_MinMax2
 export void MinMax2(
     uniform const float2 src[], uniform const int num,
     uniform float2& dst_min, uniform float2& dst_max)
@@ -161,8 +168,10 @@ export void MinMax2(
     dst_min = rmin;
     dst_max = rmax;
 }
+#endif
 
 
+#ifdef muSIMD_RayTrianglesIntersectionIndexed
 export uniform int RayTrianglesIntersectionIndexed(
     uniform const float3& pos, uniform const float3& dir,
     uniform const float3 vertices[], uniform const int indices[], uniform const int num_triangles,
@@ -219,7 +228,9 @@ export uniform int RayTrianglesIntersectionIndexed(
 
     return total_hit;
 }
+#endif
 
+#ifdef muSIMD_RayTrianglesIntersectionFlattened
 export uniform int RayTrianglesIntersectionFlattened(
     uniform const float3& pos, uniform const float3& dir,
     uniform const float3 vertices[], uniform const int num_triangles,
@@ -276,8 +287,67 @@ export uniform int RayTrianglesIntersectionFlattened(
 
     return total_hit;
 }
+#endif
+
+#ifdef muSIMD_RayTrianglesIntersectionSoA
+export uniform int RayTrianglesIntersectionSoA(
+    uniform const float3& pos, uniform const float3& dir,
+    uniform const float v1x[], uniform const float v1y[], uniform const float v1z[],
+    uniform const float v2x[], uniform const float v2y[], uniform const float v2z[],
+    uniform const float v3x[], uniform const float v3y[], uniform const float v3z[],
+    uniform const int num_triangles,
+    uniform int& tindex, uniform float& distance)
+{
+    uniform int total_hit = 0;
+    distance = FLT_MAX;
+
+    // SIMD pass
+    uniform int num_triangles_simd = num_triangles & ~(C - 1);
+    for(uniform int bi=0; bi < num_triangles_simd; bi += C) {
+        float3 p1 = {v1x[bi+I], v1y[bi+I], v1z[bi+I]};
+        float3 p2 = {v2x[bi+I], v2y[bi+I], v2z[bi+I]};
+        float3 p3 = {v3x[bi+I], v3y[bi+I], v3z[bi+I]};
+
+        float d;
+        bool hit = ray_triangle_intersection(pos, dir, p1, p2, p3, d);
+        if(any(hit)) {
+            uniform int hita[C]; hita[I] = hit;
+            uniform float da[C]; da[I] = d;
+            for(uniform int i = 0; i < C; ++i) {
+                if(hita[i]) {
+                    total_hit++;
+                    if(da[i] < distance) {
+                        tindex = bi + i;
+                        distance = da[i];
+                    }
+                }
+            }
+        }
+    }
+
+    // non-SIMD pass
+    for(uniform int ti = num_triangles_simd; ti < num_triangles; ++ti) {
+        uniform float3 p1 = {v1x[ti], v1y[ti], v1z[ti]};
+        uniform float3 p2 = {v2x[ti], v2y[ti], v2z[ti]};
+        uniform float3 p3 = {v3x[ti], v3y[ti], v3z[ti]};
+
+        uniform float d;
+        uniform bool hit = ray_triangle_intersection(pos, dir, p1, p2, p3, d);
+        if(hit) {
+            total_hit++;
+            if(d < distance) {
+                tindex = ti;
+                distance = d;
+            }
+        }
+    }
+
+    return total_hit;
+}
+#endif
 
 
+#ifdef muSIMD_PolyInside
 export uniform int PolyInsideImpl(
     uniform const float2 points[], uniform int ngon, uniform float2& minp, uniform float2& maxp, uniform float2& pos,
     uniform float xc[], uniform int maxxc)
@@ -358,7 +428,10 @@ export uniform int PolyInsideImpl(
     }
     return c;
 }
+#endif
 
+
+#ifdef muSIMD_PolyInsideSoA
 export uniform int PolyInsideSoAImpl(
     uniform const float px[], uniform const float py[], uniform int ngon, uniform float2& minp, uniform float2& maxp, uniform float2& pos,
     uniform float xc[], uniform int maxxc)
@@ -430,8 +503,10 @@ export uniform int PolyInsideSoAImpl(
     }
     return c;
 }
+#endif
 
 
+#ifdef muSIMD_GenerateNormalsTriangleIndexed
 export void GenerateNormalsTriangleIndexed(uniform float3 dst[],
     uniform const float3 vertices[], uniform const int indices[],
     uniform const int num_triangles, uniform const int num_vertices)
@@ -478,7 +553,9 @@ export void GenerateNormalsTriangleIndexed(uniform float3 dst[],
 
     NormalizeImpl(dst, num_vertices);
 }
+#endif
 
+#ifdef muSIMD_GenerateNormalsTriangleFlattened
 export void GenerateNormalsTriangleFlattened(uniform float3 dst[],
     uniform const float3 vertices[], uniform const int indices[],
     uniform const int num_triangles, uniform const int num_vertices)
@@ -525,7 +602,9 @@ export void GenerateNormalsTriangleFlattened(uniform float3 dst[],
 
     NormalizeImpl(dst, num_vertices);
 }
+#endif
 
+#ifdef muSIMD_GenerateNormalsTriangleSoA
 export void GenerateNormalsTriangleSoA(uniform float3 dst[],
     uniform const float v1x[], uniform const float v1y[], uniform const float v1z[],
     uniform const float v2x[], uniform const float v2y[], uniform const float v2z[],
@@ -574,8 +653,10 @@ export void GenerateNormalsTriangleSoA(uniform float3 dst[],
 
     NormalizeImpl(dst, num_vertices);
 }
+#endif
 
 
+#ifdef muSIMD_GenerateTangentsTriangleIndexed
 export void GenerateTangentsIndexed(uniform float4 dst[],
     uniform const float3 vertices[], uniform const float2 uv[], uniform const float3 normals[], uniform const int indices[],
     uniform const int num_triangles, uniform const int num_vertices,
@@ -658,7 +739,9 @@ export void GenerateTangentsIndexed(uniform float4 dst[],
         dst[vi] = orthogonalize_tangent(tmp_tangents[vi], tmp_binormals[vi], normals[vi]);
     }
 }
+#endif
 
+#ifdef muSIMD_GenerateTangentsTriangleFlattened
 export void GenerateTangentsFlattened(uniform float4 dst[],
     uniform const float3 vertices[], uniform const float2 uv[], uniform const float3 normals[], uniform const int indices[],
     uniform const int num_triangles, uniform const int num_vertices,
@@ -741,7 +824,9 @@ export void GenerateTangentsFlattened(uniform float4 dst[],
         dst[vi] = orthogonalize_tangent(tmp_tangents[vi], tmp_binormals[vi], normals[vi]);
     }
 }
+#endif
 
+#ifdef muSIMD_GenerateTangentsTriangleSoA
 export void GenerateTangentsSoA(
     uniform float4 dst[],
     uniform const float v1x[], uniform const float v1y[], uniform const float v1z[],
@@ -835,3 +920,4 @@ export void GenerateTangentsSoA(
         dst[vi] = orthogonalize_tangent(tmp_tangents[vi], tmp_binormals[vi], normals[vi]);
     }
 }
+#endif
