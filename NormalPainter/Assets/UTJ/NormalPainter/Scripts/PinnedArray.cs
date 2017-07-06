@@ -120,14 +120,12 @@ namespace UTJ.NormalPainter
             public T[] items;
             public int size;
         }
-
         [StructLayout(LayoutKind.Explicit)]
         struct Caster
         {
             [FieldOffset(0)] public List<T> list;
             [FieldOffset(0)] public ListData data;
         }
-
 
         public static T[] ListGetInternalArray(List<T> list)
         {
@@ -144,27 +142,26 @@ namespace UTJ.NormalPainter
             caster.data.size = data.Length;
             return ret;
         }
+        public static void ListSetCount(List<T> list, int count)
+        {
+            var ret = new List<T>();
+            var caster = new Caster();
+            caster.list = list;
+            caster.data.size = count;
+        }
         #endregion
 
 
         public PinnedList(int size)
         {
-            m_list = new List<T>(size);
-            m_data = ListGetInternalArray(m_list);
+            m_data = new T[size];
+            m_list = ListCreateIntrusive(m_data);
             m_gch = GCHandle.Alloc(m_data, GCHandleType.Pinned);
         }
         public PinnedList(T[] data, bool clone = false)
         {
-            if (clone)
-            {
-                m_list = new List<T>(data);
-                m_data = ListGetInternalArray(m_list);
-            }
-            else
-            {
-                m_data = data;
-                m_list = ListCreateIntrusive(m_data);
-            }
+            m_data = clone ? (T[])data.Clone() : data;
+            m_list = ListCreateIntrusive(m_data);
             m_gch = GCHandle.Alloc(m_data, GCHandleType.Pinned);
         }
         public PinnedList(List<T> data, bool clone = false)
@@ -192,6 +189,37 @@ namespace UTJ.NormalPainter
             body(m_list);
             m_data = ListGetInternalArray(m_list);
             m_gch = GCHandle.Alloc(m_data, GCHandleType.Pinned);
+        }
+
+        public void Resize(int size)
+        {
+            if (size == m_data.Length) return;
+
+            if(size > m_data.Length)
+            {
+                LockList(l => {
+                    l.Capacity = size;
+                });
+            }
+            ListSetCount(m_list, size);
+        }
+
+        public void ResizeDiscard(int size)
+        {
+            if (size == m_data.Length) return;
+
+            if (size > m_data.Length)
+            {
+                if (m_gch.IsAllocated)
+                    m_gch.Free();
+                m_data = new T[size];
+                m_list = ListCreateIntrusive(m_data);
+                m_gch = GCHandle.Alloc(m_data, GCHandleType.Pinned);
+            }
+            else
+            {
+                ListSetCount(m_list, size);
+            }
         }
 
         public PinnedList<T> Clone() { return new PinnedList<T>(m_list, true); }
