@@ -57,6 +57,11 @@ namespace UTJ.NormalPainter
         Auto,
         Realtime,
     }
+    public enum TangentsPrecision
+    {
+        Fast,
+        Precise,
+    }
 
     public enum ImageFormat
     {
@@ -424,9 +429,13 @@ namespace UTJ.NormalPainter
             }
         }
 
-        public void RecalculateTangents(bool precise = false)
+        public void RecalculateTangents()
         {
-            if (precise)
+            RecalculateTangents(m_settings.tangentsPrecision);
+        }
+        public void RecalculateTangents(TangentsPrecision precision)
+        {
+            if (precision == TangentsPrecision.Precise)
             {
                 m_meshTarget.RecalculateTangents();
                 m_tangentsPredeformed.LockList(l => {

@@ -562,17 +562,16 @@ namespace UTJ.NormalPainter
                 }
 
                 EditorGUILayout.Space();
-                settings.tangentsMode = (TangentsUpdateMode)EditorGUILayout.EnumPopup("Tangents Update", settings.tangentsMode);
+                settings.tangentsMode = (TangentsUpdateMode)EditorGUILayout.EnumPopup("Tangents Update Mode", settings.tangentsMode);
                 if (settings.tangentsMode == TangentsUpdateMode.Manual)
                 {
                     EditorGUILayout.BeginHorizontal();
-                    EditorGUILayout.BeginVertical(GUILayout.Width(indentSize));
-                    EditorGUILayout.Space();
-                    EditorGUILayout.EndVertical();
+                    EditorGUILayout.LabelField("", GUILayout.Width(indentSize));
                     if (GUILayout.Button("Recalculate Tangents [T]"))
                         m_target.RecalculateTangents();
                     EditorGUILayout.EndHorizontal();
                 }
+                settings.tangentsPrecision = (TangentsPrecision)EditorGUILayout.EnumPopup("Tangents Precision", settings.tangentsPrecision);
 
                 if (m_target.GetComponent<SkinnedMeshRenderer>() != null)
                 {

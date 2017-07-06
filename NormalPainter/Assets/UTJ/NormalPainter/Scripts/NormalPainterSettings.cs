@@ -77,6 +77,7 @@ namespace UTJ.NormalPainter
         }
 
         public TangentsUpdateMode tangentsMode = TangentsUpdateMode.Auto;
+        public TangentsPrecision tangentsPrecision = TangentsPrecision.Fast;
 
         // edit options
         public EditMode editMode = EditMode.Select;
