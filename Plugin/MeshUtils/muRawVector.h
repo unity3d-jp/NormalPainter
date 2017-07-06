@@ -79,7 +79,7 @@ public:
     static void* allocate(size_t size) { return AlignedMalloc(size, alignment); }
     static void deallocate(void *addr, size_t /*size*/) { AlignedFree(addr); }
 
-    void reserve(size_t s)
+    void reserve(size_t s, bool discard = false)
     {
         if (s > m_capacity) {
             s = std::max<size_t>(s, m_size * 2);
@@ -87,7 +87,8 @@ public:
             size_t oldsize = sizeof(T) * m_size;
 
             T *newdata = (T*)allocate(newsize);
-            memcpy(newdata, m_data, oldsize);
+            if (!discard)
+                memcpy(newdata, m_data, oldsize);
             deallocate(m_data, oldsize);
             m_data = newdata;
             m_capacity = s;
@@ -121,6 +122,12 @@ public:
         m_size = s;
     }
 
+    void resize_discard(size_t s)
+    {
+        reserve(s, true);
+        m_size = s;
+    }
+
     void resize_with_zeroclear(size_t s)
     {
         resize(s);
@@ -131,7 +138,7 @@ public:
     {
         size_t pos = size();
         resize(s);
-        // std::fill() can suppress compiler's optimization...
+        // std::fill() can be significantly slower than plain copy
         for (size_t i = pos; i < s; ++i) {
             m_data[i] = v;
         }
