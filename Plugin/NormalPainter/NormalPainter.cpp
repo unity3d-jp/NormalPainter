@@ -3,6 +3,8 @@
 
 using namespace mu;
 
+#define npEpsilon 0.0000001f
+
 struct npModelData
 {
     int         *indices = nullptr;
@@ -198,7 +200,7 @@ npAPI int npSelectSingle(
             float3 dir = normalize(vertices[vi] - lcampos);
             
             // if there are vertices with identical position, pick most camera-facing one 
-            if (near_equal(distance, nearest_distance)) {
+            if (near_equal(distance, nearest_distance, npEpsilon)) {
                 float facing = dot(normals[vi], dir);
                 if (facing < nearest_facing) {
                     nearest_index = vi;
@@ -678,7 +680,7 @@ npAPI int npWeld(
         float3 n = normals[vi];
         for (int i = 0; i < num_vertices; ++i) {
             if (vi != i && !checked[i] &&
-                near_equal(length(vertices[i] - p), 0.0f) &&
+                length(vertices[i] - p) < npEpsilon &&
                 angle_between(n, normals[i]) * Rad2Deg <= weld_angle)
             {
                 if (smoothing) n += normals[i];
@@ -763,7 +765,7 @@ npAPI int npWeld2(
             auto& twna = twnormals[ti];
             int num_tv = targets[ti].num_vertices;
             for (int tvi = 0; tvi < num_tv; ++tvi) {
-                if (near_equal(length_sq(twva[tvi] - p), 0.0f) && angle_between(n, twna[tvi]) * Rad2Deg <= weld_angle) {
+                if (length(twva[tvi] - p) < npEpsilon && angle_between(n, twna[tvi]) * Rad2Deg <= weld_angle) {
                     weld_map.push_back({ vi, tvi });
                 }
             }
@@ -958,7 +960,9 @@ npAPI int npBuildMirroringRelation(
         if (d1 < 0.0f) {
             for (int i = 0; i < num_vertices; ++i) {
                 float d2 = distances[i];
-                if (d2 > 0.0f && near_equal(vertices[vi], vertices[i] - plane_normal * (d2 * 2.0f), epsilon)) {
+                if (d2 > 0.0f &&
+                    length(vertices[vi] - (vertices[i] - plane_normal * (d2 * 2.0f))) < npEpsilon)
+                {
                     float3 n1 = normals[vi];
                     float3 n2 = plane_mirror(normals[i], plane_normal);
                     if (dot(n1, n2) >= 0.99f) {

@@ -3,7 +3,7 @@
 ![](https://user-images.githubusercontent.com/1488611/27468607-b3e9e4d0-5825-11e7-954d-fca1a7a50417.gif)
 
 Unity 上でポリゴンモデルの法線編集を可能にするツールです。
-Unity 5.6 系以上、Windows (64bit) & Mac で動作します。
+Unity 5.6 系以上、Windows (64bit) or Mac、D3D11 世代以降の GPU の環境で動作します。
 
 ## 使い方
 - [NormalPainter.unitypackage](https://github.com/unity3d-jp/NormalPainter/releases/download/20170703/NormalPainter.unitypackage) をプロジェクトにインポート
@@ -19,7 +19,7 @@ Unity 5.6 系以上、Windows (64bit) & Mac で動作します。
   - 各頂点から法線方向にレイを飛ばし、指定オブジェクトに当たった位置の法線を拾ってきます
 
 - import / export
-  - 法線 <-> 頂点の相互変換
+  - 法線 <-> 頂点カラーの相互変換
   - 法線をテクスチャとしてエクスポート
   - 法線マップを頂点の法線としてインポート
   - .obj ファイルとしてエクスポート

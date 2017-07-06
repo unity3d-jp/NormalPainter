@@ -728,6 +728,9 @@ namespace UTJ.NormalPainter
                     settings.showNormals = EditorGUILayout.Toggle("Normals", settings.showNormals);
                     settings.showTangents = EditorGUILayout.Toggle("Tangents", settings.showTangents);
                     settings.showBinormals = EditorGUILayout.Toggle("Binormals", settings.showBinormals);
+                    EditorGUI.indentLevel++;
+                    settings.showSelectedOnly = EditorGUILayout.Toggle("Selected Only", settings.showSelectedOnly);
+                    EditorGUI.indentLevel--;
                     EditorGUI.indentLevel--;
                     EditorGUILayout.Space();
                 }

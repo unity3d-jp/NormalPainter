@@ -96,7 +96,7 @@ inline void BuildWeldMap(
         int r = vi;
         float3 p = vertices[vi];
         for (int i = 0; i < vi; ++i) {
-            if (near_equal(length_sq(vertices[i] - p), 0.0f)) {
+            if (length(vertices[i] - p) < 0.0000001f) {
                 r = i;
                 break;
             }
