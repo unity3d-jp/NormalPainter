@@ -21,6 +21,20 @@ bool GenerateTangentsPoly(
     IArray<float4> dst, const IArray<float3> points, const IArray<float3> normals, const IArray<float2> uv,
     const IArray<int> counts, const IArray<int> offsets, const IArray<int> indices);
 
+// PointsIter: indexed_iterator<const float3*, int*> or indexed_iterator_s<const float3*, int*>
+template<class PointsIter>
+void GenerateNormalsPoly(float3 *dst,
+    PointsIter vertices, const int *counts, const int *offsets, const int *indices,
+    int num_faces, int num_vertices);
+
+// PointsIter: indexed_iterator<const float3*, int*> or indexed_iterator_s<const float3*, int*>
+// UVIter: indexed_iterator<const float2*, int*> or indexed_iterator_s<const float2*, int*>
+template<class PointsIter, class UVIter>
+void GenerateTangentsPoly(float4 *dst,
+    PointsIter vertices, UVIter uv, const float3 *normals,
+    const int *counts, const int *offsets, const int *indices,
+    int num_faces, int num_vertices);
+
 template<int N>
 bool GenerateWeightsN(RawVector<Weights<N>>& dst, IArray<int> bone_indices, IArray<float> bone_weights, int bones_per_vertex);
 

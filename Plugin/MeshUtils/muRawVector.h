@@ -130,7 +130,7 @@ public:
 
     void resize_with_zeroclear(size_t s)
     {
-        resize(s);
+        resize_discard(s);
         zeroclear();
     }
 

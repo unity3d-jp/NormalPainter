@@ -71,8 +71,8 @@ public:
     using const_reference = const T&;
     using pointer = T*;
     using const_pointer = const T*;
-    using iterator = indexed_iterator<const I*, T*>;
-    using const_iterator = indexed_iterator<const I*, const T*>;
+    using iterator = indexed_iterator<T*, const I*>;
+    using const_iterator = indexed_iterator<const T*, const I*>;
 
     IntrusiveIndexedArray() {}
     IntrusiveIndexedArray(const I *i, const T *d, size_t s) : m_index(const_cast<I*>(i)), m_data(const_cast<T*>(d)), m_size(s) {}
@@ -106,10 +106,10 @@ public:
     T& operator[](size_t i) { return m_data[m_index[i]]; }
     const T& operator[](size_t i) const { return m_data[m_index[i]]; }
 
-    iterator begin() { return { m_index, m_data }; }
-    const_iterator begin() const { return { m_index, m_data }; }
-    iterator end() { return { m_index + m_size, m_data }; }
-    const_iterator end() const { return { m_index + m_size, m_data }; }
+    iterator begin() { return { m_data, m_index }; }
+    const_iterator begin() const { return { m_data, m_index }; }
+    iterator end() { return { m_data, m_index + m_size }; }
+    const_iterator end() const { return { m_data, m_index + m_size }; }
 
 private:
     I *m_index = nullptr;

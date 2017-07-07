@@ -1065,6 +1065,101 @@ inline float plane_distance(float3 p, float3 pn)            { return dot(p, pn);
 inline float3 plane_mirror(float3 p, float3 pn, float pd)   { return p - pn * (plane_distance(p, pn, pd) * 2.0f); }
 inline float3 plane_mirror(float3 p, float3 pn)             { return p - pn * (plane_distance(p, pn) * 2.0f); }
 
+
+inline void compute_triangle_tangent(
+    const float3(&vertices)[3], const float2(&uv)[3], float3(&dst_tangent)[3], float3(&dst_binormal)[3])
+{
+    float3 p = vertices[1] - vertices[0];
+    float3 q = vertices[2] - vertices[0];
+    float2 s = { uv[1].x - uv[0].x, uv[2].x - uv[0].x };
+    float2 t = { uv[1].y - uv[0].y, uv[2].y - uv[0].y };
+
+    float div = s.x * t.y - s.y * t.x;
+    float area = std::abs(div);
+    float rdiv = 1.0f / div;
+    s *= rdiv;
+    t *= rdiv;
+
+    float3 tangent = normalize({
+        t.y * p.x - t.x * q.x,
+        t.y * p.y - t.x * q.y,
+        t.y * p.z - t.x * q.z
+    }) * area;
+
+    float3 binormal = normalize({
+        s.x * q.x - s.y * p.x,
+        s.x * q.y - s.y * p.y,
+        s.x * q.z - s.y * p.z
+    }) * area;
+
+    float angles[3] = {
+        angle_between2(vertices[2], vertices[1], vertices[0]),
+        angle_between2(vertices[0], vertices[2], vertices[1]),
+        angle_between2(vertices[1], vertices[0], vertices[2]),
+    };
+    for (int v = 0; v < 3; ++v)
+    {
+        dst_tangent[v] = tangent * angles[v];
+        dst_binormal[v] = binormal * angles[v];
+    }
+}
+
+inline float4 orthogonalize_tangent(float3 tangent, float3 binormal, float3 normal)
+{
+    float NdotT = dot(normal, tangent);
+    tangent -= normal * NdotT;
+    float magT = length(tangent);
+    tangent = tangent / magT;
+
+    float NdotB = dot(normal, binormal);
+    float TdotB = dot(tangent, binormal) * magT;
+    binormal -= normal * NdotB - tangent * TdotB;;
+    float magB = length(binormal);
+    binormal = binormal / magB;
+
+#if 0
+    const float epsilon = 1e-6f;
+    if (magT <= epsilon || magB <= epsilon)
+    {
+        float3 axis1, axis2;
+
+        float dpXN = std::abs(dot({ 1.0f, 0.0f, 0.0f }, normal));
+        float dpYN = std::abs(dot({ 0.0f, 1.0f, 0.0f }, normal));
+        float dpZN = std::abs(dot({ 0.0f, 0.0f, 1.0f }, normal));
+
+        if (dpXN <= dpYN && dpXN <= dpZN)
+        {
+            axis1 = { 1.0f, 0.0f, 0.0f };
+            if (dpYN <= dpZN)
+                axis2 = { 0.0f, 1.0f, 0.0f };
+            else
+                axis2 = { 0.0f, 0.0f, 1.0f };
+        }
+        else if (dpYN <= dpXN && dpYN <= dpZN)
+        {
+            axis1 = { 0.0f, 1.0f, 0.0f };
+            if (dpXN <= dpZN)
+                axis2 = { 1.0f, 0.0f, 0.0f };
+            else
+                axis2 = { 0.0f, 0.0f, 1.0f };
+        }
+        else
+        {
+            axis1 = { 0.0f, 0.0f, 1.0f };
+            if (dpXN <= dpYN)
+                axis2 = { 1.0f, 0.0f, 0.0f };
+            else
+                axis2 = { 0.0f, 1.0f, 0.0f };
+        }
+        tangent = normalize(axis1 - normal * dot(normal, axis1));
+        binormal = normalize(axis2 - normal * dot(normal, axis2) - normalize(tangent) * dot(tangent, axis2));
+    }
+#endif
+
+    return { tangent.x, tangent.y, tangent.z,
+        dot(cross(normal, tangent), binormal) > 0.0f ? 1.0f : -1.0f };
+}
+
 #ifdef muMath_AddNamespace
 } // namespace mu
 #endif

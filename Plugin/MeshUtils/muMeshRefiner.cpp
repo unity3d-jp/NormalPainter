@@ -52,7 +52,6 @@ void MeshRefiner::prepare(
     else {
         mu::CountIndices(counts, offsets, num_indices, num_indices_tri);
     }
-
 }
 
 void MeshRefiner::genNormals(bool flip)
@@ -115,30 +114,25 @@ void MeshRefiner::genNormalsWithSmoothAngle(float smooth_angle, bool flip)
         auto& face_normal = face_normals[fi];
         for (int ci = 0; ci < count; ++ci) {
             int vi = face[ci];
-
-            int num_connections = connection.v2f_counts[vi];
-            int *cfaces = &connection.v2f_faces[connection.v2f_offsets[vi]];
             auto normal = float3::zero();
-            for (int ni = 0; ni < num_connections; ++ni) {
-                auto& connected_normal = face_normals[cfaces[ni]];
-                float dp = dot(face_normal, connected_normal);
-                if (dp > angle) {
-                    normal += connected_normal;
+            connection.eachConnectedFaces(vi, [&](int fi2, int) {
+                float3 n = face_normals[fi2];
+                if (dot(face_normal, n) > angle) {
+                    normal += n;
                 }
-            }
+            });
             normals_tmp[offset + ci] = normal;
         }
     }
 
     // normalize
     Normalize(normals_tmp.data(), normals_tmp.size());
-
     normals = normals_tmp;
 }
 
 void MeshRefiner::genTangents()
 {
-    tangents_tmp.resize(std::max<size_t>(normals.size(), uv.size()));
+    tangents_tmp.resize_discard(std::max<size_t>(normals.size(), uv.size()));
     mu::GenerateTangentsPoly(tangents_tmp, points, normals, uv, counts, offsets, indices);
 }
 

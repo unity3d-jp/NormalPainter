@@ -342,99 +342,6 @@ void GenerateNormalsTriangleSoA_Generic(float3 *dst,
 
 // tangent calculation
 
-static inline void compute_triangle_tangent(
-    const float3 (&vertices)[3], const float2 (&uv)[3], float3 (&dst_tangent)[3], float3 (&dst_binormal)[3])
-{
-    float3 p = vertices[1] - vertices[0];
-    float3 q = vertices[2] - vertices[0];
-    float2 s = { uv[1].x - uv[0].x, uv[2].x - uv[0].x };
-    float2 t = { uv[1].y - uv[0].y, uv[2].y - uv[0].y };
-
-    float div = s.x * t.y - s.y * t.x;
-    float area = std::abs(div);
-    float rdiv = 1.0f / div;
-    s *= rdiv;
-    t *= rdiv;
-
-    float3 tangent = normalize({
-        t.y * p.x - t.x * q.x,
-        t.y * p.y - t.x * q.y,
-        t.y * p.z - t.x * q.z
-    }) * area;
-
-    float3 binormal = normalize({
-        s.x * q.x - s.y * p.x,
-        s.x * q.y - s.y * p.y,
-        s.x * q.z - s.y * p.z
-    }) * area;
-
-    float angles[3] = {
-        angle_between2(vertices[2], vertices[1], vertices[0]),
-        angle_between2(vertices[0], vertices[2], vertices[1]),
-        angle_between2(vertices[1], vertices[0], vertices[2]),
-    };
-    for (int v = 0; v < 3; ++v)
-    {
-        dst_tangent[v] = tangent * angles[v];
-        dst_binormal[v] = binormal * angles[v];
-    }
-}
-
-static inline float4 orthogonalize_tangent(float3 tangent, float3 binormal, float3 normal)
-{
-    float NdotT = dot(normal, tangent);
-    tangent -= normal * NdotT;
-    float magT = length(tangent);
-    tangent = tangent / magT;
-
-    float NdotB = dot(normal, binormal);
-    float TdotB = dot(tangent, binormal) * magT;
-    binormal -= normal * NdotB - tangent * TdotB;;
-    float magB = length(binormal);
-    binormal = binormal / magB;
-
-#if 0
-    const float epsilon = 1e-6f;
-    if (magT <= epsilon || magB <= epsilon)
-    {
-        float3 axis1, axis2;
-
-        float dpXN = std::abs(dot({ 1.0f, 0.0f, 0.0f }, normal));
-        float dpYN = std::abs(dot({ 0.0f, 1.0f, 0.0f }, normal));
-        float dpZN = std::abs(dot({ 0.0f, 0.0f, 1.0f }, normal));
-
-        if (dpXN <= dpYN && dpXN <= dpZN)
-        {
-            axis1 = { 1.0f, 0.0f, 0.0f };
-            if (dpYN <= dpZN)
-                axis2 = { 0.0f, 1.0f, 0.0f };
-            else
-                axis2 = { 0.0f, 0.0f, 1.0f };
-        }
-        else if (dpYN <= dpXN && dpYN <= dpZN)
-        {
-            axis1 = { 0.0f, 1.0f, 0.0f };
-            if (dpXN <= dpZN)
-                axis2 = { 1.0f, 0.0f, 0.0f };
-            else
-                axis2 = { 0.0f, 0.0f, 1.0f };
-        }
-        else
-        {
-            axis1 = { 0.0f, 0.0f, 1.0f };
-            if (dpXN <= dpYN)
-                axis2 = { 1.0f, 0.0f, 0.0f };
-            else
-                axis2 = { 0.0f, 1.0f, 0.0f };
-        }
-        tangent = normalize(axis1 - normal * dot(normal, axis1));
-        binormal = normalize(axis2 - normal * dot(normal, axis2) - normalize(tangent) * dot(tangent, axis2));
-    }
-#endif
-
-    return { tangent.x, tangent.y, tangent.z,
-        dot(cross(normal, tangent), binormal) > 0.0f ? 1.0f : -1.0f };
-}
 
 void GenerateTangentsTriangleIndexed_Generic(float4 *dst,
     const float3 *vertices, const float2 *uv, const float3 *normals, const int *indices,
@@ -532,6 +439,30 @@ void GenerateTangentsTriangleSoA_Generic(float4 *dst,
     for (int vi = 0; vi < num_vertices; ++vi) {
         dst[vi] = orthogonalize_tangent(tangents[vi], binormals[vi], normals[vi]);
     }
+}
+
+
+bool GenerateNormalsPoly(
+    float3 *dst, const float3 *points, const int *counts, const int *offsets, const int *indices,
+    int num_faces, int num_vertices)
+{
+    memset(dst, 0, sizeof(float3)*num_vertices);
+
+    for (size_t fi = 0; fi < num_faces; ++fi)
+    {
+        const int *face = &indices[offsets[fi]];
+        float3 p0 = points[face[0]];
+        float3 p1 = points[face[1]];
+        float3 p2 = points[face[2]];
+        float3 n = cross(p1 - p0, p2 - p0);
+
+        int count = counts[fi];
+        for (int ci = 0; ci < count; ++ci) {
+            dst[face[ci]] += n;
+        }
+    }
+    Normalize(dst, num_vertices);
+    return true;
 }
 
 #ifdef muMath_AddNamespace
