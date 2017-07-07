@@ -61,12 +61,10 @@ IF(ENABLE_ISPC)
     SET(MUCORE_FILES
         ${MUCORE_DIR}/MeshUtilsCore.h
         ${MUCORE_DIR}/MeshUtilsCore${CMAKE_CXX_OUTPUT_EXTENSION}
-        ${MUCORE_DIR}/MeshUtilsCore_sse2${CMAKE_CXX_OUTPUT_EXTENSION}
         ${MUCORE_DIR}/MeshUtilsCore_sse4${CMAKE_CXX_OUTPUT_EXTENSION}
         ${MUCORE_DIR}/MeshUtilsCore_avx${CMAKE_CXX_OUTPUT_EXTENSION}
         ${MUCORE_DIR}/MeshUtilsCore2.h
         ${MUCORE_DIR}/MeshUtilsCore2${CMAKE_CXX_OUTPUT_EXTENSION}
-        ${MUCORE_DIR}/MeshUtilsCore2_sse2${CMAKE_CXX_OUTPUT_EXTENSION}
         ${MUCORE_DIR}/MeshUtilsCore2_sse4${CMAKE_CXX_OUTPUT_EXTENSION}
         ${MUCORE_DIR}/MeshUtilsCore2_avx${CMAKE_CXX_OUTPUT_EXTENSION}
     )
