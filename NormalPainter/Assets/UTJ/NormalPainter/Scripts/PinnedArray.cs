@@ -144,7 +144,6 @@ namespace UTJ.NormalPainter
         }
         public static void ListSetCount(List<T> list, int count)
         {
-            var ret = new List<T>();
             var caster = new Caster();
             caster.list = list;
             caster.data.size = count;
