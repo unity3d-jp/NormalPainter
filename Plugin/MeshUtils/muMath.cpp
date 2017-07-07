@@ -351,7 +351,7 @@ static inline void compute_triangle_tangent(
     float2 t = { uv[1].y - uv[0].y, uv[2].y - uv[0].y };
 
     float div = s.x * t.y - s.y * t.x;
-    float area = abs(div);
+    float area = std::abs(div);
     float rdiv = 1.0f / div;
     s *= rdiv;
     t *= rdiv;
