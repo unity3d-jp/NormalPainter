@@ -545,16 +545,44 @@ static inline uniform float4 orthogonalize_tangent(
 
 static inline void NormalizeImpl(uniform float3 dst[], uniform const int num)
 {
-    uniform int num_simd_blocks = num & ~(C - 1);
+    uniform int num_simd = num & ~(C - 1);
 
-    for (uniform int bi = 0; bi < num_simd_blocks; bi += C) {
+    for (uniform int bi = 0; bi < num_simd; bi += C) {
         float3 n;
         aos_to_soa3((uniform float*)(&dst[bi]), &n.x, &n.y, &n.z);
         n = normalize(n);
         soa_to_aos3(n.x, n.y, n.z, (uniform float*)(&dst[bi]));
     }
 
-    for (uniform int i = num_simd_blocks; i < num; ++i) {
+    for (uniform int i = num_simd; i < num; ++i) {
         dst[i] = normalize(dst[i]);
+    }
+}
+static inline void NormalizeSoAImpl(uniform float dstx[], uniform float dsty[], uniform float dstz[], uniform const int num)
+{
+    foreach(i=0 ... num) {
+        float3 n = {dstx[i], dsty[i], dstz[i]};
+        n = normalize(n);
+        dstx[i] = n.x;
+        dsty[i] = n.y;
+        dstz[i] = n.z;
+    }
+}
+
+static inline void SoAToAoS(uniform float3 dst[], uniform float sx[], uniform float sy[], uniform float sz[], uniform const int num)
+{
+    uniform int num_simd = num & ~(C-1);
+    for (uniform int bi = 0; bi < num_simd; bi += C) {
+        int i = bi + I;
+        uniform float3 aos[C];
+        soa_to_aos3(sx[i], sy[i], sz[i], (uniform float*)&aos[0]);
+
+        for (uniform int ci = 0; ci < C; ++ci) {
+            dst[bi+ci] = aos[ci];
+        }
+    }
+
+    for (uniform int i = num_simd; i < num; ++i) {
+        dst[i] = float3_(sx[i], sy[i], sz[i]);
     }
 }

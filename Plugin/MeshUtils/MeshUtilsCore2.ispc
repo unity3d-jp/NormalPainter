@@ -511,6 +511,13 @@ export void GenerateNormalsTriangleIndexed(uniform float3 dst[],
     uniform const float3 vertices[], uniform const int indices[],
     uniform const int num_triangles, uniform const int num_vertices)
 {
+    uniform int num_vertices_aligned = (num_vertices + (C - 1)) & ~(C - 1);
+    float * uniform mem_tmp = uniform new float[num_vertices_aligned * 3];
+    foreach(i=0 ... num_vertices_aligned * 3) { mem_tmp[i]=0.0f; }
+    float * uniform tnx = mem_tmp + num_vertices_aligned * 0;
+    float * uniform tny = mem_tmp + num_vertices_aligned * 1;
+    float * uniform tnz = mem_tmp + num_vertices_aligned * 2;
+
     uniform int num_triangles_simd = num_triangles & ~(C - 1);
 
     // SIMD pass
@@ -522,16 +529,15 @@ export void GenerateNormalsTriangleIndexed(uniform float3 dst[],
         float3 p2 = vertices[indices[ti3  + 2]];
         float3 n = cross(p1 - p0, p2 - p0);
 
-        uniform float3 n_aos[C];
-        soa_to_aos3(n.x, n.y, n.z, (uniform float*)&n_aos[0]);
-
-        for(uniform int i=0; i<C; ++i) {
-            uniform int i0 = indices[(bi + i) * 3 + 0];
-            uniform int i1 = indices[(bi + i) * 3 + 1];
-            uniform int i2 = indices[(bi + i) * 3 + 2];
-            dst[i0] = dst[i0] + n_aos[i];
-            dst[i1] = dst[i1] + n_aos[i];
-            dst[i2] = dst[i2] + n_aos[i];
+        uniform float nx[C], ny[C], nz[C];
+        nx[I]=n.x; ny[I]=n.y; nz[I]=n.z;
+        for(uniform int ci=0; ci<C; ++ci) {
+            for(uniform int i=0; i<3; ++i) {
+                uniform int ix = indices[(bi + ci) * 3 + i];
+                tnx[ix] += nx[ci];
+                tny[ix] += ny[ci];
+                tnz[ix] += nz[ci];
+            }
         }
     }
 
@@ -546,12 +552,17 @@ export void GenerateNormalsTriangleIndexed(uniform float3 dst[],
         uniform float3 p2 = vertices[i2];
         uniform float3 n = cross(p1 - p0, p2 - p0);
 
-        dst[i0] = dst[i0] + n;
-        dst[i1] = dst[i1] + n;
-        dst[i2] = dst[i2] + n;
+        for(uniform int i=0; i<3; ++i) {
+            uniform int ix = indices[ti3 + i];
+            tnx[ix] += n.x;
+            tny[ix] += n.y;
+            tnz[ix] += n.z;
+        }
     }
 
-    NormalizeImpl(dst, num_vertices);
+    NormalizeSoAImpl(tnx, tny, tnz, num_vertices);
+    SoAToAoS(dst, tnx, tny, tnz, num_vertices);
+    delete[] mem_tmp;
 }
 #endif
 
@@ -560,6 +571,13 @@ export void GenerateNormalsTriangleFlattened(uniform float3 dst[],
     uniform const float3 vertices[], uniform const int indices[],
     uniform const int num_triangles, uniform const int num_vertices)
 {
+    uniform int num_vertices_aligned = (num_vertices + (C - 1)) & ~(C - 1);
+    float * uniform mem_tmp = uniform new float[num_vertices_aligned * 3];
+    foreach(i=0 ... num_vertices_aligned * 3) { mem_tmp[i]=0.0f; }
+    float * uniform tnx = mem_tmp + num_vertices_aligned * 0;
+    float * uniform tny = mem_tmp + num_vertices_aligned * 1;
+    float * uniform tnz = mem_tmp + num_vertices_aligned * 2;
+
     uniform int num_triangles_simd = num_triangles & ~(C - 1);
 
     // SIMD pass
@@ -571,16 +589,15 @@ export void GenerateNormalsTriangleFlattened(uniform float3 dst[],
         float3 p2 = vertices[ti3  + 2];
         float3 n = cross(p1 - p0, p2 - p0);
 
-        uniform float3 n_aos[C];
-        soa_to_aos3(n.x, n.y, n.z, (uniform float*)&n_aos[0]);
-
-        for(uniform int i=0; i<C; ++i) {
-            uniform int i0 = indices[(bi + i) * 3 + 0];
-            uniform int i1 = indices[(bi + i) * 3 + 1];
-            uniform int i2 = indices[(bi + i) * 3 + 2];
-            dst[i0] = dst[i0] + n_aos[i];
-            dst[i1] = dst[i1] + n_aos[i];
-            dst[i2] = dst[i2] + n_aos[i];
+        uniform float nx[C], ny[C], nz[C];
+        nx[I]=n.x; ny[I]=n.y; nz[I]=n.z;
+        for(uniform int ci=0; ci<C; ++ci) {
+            for(uniform int i=0; i<3; ++i) {
+                uniform int ix = indices[(bi + ci) * 3 + i];
+                tnx[ix] += nx[ci];
+                tny[ix] += ny[ci];
+                tnz[ix] += nz[ci];
+            }
         }
     }
 
@@ -592,15 +609,17 @@ export void GenerateNormalsTriangleFlattened(uniform float3 dst[],
         uniform float3 p2 = vertices[ti3 + 2];
         uniform float3 n = cross(p1 - p0, p2 - p0);
 
-        uniform int i0 = indices[ti3 + 0];
-        uniform int i1 = indices[ti3 + 1];
-        uniform int i2 = indices[ti3 + 2];
-        dst[i0] = dst[i0] + n;
-        dst[i1] = dst[i1] + n;
-        dst[i2] = dst[i2] + n;
+        for(uniform int i=0; i<3; ++i) {
+            uniform int ix = indices[ti3 + i];
+            tnx[ix] += n.x;
+            tny[ix] += n.y;
+            tnz[ix] += n.z;
+        }
     }
 
-    NormalizeImpl(dst, num_vertices);
+    NormalizeSoAImpl(tnx, tny, tnz, num_vertices);
+    SoAToAoS(dst, tnx, tny, tnz, num_vertices);
+    delete[] mem_tmp;
 }
 #endif
 
@@ -612,6 +631,13 @@ export void GenerateNormalsTriangleSoA(uniform float3 dst[],
     uniform const int indices[],
     uniform const int num_triangles, uniform const int num_vertices)
 {
+    uniform int num_vertices_aligned = (num_vertices + (C - 1)) & ~(C - 1);
+    float * uniform mem_tmp = uniform new float[num_vertices_aligned * 3];
+    foreach(i=0 ... num_vertices_aligned * 3) { mem_tmp[i]=0.0f; }
+    float * uniform tnx = mem_tmp + num_vertices_aligned * 0;
+    float * uniform tny = mem_tmp + num_vertices_aligned * 1;
+    float * uniform tnz = mem_tmp + num_vertices_aligned * 2;
+
     uniform int num_triangles_simd = num_triangles & ~(C - 1);
 
     // SIMD pass
@@ -622,16 +648,15 @@ export void GenerateNormalsTriangleSoA(uniform float3 dst[],
         float3 p2 = {v3x[ti], v3y[ti], v3z[ti]};
         float3 n = cross(p1 - p0, p2 - p0);
 
-        uniform float3 n_aos[C];
-        soa_to_aos3(n.x, n.y, n.z, (uniform float*)&n_aos[0]);
-
-        for(uniform int i=0; i<C; ++i) {
-            uniform int i0 = indices[(bi + i) * 3 + 0];
-            uniform int i1 = indices[(bi + i) * 3 + 1];
-            uniform int i2 = indices[(bi + i) * 3 + 2];
-            dst[i0] = dst[i0] + n_aos[i];
-            dst[i1] = dst[i1] + n_aos[i];
-            dst[i2] = dst[i2] + n_aos[i];
+        uniform float nx[C], ny[C], nz[C];
+        nx[I]=n.x; ny[I]=n.y; nz[I]=n.z;
+        for(uniform int ci=0; ci<C; ++ci) {
+            for(uniform int i=0; i<3; ++i) {
+                uniform int ix = indices[(bi + ci) * 3 + i];
+                tnx[ix] += nx[ci];
+                tny[ix] += ny[ci];
+                tnz[ix] += nz[ci];
+            }
         }
     }
 
@@ -643,15 +668,17 @@ export void GenerateNormalsTriangleSoA(uniform float3 dst[],
         uniform float3 p2 = {v3x[ti], v3y[ti], v3z[ti]};
         uniform float3 n = cross(p1 - p0, p2 - p0);
 
-        uniform int i0 = indices[ti3 + 0];
-        uniform int i1 = indices[ti3 + 1];
-        uniform int i2 = indices[ti3 + 2];
-        dst[i0] = dst[i0] + n;
-        dst[i1] = dst[i1] + n;
-        dst[i2] = dst[i2] + n;
+        for(uniform int i=0; i<3; ++i) {
+            uniform int ix = indices[ti3 + i];
+            tnx[ix] += n.x;
+            tny[ix] += n.y;
+            tnz[ix] += n.z;
+        }
     }
 
-    NormalizeImpl(dst, num_vertices);
+    NormalizeSoAImpl(tnx, tny, tnz, num_vertices);
+    SoAToAoS(dst, tnx, tny, tnz, num_vertices);
+    delete[] mem_tmp;
 }
 #endif
 

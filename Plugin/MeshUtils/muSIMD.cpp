@@ -176,7 +176,6 @@ bool PolyInside_ISPC(const float px[], const float py[], int ngon, const float2 
 void GenerateNormalsTriangleIndexed_ISPC(float3 *dst,
     const float3 *vertices, const int *indices, int num_triangles, int num_vertices)
 {
-    memset(dst, 0, sizeof(float3)*num_vertices);
     ispc::GenerateNormalsTriangleIndexed((ispc::float3*)dst, (ispc::float3*)vertices, indices, num_triangles, num_vertices);
 }
 #endif
@@ -185,7 +184,6 @@ void GenerateNormalsTriangleIndexed_ISPC(float3 *dst,
 void GenerateNormalsTriangleFlattened_ISPC(float3 *dst,
     const float3 *vertices, const int *indices, int num_triangles, int num_vertices)
 {
-    memset(dst, 0, sizeof(float3)*num_vertices);
     ispc::GenerateNormalsTriangleFlattened((ispc::float3*)dst, (ispc::float3*)vertices, indices, num_triangles, num_vertices);
 }
 #endif
@@ -197,7 +195,6 @@ void GenerateNormalsTriangleSoA_ISPC(float3 *dst,
     const float *v3x, const float *v3y, const float *v3z,
     const int *indices, int num_triangles, int num_vertices)
 {
-    memset(dst, 0, sizeof(float3)*num_vertices);
     ispc::GenerateNormalsTriangleSoA((ispc::float3*)dst,
         v1x, v1y, v1z, v2x, v2y, v2z, v3x, v3y, v3z,
         indices, num_triangles, num_vertices);
