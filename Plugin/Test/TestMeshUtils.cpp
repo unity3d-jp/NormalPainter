@@ -246,8 +246,8 @@ TestCase(TestNormalsAndTangents)
                 StrideIterator<float2> uiter = { uv.data(), sizeof(float2) };
                 StrideIterator<float4> titer = { tangents[6].data(), sizeof(float4) };
 
-                TestScope("GenerateTangents Unity", [&]() {
-                    CalculateTangents(viter, niter, uiter, indices.data(), num_points, num_triangles, titer);
+                TestScope("CalculateTangents (Unity.exe)", [&]() {
+                    CalculateTangents(viter, niter, uiter, indices.data(), num_points, num_triangles * 3, titer);
                 }, num_try);
             }
         }

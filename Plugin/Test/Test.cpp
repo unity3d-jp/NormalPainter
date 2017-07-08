@@ -4,19 +4,21 @@
 
 using namespace mu;
 
+static std::string g_log;
+
 void PrintImpl(const char *format, ...)
 {
-    va_list args;
-    va_start(args, format);
-#ifdef _WIN32
     const int MaxBuf = 4096;
     char buf[MaxBuf];
-    vsnprintf(buf, sizeof(buf), format, args);
+
+    va_list args;
+    va_start(args, format);
+    vsprintf(buf, format, args);
+    g_log += buf;
+#ifdef _WIN32
     ::OutputDebugStringA(buf);
-    printf(buf);
-#else
-    vprintf(format, args);
 #endif
+    printf(buf);
     va_end(args);
     fflush(stdout);
 }
@@ -45,8 +47,14 @@ static void RunTestImpl(const TestEntry& v)
     Print("%s end (%.2fms)\n\n", v.name.c_str(), NS2MS(end-begin));
 }
 
+testExport const char* GetLogMessage()
+{
+    return g_log.c_str();
+}
+
 testExport void RunTest(char *name)
 {
+    g_log.clear();
     for (auto& entry : g_tests) {
         if (entry.name == name) {
             RunTestImpl(entry);
@@ -56,6 +64,7 @@ testExport void RunTest(char *name)
 
 testExport void RunAllTests()
 {
+    g_log.clear();
     for (auto& entry : g_tests) {
         RunTestImpl(entry);
     }

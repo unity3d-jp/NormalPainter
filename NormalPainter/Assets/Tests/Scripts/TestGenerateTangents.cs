@@ -9,15 +9,29 @@ public static class TestGenerateTangents
     [MenuItem("Test/TestGenerateTangents")]
     public static void DoTestGenerateTangents()
     {
-        string path = Environment.GetEnvironmentVariable("PATH", EnvironmentVariableTarget.Process);
-        path = Application.dataPath + "Tests/Plugins/x86_64;" + path;
-        Environment.SetEnvironmentVariable("PATH", path, EnvironmentVariableTarget.Process);
+        SetLibraryPath();
         DoTestGenerateTangents_();
     }
+
+    static void SetLibraryPath()
+    {
+        var libraryPath = Application.dataPath + "Tests/Plugins/x86_64";
+        var path = Environment.GetEnvironmentVariable("PATH", EnvironmentVariableTarget.Process);
+        if(!path.Contains(libraryPath))
+        {
+            path = libraryPath + ";" + path;
+            Environment.SetEnvironmentVariable("PATH", path, EnvironmentVariableTarget.Process);
+        }
+    }
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void DoTestGenerateTangents_()
     {
-        TestNormalsAndTangentsEx();
+        RunTest("TestNormalsAndTangents");
+        Debug.Log(Marshal.PtrToStringAnsi(GetLogMessage()));
     }
-    [DllImport("Test")] static extern void TestNormalsAndTangentsEx();
+
+    [DllImport("Test")] static extern IntPtr GetLogMessage();
+    [DllImport("Test")] static extern void RunTest(string name);
+    [DllImport("Test")] static extern void RunAllTests();
 }
