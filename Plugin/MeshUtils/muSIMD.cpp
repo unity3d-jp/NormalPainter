@@ -205,15 +205,9 @@ void GenerateNormalsTriangleSoA_ISPC(float3 *dst,
 void GenerateTangentsTriangleIndexed_ISPC(float4 *dst,
     const float3 *vertices, const float2 *uv, const float3 *normals, const int *indices, int num_triangles, int num_vertices)
 {
-    RawVector<float3> tmp_tangents, tmp_binormals;
-    tmp_tangents.resize_with_zeroclear(num_vertices);
-    tmp_binormals.resize_with_zeroclear(num_vertices);
-
-    ispc::GenerateTangentsIndexed((ispc::float4*)dst,
+    ispc::GenerateTangentsTriangleIndexed((ispc::float4*)dst,
         (ispc::float3*)vertices, (ispc::float2*)uv, (ispc::float3*)normals, indices,
-        num_triangles, num_vertices,
-        (ispc::float3*)tmp_tangents.data(),
-        (ispc::float3*)tmp_binormals.data());
+        num_triangles, num_vertices);
 }
 #endif
 
@@ -221,15 +215,9 @@ void GenerateTangentsTriangleIndexed_ISPC(float4 *dst,
 void GenerateTangentsTriangleFlattened_ISPC(float4 *dst,
     const float3 *vertices, const float2 *uv, const float3 *normals, const int *indices, int num_triangles, int num_vertices)
 {
-    RawVector<float3> tmp_tangents, tmp_binormals;
-    tmp_tangents.resize_with_zeroclear(num_vertices);
-    tmp_binormals.resize_with_zeroclear(num_vertices);
-
-    ispc::GenerateTangentsFlattened((ispc::float4*)dst,
+    ispc::GenerateTangentsTriangleFlattened((ispc::float4*)dst,
         (ispc::float3*)vertices, (ispc::float2*)uv, (ispc::float3*)normals, indices,
-        num_triangles, num_vertices,
-        (ispc::float3*)tmp_tangents.data(),
-        (ispc::float3*)tmp_binormals.data());
+        num_triangles, num_vertices);
 }
 #endif
 
@@ -244,19 +232,13 @@ void GenerateTangentsTriangleSoA_ISPC(float4 *dst,
     const float3 *normals,
     const int *indices, int num_triangles, int num_vertices)
 {
-    RawVector<float3> tmp_tangents, tmp_binormals;
-    tmp_tangents.resize_with_zeroclear(num_vertices);
-    tmp_binormals.resize_with_zeroclear(num_vertices);
-
-    ispc::GenerateTangentsSoA(
+    ispc::GenerateTangentsTriangleSoA(
         (ispc::float4*)dst,
         v1x, v1y, v1z, v2x, v2y, v2z, v3x, v3y, v3z,
         u1x, u1y, u2x, u2y, u3x, u3y,
         (ispc::float3*)normals,
         indices,
-        num_triangles, num_vertices,
-        (ispc::float3*)tmp_tangents.data(),
-        (ispc::float3*)tmp_binormals.data());
+        num_triangles, num_vertices);
 }
 #endif
 #endif // muEnableISPC
