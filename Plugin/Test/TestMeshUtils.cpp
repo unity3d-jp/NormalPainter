@@ -36,7 +36,7 @@ template<class T> struct StrideIterator
 };
 
 
-void Test_IndexedArrays()
+TestCase(Test_IndexedArrays)
 {
     std::vector<uint16_t> indices16 = { 0,1,0,2,1,3,2 };
     std::vector<uint32_t> indices32 = { 0,1,2,1,2,3 };
@@ -53,10 +53,9 @@ void Test_IndexedArrays()
     for (auto& v : iia2) { Print("%.f ", v); }
     Print("\n");
 }
-RegisterTestEntry(Test_IndexedArrays)
 
 
-void TestMeshRefiner()
+TestCase(TestMeshRefiner)
 {
     RawVector<float3> points = {
         { 0.0f, 0.0f, 0.0f },{ 1.0f, 0.0f, 0.0f },{ 2.0f, 0.0f, 0.0f },
@@ -95,10 +94,9 @@ void TestMeshRefiner()
     refiner.refine(false);
     refiner.genSubmesh(materialIDs);
 }
-RegisterTestEntry(TestMeshRefiner)
 
 
-void TestNormalsAndTangents()
+TestCase(TestNormalsAndTangents)
 {
     RawVector<int> indices, counts;
     RawVector<float3> points;
@@ -166,117 +164,72 @@ void TestNormalsAndTangents()
     usoa[2].data(), usoa[3].data(),\
     usoa[4].data(), usoa[5].data()
 
-    {
-        auto s1b = Now();
-        for (int i = 0; i < num_try; ++i)
-            GenerateNormalsTriangleIndexed_Generic(normals[0].data(), points.data(), indices.data(), num_triangles, num_points);
-        auto s1e = Now();
+    // generate normals
 
-        auto s2b = Now();
+    TestScope("GenerateNormals indexed C++", [&]() {
+        GenerateNormalsTriangleIndexed_Generic(normals[0].data(), points.data(), indices.data(), num_triangles, num_points);
+    }, num_try);
 #ifdef muSIMD_GenerateNormalsTriangleIndexed
-        for (int i = 0; i < num_try; ++i)
-            GenerateNormalsTriangleIndexed_ISPC(normals[1].data(), points.data(), indices.data(), num_triangles, num_points);
+    TestScope("GenerateNormals indexed ISPC", [&]() {
+        GenerateNormalsTriangleIndexed_ISPC(normals[1].data(), points.data(), indices.data(), num_triangles, num_points);
+    }, num_try);
 #endif
-        auto s2e = Now();
 
-        auto s3b = Now();
-        for (int i = 0; i < num_try; ++i)
-            GenerateNormalsTriangleFlattened_Generic(normals[2].data(), points_f.data(), indices.data(), num_triangles, num_points);
-        auto s3e = Now();
-
-        auto s4b = Now();
+    TestScope("GenerateNormals flattened C++", [&]() {
+        GenerateNormalsTriangleFlattened_Generic(normals[2].data(), points_f.data(), indices.data(), num_triangles, num_points);
+    }, num_try);
 #ifdef muSIMD_GenerateNormalsTriangleFlattened
-        for (int i = 0; i < num_try; ++i)
-            GenerateNormalsTriangleFlattened_ISPC(normals[3].data(), points_f.data(), indices.data(), num_triangles, num_points);
+    TestScope("GenerateNormals flattened ISPC", [&]() {
+        GenerateNormalsTriangleFlattened_ISPC(normals[3].data(), points_f.data(), indices.data(), num_triangles, num_points);
+    }, num_try);
 #endif
-        auto s4e = Now();
 
-        auto s5b = Now();
-        for (int i = 0; i < num_try; ++i)
-            GenerateNormalsTriangleSoA_Generic(normals[4].data(), SoAPointsArgs, indices.data(), num_triangles, num_points);
-        auto s5e = Now();
-
-        auto s6b = Now();
+    TestScope("GenerateNormals SoA C++", [&]() {
+        GenerateNormalsTriangleSoA_Generic(normals[4].data(), SoAPointsArgs, indices.data(), num_triangles, num_points);
+    }, num_try);
 #ifdef muSIMD_GenerateNormalsTriangleSoA
-        for (int i = 0; i < num_try; ++i)
-            GenerateNormalsTriangleSoA_ISPC(normals[5].data(), SoAPointsArgs, indices.data(), num_triangles, num_points);
+    TestScope("GenerateNormals SoA ISPC", [&]() {
+        GenerateNormalsTriangleSoA_ISPC(normals[5].data(), SoAPointsArgs, indices.data(), num_triangles, num_points);
+    }, num_try);
 #endif
-        auto s6e = Now();
 
-        Print(
-            "    GenerateNormals indexed C++: %.2fms\n"
-            "    GenerateNormals indexed ISPC: %.2fms\n"
-            "    GenerateNormals flattened C++: %.2fms\n"
-            "    GenerateNormals flattened ISPC: %.2fms\n"
-            "    GenerateNormals SoA C++: %.2fms\n"
-            "    GenerateNormals SoA ISPC: %.2fms\n"
-            ,
-            NS2MS(s1e - s1b) / num_try,
-            NS2MS(s2e - s2b) / num_try,
-            NS2MS(s3e - s3b) / num_try,
-            NS2MS(s4e - s4b) / num_try,
-            NS2MS(s5e - s5b) / num_try,
-            NS2MS(s6e - s6b) / num_try);
-    }
 
-    {
-        auto s1b = Now();
-        for (int i = 0; i < num_try; ++i)
-            GenerateTangentsTriangleIndexed_Generic(tangents[0].data(),
-                points.data(), uv.data(), normals[0].data(), indices.data(), num_triangles, num_points);
-        auto s1e = Now();
+    // generate tangents
 
-        auto s2b = Now();
+    TestScope("GenerateTangents indexed C++", [&]() {
+        GenerateTangentsTriangleIndexed_Generic(tangents[0].data(),
+            points.data(), uv.data(), normals[0].data(), indices.data(), num_triangles, num_points);
+    }, num_try);
 #ifdef muSIMD_GenerateTangentsTriangleIndexed
-        for (int i = 0; i < num_try; ++i)
-            GenerateTangentsTriangleIndexed_ISPC(tangents[1].data(),
-                points.data(), uv.data(), normals[1].data(), indices.data(), num_triangles, num_points);
+    TestScope("GenerateTangents indexed ISPC", [&]() {
+        GenerateTangentsTriangleIndexed_ISPC(tangents[1].data(),
+            points.data(), uv.data(), normals[1].data(), indices.data(), num_triangles, num_points);
+    }, num_try);
 #endif
-        auto s2e = Now();
 
-        auto s3b = Now();
-        for (int i = 0; i < num_try; ++i)
-            GenerateTangentsTriangleFlattened_Generic(tangents[2].data(),
-                points_f.data(), uv_f.data(), normals[2].data(), indices.data(), num_triangles, num_points);
-        auto s3e = Now();
-
-        auto s4b = Now();
+    TestScope("GenerateTangents flattened C++", [&]() {
+        GenerateTangentsTriangleFlattened_Generic(tangents[2].data(),
+            points_f.data(), uv_f.data(), normals[2].data(), indices.data(), num_triangles, num_points);
+    }, num_try);
 #ifdef muSIMD_GenerateTangentsTriangleFlattened
-        for (int i = 0; i < num_try; ++i)
-            GenerateTangentsTriangleFlattened_ISPC(tangents[3].data(),
-                points_f.data(), uv_f.data(), normals[3].data(), indices.data(), num_triangles, num_points);
+    TestScope("GenerateTangents flattened ISPC", [&]() {
+        GenerateTangentsTriangleFlattened_ISPC(tangents[3].data(),
+            points_f.data(), uv_f.data(), normals[3].data(), indices.data(), num_triangles, num_points);
+    }, num_try);
 #endif
-        auto s4e = Now();
 
-        auto s5b = Now();
-        for (int i = 0; i < num_try; ++i)
-            GenerateTangentsTriangleSoA_Generic(tangents[4].data(),
-                SoAPointsArgs, SoAUVArgs, normals[4].data(), indices.data(), num_triangles, num_points);
-        auto s5e = Now();
-
-        auto s6b = Now();
-#ifdef muSIMD_GenerateTangentsTriangleSoA
-        for (int i = 0; i < num_try; ++i)
-            GenerateTangentsTriangleSoA_ISPC(tangents[5].data(),
-                SoAPointsArgs, SoAUVArgs, normals[5].data(), indices.data(), num_triangles, num_points);
+    TestScope("GenerateTangents SoA C++", [&]() {
+        GenerateTangentsTriangleSoA_Generic(tangents[4].data(),
+            SoAPointsArgs, SoAUVArgs, normals[4].data(), indices.data(), num_triangles, num_points);
+    }, num_try);
+#ifdef muSIMD_GenerateTangentsTriangleFlattened
+    TestScope("GenerateTangents SoA ISPC", [&]() {
+        GenerateTangentsTriangleSoA_ISPC(tangents[5].data(),
+            SoAPointsArgs, SoAUVArgs, normals[5].data(), indices.data(), num_triangles, num_points);
+    }, num_try);
 #endif
-        auto s6e = Now();
 
-        Print(
-            "    GenerateTangents indexed C++: %.2fms\n"
-            "    GenerateTangents indexed ISPC: %.2fms\n"
-            "    GenerateTangents flattened C++: %.2fms\n"
-            "    GenerateTangents flattened ISPC: %.2fms\n"
-            "    GenerateTangents SoA C++: %.2fms\n"
-            "    GenerateTangents SoA ISPC: %.2fms\n"
-            ,
-            NS2MS(s1e - s1b) / num_try,
-            NS2MS(s2e - s2b) / num_try,
-            NS2MS(s3e - s3b) / num_try,
-            NS2MS(s4e - s4b) / num_try,
-            NS2MS(s5e - s5b) / num_try,
-            NS2MS(s6e - s6b) / num_try);
-    }
+    // try to call CalculateTangents() in Unity.exe
     {
         auto unity_exe = GetModule("Unity.exe");
         if (unity_exe) {
@@ -293,11 +246,9 @@ void TestNormalsAndTangents()
                 StrideIterator<float2> uiter = { uv.data(), sizeof(float2) };
                 StrideIterator<float4> titer = { tangents[6].data(), sizeof(float4) };
 
-                auto s7b = Now();
-                for (int i = 0; i < num_try; ++i)
+                TestScope("GenerateTangents Unity", [&]() {
                     CalculateTangents(viter, niter, uiter, indices.data(), num_points, num_triangles, titer);
-                auto s7e = Now();
-                Print("    GenerateTangents Unity: %.2fms\n", NS2MS(s7e - s7b) / num_try);
+                }, num_try);
             }
         }
         else {
@@ -331,22 +282,14 @@ void TestNormalsAndTangents()
 #undef SoAUVArgs
 #undef SoAPointsArgs
 }
-RegisterTestEntry(TestNormalsAndTangents)
-
-#ifdef _WIN32
-testExport void TestNormalsAndTangentsEx()
-{
-    TestNormalsAndTangents();
-}
-#endif
 
 
-void TestMatrixSwapHandedness()
+TestCase(TestMatrixSwapHandedness)
 {
     quatf rot1 = rotate(normalize(float3{0.15f, 0.3f, 0.6f}), 60.0f);
     quatf rot2 = swap_handedness(rot1);
-    float4x4 mat1 = to_float4x4(rot1);
-    float4x4 mat2 = to_float4x4(rot2);
+    float4x4 mat1 = to_mat4x4(rot1);
+    float4x4 mat2 = to_mat4x4(rot2);
     float4x4 mat3 = swap_handedness(mat1);
     float4x4 imat1 = invert(mat1);
     float4x4 imat2 = invert(mat2);
@@ -356,10 +299,9 @@ void TestMatrixSwapHandedness()
     bool r2 = near_equal(imat2, imat3);
     Print("    %d, %d\n", (int)r1, (int)r2);
 }
-RegisterTestEntry(TestMatrixSwapHandedness)
 
 
-void TestMulPoints()
+TestCase(TestMulPoints)
 {
     const int num_data = 65536;
     const int num_try = 128;
@@ -375,59 +317,39 @@ void TestMulPoints()
         src[i] = { (float)i*0.1f, (float)i*0.05f, (float)i*0.025f };
     }
 
-
-    auto s1_begin = Now();
-    for (int i = 0; i < num_try; ++i) {
-        MulPoints_Generic(matrix, src.data(), dst1.data(), num_data);
-    }
-    auto s1_end = Now();
-
-    auto s2_begin = Now();
-#ifdef muSIMD_MulPoints3
-    for (int i = 0; i < num_try; ++i) {
-        MulPoints_ISPC(matrix, src.data(), dst2.data(), num_data);
-    }
-#endif
-    auto s2_end = Now();
-
-    int eq1 = NearEqual(dst1.data(), dst2.data(), num_data);
-
-
-    auto s3_begin = Now();
-    for (int i = 0; i < num_try; ++i) {
-        MulVectors_Generic(matrix, src.data(), dst1.data(), num_data);
-    }
-    auto s3_end = Now();
-
-    auto s4_begin = Now();
-#ifdef muSIMD_MulVectors3
-    for (int i = 0; i < num_try; ++i) {
-        MulVectors_ISPC(matrix, src.data(), dst2.data(), num_data);
-    }
-#endif
-    auto s4_end = Now();
-
-    int eq2 = NearEqual(dst1.data(), dst2.data(), num_data);
-
-
     Print(
         "    num_data: %d\n"
-        "    num_try: %d\n"
-        "    MulPoints  : Generic %.2fms, ISPC %.2fms\n"
-        "    MulVectors : Generic %.2fms, ISPC %.2fms\n"
-        "    %d %d\n",
+        "    num_try: %d\n",
         num_data,
-        num_try,
-        NS2MS(s1_end - s1_begin),
-        NS2MS(s2_end - s2_begin),
-        NS2MS(s3_end - s3_begin),
-        NS2MS(s4_end - s4_begin),
-        eq1, eq2);
+        num_try);
+
+    TestScope("MulPoints C++", [&]() {
+        MulPoints_Generic(matrix, src.data(), dst1.data(), num_data);
+    }, num_try);
+#ifdef muSIMD_MulPoints3
+    TestScope("MulPoints ISPC", [&]() {
+        MulPoints_ISPC(matrix, src.data(), dst2.data(), num_data);
+    }, num_try);
+    if (!NearEqual(dst1.data(), dst2.data(), num_data)) {
+        Print("    *** validation failed ***\n");
+    }
+#endif
+
+    TestScope("MulVectors C++", [&]() {
+        MulVectors_Generic(matrix, src.data(), dst1.data(), num_data);
+    }, num_try);
+#ifdef muSIMD_MulPoints3
+    TestScope("MulVectors ISPC", [&]() {
+        MulVectors_ISPC(matrix, src.data(), dst2.data(), num_data);
+    }, num_try);
+    if (!NearEqual(dst1.data(), dst2.data(), num_data)) {
+        Print("    *** validation failed ***\n");
+    }
+#endif
 }
-RegisterTestEntry(TestMulPoints)
 
 
-void TestRayTrianglesIntersection()
+TestCase(TestRayTrianglesIntersection)
 {
     RawVector<float3> vertices;
     RawVector<float3> vertices_flattened;
@@ -482,92 +404,64 @@ void TestRayTrianglesIntersection()
     int tindex;
     float distance;
 
-    auto print = [&]() {
-        Print("    %d hits: index %d, distance %f\n",
+    Print(
+        "    triangle count: %d\n"
+        "    ray count: %d\n",
+        num_triangles,
+        num_try);
+
+    auto PrintResult = [&]() {
+        Print("        %d hits: index %d, distance %f\n",
             num_hits, tindex, distance);
     };
 
-    auto s1_begin = Now();
-    for (int i = 0; i < num_try; ++i) {
+    TestScope("RayTrianglesIntersection indexed C++", [&]() {
         num_hits = RayTrianglesIntersectionIndexed_Generic(ray_pos, ray_dir, vertices.data(),
             indices.data(), num_triangles, tindex, distance);
-    }
-    auto s1_end = Now();
+    }, num_try);
+    PrintResult();
 
-    print();
-
-    auto s2_begin = Now();
 #ifdef muSIMD_RayTrianglesIntersectionIndexed
-    for (int i = 0; i < num_try; ++i) {
+    TestScope("RayTrianglesIntersection indexed ISPC", [&]() {
         num_hits = RayTrianglesIntersectionIndexed_ISPC(ray_pos, ray_dir, vertices.data(),
             indices.data(), num_triangles, tindex, distance);
-    }
+    }, num_try);
+    PrintResult();
 #endif
-    auto s2_end = Now();
 
-    print();
-
-    auto s3_begin = Now();
-    for (int i = 0; i < num_try; ++i) {
+    TestScope("RayTrianglesIntersection flattened C++", [&]() {
         num_hits = RayTrianglesIntersectionFlattened_Generic(ray_pos, ray_dir, vertices_flattened.data(), num_triangles, tindex, distance);
-    }
-    auto s3_end = Now();
+    }, num_try);
+    PrintResult();
 
-    print();
-
-    auto s4_begin = Now();
-#ifdef muSIMD_RayTrianglesIntersectionFlattened
-    for (int i = 0; i < num_try; ++i) {
+#ifdef muSIMD_RayTrianglesIntersectionIndexed
+    TestScope("RayTrianglesIntersection flattened ISPC", [&]() {
         num_hits = RayTrianglesIntersectionFlattened_ISPC(ray_pos, ray_dir, vertices_flattened.data(), num_triangles, tindex, distance);
-    }
+    }, num_try);
+    PrintResult();
 #endif
-    auto s4_end = Now();
 
-    print();
-
-    auto s5_begin = Now();
-    for (int i = 0; i < num_try; ++i) {
+    TestScope("RayTrianglesIntersection SoA C++", [&]() {
         num_hits = RayTrianglesIntersectionSoA_Generic(ray_pos, ray_dir,
             v1x.data(), v1y.data(), v1z.data(),
             v2x.data(), v2y.data(), v2z.data(),
             v3x.data(), v3y.data(), v3z.data(), num_triangles, tindex, distance);
-    }
-    auto s5_end = Now();
+    }, num_try);
+    PrintResult();
 
-    print();
-
-    auto s6_begin = Now();
-#ifdef muSIMD_RayTrianglesIntersectionSoA
-    for (int i = 0; i < num_try; ++i) {
+#ifdef muSIMD_RayTrianglesIntersectionIndexed
+    TestScope("RayTrianglesIntersection SoA ISPC", [&]() {
         num_hits = RayTrianglesIntersectionSoA_ISPC(ray_pos, ray_dir,
             v1x.data(), v1y.data(), v1z.data(),
             v2x.data(), v2y.data(), v2z.data(),
             v3x.data(), v3y.data(), v3z.data(), num_triangles, tindex, distance);
-    }
+    }, num_try);
+    PrintResult();
 #endif
-    auto s6_end = Now();
-
-    print();
-
-    Print(
-        "    triangle count: %d\n"
-        "    ray count: %d\n"
-        "    RayTrianglesIntersection (indexed):   Generic %.2fms, ISPC %.2fms\n"
-        "    RayTrianglesIntersection (flattened): Generic %.2fms, ISPC %.2fms\n"
-        "    RayTrianglesIntersection (SoA):       Generic %.2fms, ISPC %.2fms\n",
-        num_triangles,
-        num_try,
-        NS2MS(s1_end - s1_begin),
-        NS2MS(s2_end - s2_begin),
-        NS2MS(s3_end - s3_begin),
-        NS2MS(s4_end - s4_begin),
-        NS2MS(s5_end - s5_begin),
-        NS2MS(s6_end - s6_begin));
 }
-RegisterTestEntry(TestRayTrianglesIntersection)
 
 
-void TestPolygonInside()
+TestCase(TestPolygonInside)
 {
     const int num_try = 100;
     const int ngon = 80000;
@@ -594,74 +488,63 @@ void TestPolygonInside()
     float2 pmin, pmax;
     int num_inside = 0;
 
-    auto s1_begin = Now();
+    auto PrintResult = [&]() {
+        Print("        num_inside: %d\n", num_inside);
+    };
+
+
     num_inside = 0;
-    for (int ti = 0; ti < num_try; ++ti) {
+    TestScope("PolyInside C++", [&]() {
         MinMax_Generic(poly.data(), ngon, pmin, pmax);
         for (int pi = 0; pi < countof(points); ++pi) {
             if (PolyInside_Generic(poly.data(), ngon, pmin, pmax, points[pi])) {
                 ++num_inside;
             }
         }
-    }
-    auto s1_end = Now();
+    }, num_try);
+    PrintResult();
 
-    Print("    Generic: %d (%.2fms)\n", num_inside, NS2MS(s1_end - s1_begin));
-
-    auto s2_begin = Now();
-    num_inside = 0;
-    pmin = pmax = float2::zero();
-    for (int ti = 0; ti < num_try; ++ti) {
-        MinMax_Generic(poly.data(), ngon, pmin, pmax);
-        for (int pi = 0; pi < countof(points); ++pi) {
-            if (PolyInside_Generic(polyx.data(), polyy.data(), ngon, pmin, pmax, points[pi])) {
-                ++num_inside;
-            }
-        }
-    }
-    auto s2_end = Now();
-
-    Print("    Generic SoA: %d (%.2fms)\n", num_inside, NS2MS(s2_end - s2_begin));
-
-    auto s3_begin = Now();
 #ifdef muSIMD_PolyInside
     num_inside = 0;
-    pmin = pmax = float2::zero();
-    for (int ti = 0; ti < num_try; ++ti) {
+    TestScope("PolyInside ISPC", [&]() {
         MinMax_ISPC(poly.data(), ngon, pmin, pmax);
         for (int pi = 0; pi < countof(points); ++pi) {
             if (PolyInside_ISPC(poly.data(), ngon, pmin, pmax, points[pi])) {
                 ++num_inside;
             }
         }
-    }
+    }, num_try);
+    PrintResult();
 #endif
-    auto s3_end = Now();
 
-    Print("    ISPC: %d (%.2fms)\n", num_inside, NS2MS(s3_end - s3_begin));
+    num_inside = 0;
+    TestScope("PolyInside SoA C++", [&]() {
+        MinMax_Generic(poly.data(), ngon, pmin, pmax);
+        for (int pi = 0; pi < countof(points); ++pi) {
+            if (PolyInside_Generic(polyx.data(), polyy.data(), ngon, pmin, pmax, points[pi])) {
+                ++num_inside;
+            }
+        }
+    }, num_try);
+    PrintResult();
 
-    auto s4_begin = Now();
+
 #ifdef muSIMD_PolyInsideSoA
     num_inside = 0;
-    pmin = pmax = float2::zero();
-    for (int ti = 0; ti < num_try; ++ti) {
+    TestScope("PolyInside SoA ISPC", [&]() {
         MinMax_ISPC(poly.data(), ngon, pmin, pmax);
         for (int pi = 0; pi < countof(points); ++pi) {
             if (PolyInside_ISPC(polyx.data(), polyy.data(), ngon, pmin, pmax, points[pi])) {
                 ++num_inside;
             }
         }
-    }
+    }, num_try);
+    PrintResult();
 #endif
-    auto s4_end = Now();
-
-    Print("    ISPC SoA: %d (%.2fms)\n", num_inside, NS2MS(s4_end - s4_begin));
-    Print("\n");
 }
-RegisterTestEntry(TestPolygonInside)
 
 
-void TestEdge()
+TestCase(TestEdge)
 {
     {
         float3 points[] = {
@@ -751,4 +634,3 @@ void TestEdge()
         Print("\n");
     }
 }
-RegisterTestEntry(TestEdge)

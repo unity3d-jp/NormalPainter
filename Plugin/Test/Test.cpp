@@ -36,29 +36,39 @@ void RegisterTestEntryImpl(const char *name, const std::function<void()>& body)
     g_tests.push_back({name, body});
 }
 
-static void ExecuteTest(const TestEntry& v)
+static void RunTestImpl(const TestEntry& v)
 {
-    printf("%s begin\n", v.name.c_str());
+    Print("%s begin\n", v.name.c_str());
     auto begin = Now();
     v.body();
     auto end = Now();
-    printf("%s end (%fms)\n\n", v.name.c_str(), NS2MS(end-begin));
+    Print("%s end (%.2fms)\n\n", v.name.c_str(), NS2MS(end-begin));
+}
+
+testExport void RunTest(char *name)
+{
+    for (auto& entry : g_tests) {
+        if (entry.name == name) {
+            RunTestImpl(entry);
+        }
+    }
+}
+
+testExport void RunAllTests()
+{
+    for (auto& entry : g_tests) {
+        RunTestImpl(entry);
+    }
 }
 
 int main(int argc, char *argv[])
 {
     if (argc == 1) {
-        for (auto& entry : g_tests) {
-            ExecuteTest(entry);
-        }
+        RunAllTests();
     }
     else {
-        for (auto& entry : g_tests) {
-            for (int ai = 1; ai < argc; ++ai) {
-                if (entry.name == argv[ai]) {
-                    ExecuteTest(entry);
-                }
-            }
+        for (int i = 1; i < argc; ++i) {
+            RunTest(argv[i]);
         }
     }
 
