@@ -95,7 +95,8 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DebugDLL|x64'">
     <PostBuildEvent>
-      <Command>xcopy /Y $(TargetPath) $(SolutionDir)..\NormalPainter\Assets\Tests\Plugins\x86_64\</Command>
+      <Command>xcopy /Y $(TargetPath) $(SolutionDir)..\NormalPainter\Assets\Tests\Plugins\x86_64\
+xcopy /Y $(SolutionDir)External\libs\win64\*.dll $(SolutionDir)..\NormalPainter\Assets\Tests\Plugins\x86_64\</Command>
     </PostBuildEvent>
     <ClCompile>
       <PrecompiledHeader>Use</PrecompiledHeader>
@@ -144,7 +145,8 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='MasterDLL|x64'">
     <PostBuildEvent>
-      <Command>xcopy /Y $(TargetPath) $(SolutionDir)..\NormalPainter\Assets\Tests\Plugins\x86_64\</Command>
+      <Command>xcopy /Y $(TargetPath) $(SolutionDir)..\NormalPainter\Assets\Tests\Plugins\x86_64\
+xcopy /Y $(SolutionDir)External\libs\win64\*.dll $(SolutionDir)..\NormalPainter\Assets\Tests\Plugins\x86_64\</Command>
     </PostBuildEvent>
     <ClCompile>
       <PrecompiledHeader>Use</PrecompiledHeader>

@@ -325,6 +325,9 @@ void TestNormalsAndTangents()
     //ExportFbx("Wave_FlattenedISPC.fbx", indices, 3, points, normals[3], tangents[3], uv, {});
     //ExportFbx("Wave_SoACpp.fbx", indices, 3, points, normals[4], tangents[4], uv, {});
     //ExportFbx("Wave_SoAISPC.fbx", indices, 3, points, normals[5], tangents[5], uv, {});
+    //if (!tangents[6].empty()) {
+    //    ExportFbx("Wave_Unity.fbx", indices, 3, points, normals[0], tangents[6], uv, {});
+    //}
 
 #undef SoAUVArgs
 #undef SoAPointsArgs
