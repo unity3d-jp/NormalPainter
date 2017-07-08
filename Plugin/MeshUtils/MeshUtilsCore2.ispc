@@ -547,14 +547,13 @@ export void GenerateNormalsTriangleIndexed(uniform float3 dst[],
         float3 p2 = vertices[indices[ti3  + 2]];
         float3 n = cross(p1 - p0, p2 - p0);
 
-        uniform float nx[C], ny[C], nz[C];
-        nx[I]=n.x; ny[I]=n.y; nz[I]=n.z;
         for(uniform int ci=0; ci<C; ++ci) {
+            uniform float3 cn = {extract(n.x, ci), extract(n.y, ci), extract(n.z, ci)};
             for(uniform int i=0; i<3; ++i) {
                 uniform int ix = indices[(bi + ci) * 3 + i];
-                tnx[ix] += nx[ci];
-                tny[ix] += ny[ci];
-                tnz[ix] += nz[ci];
+                tnx[ix] += cn.x;
+                tny[ix] += cn.y;
+                tnz[ix] += cn.z;
             }
         }
     }
@@ -606,14 +605,13 @@ export void GenerateNormalsTriangleFlattened(uniform float3 dst[],
         float3 p2 = vertices[ti3  + 2];
         float3 n = cross(p1 - p0, p2 - p0);
 
-        uniform float nx[C], ny[C], nz[C];
-        nx[I]=n.x; ny[I]=n.y; nz[I]=n.z;
         for(uniform int ci=0; ci<C; ++ci) {
+            uniform float3 cn = {extract(n.x, ci), extract(n.y, ci), extract(n.z, ci)};
             for(uniform int i=0; i<3; ++i) {
                 uniform int ix = indices[(bi + ci) * 3 + i];
-                tnx[ix] += nx[ci];
-                tny[ix] += ny[ci];
-                tnz[ix] += nz[ci];
+                tnx[ix] += cn.x;
+                tny[ix] += cn.y;
+                tnz[ix] += cn.z;
             }
         }
     }
@@ -664,14 +662,13 @@ export void GenerateNormalsTriangleSoA(uniform float3 dst[],
         float3 p2 = {v3x[ti], v3y[ti], v3z[ti]};
         float3 n = cross(p1 - p0, p2 - p0);
 
-        uniform float nx[C], ny[C], nz[C];
-        nx[I]=n.x; ny[I]=n.y; nz[I]=n.z;
         for(uniform int ci=0; ci<C; ++ci) {
+            uniform float3 cn = {extract(n.x, ci), extract(n.y, ci), extract(n.z, ci)};
             for(uniform int i=0; i<3; ++i) {
                 uniform int ix = indices[(bi + ci) * 3 + i];
-                tnx[ix] += nx[ci];
-                tny[ix] += ny[ci];
-                tnz[ix] += nz[ci];
+                tnx[ix] += cn.x;
+                tny[ix] += cn.y;
+                tnz[ix] += cn.z;
             }
         }
     }
@@ -734,17 +731,11 @@ export void GenerateTangentsTriangleIndexed(uniform float4 dst[],
         float3 b[3];
         compute_triangle_tangents(v, u, t, b);
 
-        uniform float tx[3][C], ty[3][C], tz[3][C];
-        uniform float bx[3][C], by[3][C], bz[3][C];
-        for(uniform int i=0; i<3; ++i) {
-            tx[i][I]=t[i].x; ty[i][I]=t[i].y; tz[i][I]=t[i].z;
-            bx[i][I]=b[i].x; by[i][I]=b[i].y; bz[i][I]=b[i].z;
-        }
         for(uniform int ci=0; ci<C; ++ci) {
             for(uniform int i=0; i<3; ++i) {
                 uniform int ix = indices[(bi+ci)*3 + i];
-                ttx[ix]+=tx[i][ci]; tty[ix]+=ty[i][ci]; ttz[ix]+=tz[i][ci];
-                tbx[ix]+=bx[i][ci]; tby[ix]+=by[i][ci]; tbz[ix]+=bz[i][ci];
+                ttx[ix]+=extract(t[i].x, ci); tty[ix]+=extract(t[i].y, ci); ttz[ix]+=extract(t[i].z, ci);
+                tbx[ix]+=extract(b[i].x, ci); tby[ix]+=extract(b[i].y, ci); tbz[ix]+=extract(b[i].z, ci);
             }
         }
     }
@@ -834,17 +825,11 @@ export void GenerateTangentsTriangleFlattened(uniform float4 dst[],
         float3 b[3];
         compute_triangle_tangents(v, u, t, b);
 
-        uniform float tx[3][C], ty[3][C], tz[3][C];
-        uniform float bx[3][C], by[3][C], bz[3][C];
-        for(uniform int i=0; i<3; ++i) {
-            tx[i][I]=t[i].x; ty[i][I]=t[i].y; tz[i][I]=t[i].z;
-            bx[i][I]=b[i].x; by[i][I]=b[i].y; bz[i][I]=b[i].z;
-        }
         for(uniform int ci=0; ci<C; ++ci) {
             for(uniform int i=0; i<3; ++i) {
                 uniform int ix = indices[(bi+ci)*3 + i];
-                ttx[ix]+=tx[i][ci]; tty[ix]+=ty[i][ci]; ttz[ix]+=tz[i][ci];
-                tbx[ix]+=bx[i][ci]; tby[ix]+=by[i][ci]; tbz[ix]+=bz[i][ci];
+                ttx[ix]+=extract(t[i].x, ci); tty[ix]+=extract(t[i].y, ci); ttz[ix]+=extract(t[i].z, ci);
+                tbx[ix]+=extract(b[i].x, ci); tby[ix]+=extract(b[i].y, ci); tbz[ix]+=extract(b[i].z, ci);
             }
         }
     }
@@ -943,17 +928,11 @@ export void GenerateTangentsTriangleSoA(
         float3 b[3];
         compute_triangle_tangents(v, u, t, b);
 
-        uniform float tx[3][C], ty[3][C], tz[3][C];
-        uniform float bx[3][C], by[3][C], bz[3][C];
-        for(uniform int i=0; i<3; ++i) {
-            tx[i][I]=t[i].x; ty[i][I]=t[i].y; tz[i][I]=t[i].z;
-            bx[i][I]=b[i].x; by[i][I]=b[i].y; bz[i][I]=b[i].z;
-        }
         for(uniform int ci=0; ci<C; ++ci) {
             for(uniform int i=0; i<3; ++i) {
                 uniform int ix = indices[(bi+ci)*3 + i];
-                ttx[ix]+=tx[i][ci]; tty[ix]+=ty[i][ci]; ttz[ix]+=tz[i][ci];
-                tbx[ix]+=bx[i][ci]; tby[ix]+=by[i][ci]; tbz[ix]+=bz[i][ci];
+                ttx[ix]+=extract(t[i].x, ci); tty[ix]+=extract(t[i].y, ci); ttz[ix]+=extract(t[i].z, ci);
+                tbx[ix]+=extract(b[i].x, ci); tby[ix]+=extract(b[i].y, ci); tbz[ix]+=extract(b[i].z, ci);
             }
         }
     }
