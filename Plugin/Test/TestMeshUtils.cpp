@@ -29,6 +29,13 @@ void ExportFbxImpl(const char *path,
 #endif // EnableFbxExport
 
 
+template<class T> struct StrideIterator
+{
+    T *data;
+    size_t stride;
+};
+
+
 void Test_IndexedArrays()
 {
     std::vector<uint16_t> indices16 = { 0,1,0,2,1,3,2 };
@@ -38,13 +45,13 @@ void Test_IndexedArrays()
     IIArray<uint16_t, float> iia1 = { indices16, values };
     IIArray<uint32_t, float> iia2 = { indices32, values };
 
-    printf("    iia1: ");
-    for(auto& v : iia1) { printf("%.f ", v); }
-    printf("\n");
+    Print("    iia1: ");
+    for(auto& v : iia1) { Print("%.f ", v); }
+    Print("\n");
 
-    printf("    iia2: ");
-    for (auto& v : iia2) { printf("%.f ", v); }
-    printf("\n");
+    Print("    iia2: ");
+    for (auto& v : iia2) { Print("%.f ", v); }
+    Print("\n");
 }
 RegisterTestEntry(Test_IndexedArrays)
 
@@ -104,7 +111,7 @@ void TestNormalsAndTangents()
     RawVector<float3> points_f;
     RawVector<float2> uv_f;
     RawVector<float3> normals[6];
-    RawVector<float4> tangents[6];
+    RawVector<float4> tangents[7];
     RawVector<float> psoa[9], usoa[6];
 
 
@@ -142,7 +149,7 @@ void TestNormalsAndTangents()
     }
 
 
-    printf(
+    Print(
         "    num_vertices: %d\n"
         "    num_triangles: %d\n"
         ,
@@ -196,7 +203,7 @@ void TestNormalsAndTangents()
 #endif
         auto s6e = Now();
 
-        printf(
+        Print(
             "    GenerateNormals indexed C++: %.2fms\n"
             "    GenerateNormals indexed ISPC: %.2fms\n"
             "    GenerateNormals flattened C++: %.2fms\n"
@@ -255,7 +262,7 @@ void TestNormalsAndTangents()
 #endif
         auto s6e = Now();
 
-        printf(
+        Print(
             "    GenerateTangents indexed C++: %.2fms\n"
             "    GenerateTangents indexed ISPC: %.2fms\n"
             "    GenerateTangents flattened C++: %.2fms\n"
@@ -269,30 +276,67 @@ void TestNormalsAndTangents()
             NS2MS(s4e - s4b) / num_try,
             NS2MS(s5e - s5b) / num_try,
             NS2MS(s6e - s6b) / num_try);
+
+        auto s7b = Now();
+        auto s7e = Now();
+        auto unity_exe = GetModule("Unity.exe");
+        if (unity_exe) {
+            InitializeSymbols();
+
+            using CalculateTangentsT = void(*)(
+                StrideIterator<float3> vertices, StrideIterator<float3> normals, StrideIterator<float2> uv, const int *indices,
+                int num_vertices, int num_triangles, StrideIterator<float4> dst);
+
+            auto CalculateTangents = (CalculateTangentsT)FindSymbolByName("?CalculateTangents@@YAXV?$StrideIterator@VVector3f@@@@0V?$StrideIterator@VVector2f@@@@PEBIHHV?$StrideIterator@VVector4f@@@@@Z");
+            if (CalculateTangents) {
+                StrideIterator<float3> viter = { points.data(), sizeof(float3) };
+                StrideIterator<float3> niter = { normals[0].data(), sizeof(float3) };
+                StrideIterator<float2> uiter = { uv.data(), sizeof(float2) };
+                StrideIterator<float4> titer = { tangents[6].data(), sizeof(float4) };
+
+                s7b = Now();
+                for (int i = 0; i < num_try; ++i)
+                    CalculateTangents(viter, niter, uiter, indices.data(), num_points, num_triangles, titer);
+                s7e = Now();
+                Print("    GenerateTangents Unity: %.2fms\n", NS2MS(s7e - s7b) / num_try);
+            }
+        }
+        else {
+            tangents[6].clear();
+        }
     }
 
     for (int i = 1; i < countof(normals); ++i) {
+        if (normals[i].size() != normals[0].size()) { continue; }
         if (!NearEqual(normals[0].data(), normals[i].data(), normals[0].size(), 0.01f)) {
-            printf("    *** validation failed: normals %d ***\n", i);
+            Print("    *** validation failed: normals %d ***\n", i);
         }
     }
     for (int i = 1; i < countof(tangents); ++i) {
+        if (tangents[i].size() != tangents[0].size()) { continue; }
         if (!NearEqual(tangents[0].data(), tangents[i].data(), tangents[0].size(), 0.01f)) {
-            printf("    *** validation failed: tangents %d ***\n", i);
+            Print("    *** validation failed: tangents %d ***\n", i);
         }
     }
 
-    ExportFbx("Wave_IndexedCpp.fbx", indices, 3, points, normals[0], tangents[0], uv, {});
-    ExportFbx("Wave_IndexedISPC.fbx", indices, 3, points, normals[1], tangents[1], uv, {});
-    ExportFbx("Wave_FlattenedCpp.fbx", indices, 3, points, normals[2], tangents[2], uv, {});
-    ExportFbx("Wave_FlattenedISPC.fbx", indices, 3, points, normals[3], tangents[3], uv, {});
-    ExportFbx("Wave_SoACpp.fbx", indices, 3, points, normals[4], tangents[4], uv, {});
-    ExportFbx("Wave_SoAISPC.fbx", indices, 3, points, normals[5], tangents[5], uv, {});
+    //ExportFbx("Wave_IndexedCpp.fbx", indices, 3, points, normals[0], tangents[0], uv, {});
+    //ExportFbx("Wave_IndexedISPC.fbx", indices, 3, points, normals[1], tangents[1], uv, {});
+    //ExportFbx("Wave_FlattenedCpp.fbx", indices, 3, points, normals[2], tangents[2], uv, {});
+    //ExportFbx("Wave_FlattenedISPC.fbx", indices, 3, points, normals[3], tangents[3], uv, {});
+    //ExportFbx("Wave_SoACpp.fbx", indices, 3, points, normals[4], tangents[4], uv, {});
+    //ExportFbx("Wave_SoAISPC.fbx", indices, 3, points, normals[5], tangents[5], uv, {});
 
 #undef SoAUVArgs
 #undef SoAPointsArgs
 }
 RegisterTestEntry(TestNormalsAndTangents)
+
+#ifdef _WIN32
+testExport void TestNormalsAndTangentsEx()
+{
+    TestNormalsAndTangents();
+}
+#endif
 
 
 void TestMatrixSwapHandedness()
@@ -308,7 +352,7 @@ void TestMatrixSwapHandedness()
 
     bool r1 = near_equal(mat2, mat3);
     bool r2 = near_equal(imat2, imat3);
-    printf("    %d, %d\n", (int)r1, (int)r2);
+    Print("    %d, %d\n", (int)r1, (int)r2);
 }
 RegisterTestEntry(TestMatrixSwapHandedness)
 
@@ -364,7 +408,7 @@ void TestMulPoints()
     int eq2 = NearEqual(dst1.data(), dst2.data(), num_data);
 
 
-    printf(
+    Print(
         "    num_data: %d\n"
         "    num_try: %d\n"
         "    MulPoints  : Generic %.2fms, ISPC %.2fms\n"
@@ -437,7 +481,7 @@ void TestRayTrianglesIntersection()
     float distance;
 
     auto print = [&]() {
-        printf("    %d hits: index %d, distance %f\n",
+        Print("    %d hits: index %d, distance %f\n",
             num_hits, tindex, distance);
     };
 
@@ -503,7 +547,7 @@ void TestRayTrianglesIntersection()
 
     print();
 
-    printf(
+    Print(
         "    triangle count: %d\n"
         "    ray count: %d\n"
         "    RayTrianglesIntersection (indexed):   Generic %.2fms, ISPC %.2fms\n"
@@ -560,7 +604,7 @@ void TestPolygonInside()
     }
     auto s1_end = Now();
 
-    printf("    Generic: %d (%.2fms)\n", num_inside, NS2MS(s1_end - s1_begin));
+    Print("    Generic: %d (%.2fms)\n", num_inside, NS2MS(s1_end - s1_begin));
 
     auto s2_begin = Now();
     num_inside = 0;
@@ -575,7 +619,7 @@ void TestPolygonInside()
     }
     auto s2_end = Now();
 
-    printf("    Generic SoA: %d (%.2fms)\n", num_inside, NS2MS(s2_end - s2_begin));
+    Print("    Generic SoA: %d (%.2fms)\n", num_inside, NS2MS(s2_end - s2_begin));
 
     auto s3_begin = Now();
 #ifdef muSIMD_PolyInside
@@ -592,7 +636,7 @@ void TestPolygonInside()
 #endif
     auto s3_end = Now();
 
-    printf("    ISPC: %d (%.2fms)\n", num_inside, NS2MS(s3_end - s3_begin));
+    Print("    ISPC: %d (%.2fms)\n", num_inside, NS2MS(s3_end - s3_begin));
 
     auto s4_begin = Now();
 #ifdef muSIMD_PolyInsideSoA
@@ -609,8 +653,8 @@ void TestPolygonInside()
 #endif
     auto s4_end = Now();
 
-    printf("    ISPC SoA: %d (%.2fms)\n", num_inside, NS2MS(s4_end - s4_begin));
-    printf("\n");
+    Print("    ISPC SoA: %d (%.2fms)\n", num_inside, NS2MS(s4_end - s4_begin));
+    Print("\n");
 }
 RegisterTestEntry(TestPolygonInside)
 
@@ -635,20 +679,20 @@ void TestEdge()
 
         for (int vi = 0; vi < 4; ++vi) {
             bool is_edge = OnEdge(indices, 3, points, connection, vi);
-            printf("    IsEdge(): %d %d\n", vi, (int)is_edge);
+            Print("    IsEdge(): %d %d\n", vi, (int)is_edge);
         }
 
         RawVector<int> edges;
         int vi[] = { 1 };
         SelectEdge(indices, 3, points, vi, [&](int vi) { edges.push_back(vi); });
 
-        printf("    SelectEdge (triangles):");
+        Print("    SelectEdge (triangles):");
         for (int e : edges) {
-            printf(" %d", e);
+            Print(" %d", e);
         }
-        printf("\n");
+        Print("\n");
     }
-    printf("\n");
+    Print("\n");
 
     {
         float3 points[4 * 4];
@@ -682,27 +726,27 @@ void TestEdge()
 
         for (int vi = 0; vi < 16; ++vi) {
             bool is_edge = OnEdge(indices, 4, points, connection, vi);
-            printf("    IsEdge(): %d %d\n", vi, (int)is_edge);
+            Print("    IsEdge(): %d %d\n", vi, (int)is_edge);
         }
 
         RawVector<int> edges;
         int vi[] = { 1 };
 
         SelectEdge(indices, counts, offsets, points, vi, [&](int vi) { edges.push_back(vi); });
-        printf("    SelectEdge (quads):");
+        Print("    SelectEdge (quads):");
         for (int e : edges) {
-            printf(" %d", e);
+            Print(" %d", e);
         }
-        printf("\n");
+        Print("\n");
 
         edges.clear();
         vi[0] = 5;
         SelectEdge(indices, counts, offsets, points, vi, [&](int vi) { edges.push_back(vi); });
-        printf("    SelectEdge (quads):");
+        Print("    SelectEdge (quads):");
         for (int e : edges) {
-            printf(" %d", e);
+            Print(" %d", e);
         }
-        printf("\n");
+        Print("\n");
     }
 }
 RegisterTestEntry(TestEdge)

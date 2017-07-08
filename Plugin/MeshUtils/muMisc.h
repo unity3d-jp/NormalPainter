@@ -20,6 +20,7 @@ std::string ToANSI(const std::string& src);
 
 void AddDLLSearchPath(const char *v);
 void* LoadModule(const char *path);
+void* GetModule(const char *module_name);
 bool ResolveImports(void *module);
 
 void InitializeSymbols(const char *path = nullptr);

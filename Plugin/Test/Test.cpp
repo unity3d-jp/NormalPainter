@@ -4,6 +4,25 @@
 
 using namespace mu;
 
+void PrintImpl(const char *format, ...)
+{
+    va_list args;
+    va_start(args, format);
+#ifdef _WIN32
+    const int MaxBuf = 4096;
+    char buf[MaxBuf];
+    vsnprintf(buf, sizeof(buf), format, args);
+    ::OutputDebugStringA(buf);
+    printf(buf);
+#else
+    vprintf(format, args);
+#endif
+    va_end(args);
+    fflush(stdout);
+}
+
+
+
 struct TestEntry
 {
     std::string name;

@@ -167,6 +167,16 @@ void* LoadModule(const char *path)
 #endif //_WIN32
 }
 
+void* GetModule(const char *module_name)
+{
+#ifdef _WIN32
+    return ::GetModuleHandleA(module_name);
+#else  // _WIN32
+    return nullptr;
+#endif //_WIN32
+}
+
+
 void InitializeSymbols(const char *path)
 {
 #ifdef _WIN32
@@ -183,6 +193,7 @@ void InitializeSymbols(const char *path)
     }
 
     DWORD opt = ::SymGetOptions();
+    opt |= SYMOPT_DEBUG;
     opt |= SYMOPT_DEFERRED_LOADS;
     opt &= ~SYMOPT_UNDNAME;
     ::SymSetOptions(opt);
