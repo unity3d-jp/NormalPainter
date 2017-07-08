@@ -100,27 +100,16 @@ export void Normalize(
     uniform float3 dst[],
     uniform const int num)
 {
-    uniform const int num_loops = num / C;
-
-    uniform float * uniform fv = (uniform float * uniform)dst;
-    for(uniform int i=0; i < num_loops; ++i) {
-        uniform const int i3 = i*3;
-        float x,y,z;
-        aos_to_soa3((uniform float*)&fv[C*i3], &x, &y, &z);
-        float d = rsqrt(x*x + y*y + z*z);
-        x *= d;
-        y *= d;
-        z *= d;
-        soa_to_aos3(x, y, z, (uniform float*)&fv[C*i3]);
+    uniform int num_simd = num & ~(C - 1);
+    for(uniform int bi=0; bi < num_simd; bi+=C) {
+        float3 n;
+        aos_to_soa3((uniform float*)&dst[bi], &n.x, &n.y, &n.z);
+        n = normalize(n);
+        soa_to_aos3(n.x, n.y, n.z, (uniform float*)&dst[bi]);
     }
 
-    for(uniform int i=num_loops*C; i < num; ++i) {
-        uniform float3 t = dst[i];
-        uniform float d = rsqrt(t.x*t.x + t.y*t.y + t.z*t.z);
-        t.x *= d;
-        t.y *= d;
-        t.z *= d;
-        dst[i] = t;
+    for(uniform int i=num_simd; i < num; ++i) {
+        dst[i] = normalize(dst[i]);
     }
 }
 #endif
