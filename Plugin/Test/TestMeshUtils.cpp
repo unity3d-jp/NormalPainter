@@ -276,9 +276,8 @@ void TestNormalsAndTangents()
             NS2MS(s4e - s4b) / num_try,
             NS2MS(s5e - s5b) / num_try,
             NS2MS(s6e - s6b) / num_try);
-
-        auto s7b = Now();
-        auto s7e = Now();
+    }
+    {
         auto unity_exe = GetModule("Unity.exe");
         if (unity_exe) {
             InitializeSymbols();
@@ -294,10 +293,10 @@ void TestNormalsAndTangents()
                 StrideIterator<float2> uiter = { uv.data(), sizeof(float2) };
                 StrideIterator<float4> titer = { tangents[6].data(), sizeof(float4) };
 
-                s7b = Now();
+                auto s7b = Now();
                 for (int i = 0; i < num_try; ++i)
                     CalculateTangents(viter, niter, uiter, indices.data(), num_points, num_triangles, titer);
-                s7e = Now();
+                auto s7e = Now();
                 Print("    GenerateTangents Unity: %.2fms\n", NS2MS(s7e - s7b) / num_try);
             }
         }

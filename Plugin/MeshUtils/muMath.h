@@ -19,374 +19,221 @@ extern const float PI;
 extern const float Deg2Rad;
 extern const float Rad2Deg;
 
-struct float2
+template<class T>
+struct tvec2
 {
-    float x, y;
-    float& operator[](int i) { return ((float*)this)[i]; }
-    const float& operator[](int i) const { return ((float*)this)[i]; }
-    bool operator==(const float2& v) const { return x == v.x && y == v.y; }
-    bool operator!=(const float2& v) const { return !((*this)==v); }
+    T x, y;
+    T& operator[](int i) { return ((T*)this)[i]; }
+    const T& operator[](int i) const { return ((T*)this)[i]; }
+    bool operator==(const tvec2& v) const { return x == v.x && y == v.y; }
+    bool operator!=(const tvec2& v) const { return !((*this)==v); }
 
-    void assign(const float *v)
+    template<class U> void assign(const U *v)
     {
-        *this = { v[0], v[1] };
-    }
-    void assign(const double *v)
-    {
-        *this = { (float)v[0], (float)v[1] };
+        *this = { (T)v[0], (T)v[1] };
     }
 
-    static float2 zero() { return{ 0.0f, 0.0f }; }
-    static float2 one() { return{ 1.0f, 1.0f }; }
+    static tvec2 zero() { return{ (T)0, (T)0 }; }
+    static tvec2 one() { return{ (T)1, (T)1 }; }
 };
-struct float3
+using float2 = tvec2<float>;
+using double2 = tvec2<double>;
+
+template<class T>
+struct tvec3
 {
-    float x, y, z;
-    float& operator[](int i) { return ((float*)this)[i]; }
-    const float& operator[](int i) const { return ((float*)this)[i]; }
-    bool operator==(const float3& v) const { return x == v.x && y == v.y && z == v.z; }
-    bool operator!=(const float3& v) const { return !((*this) == v); }
+    T x, y, z;
+    T& operator[](int i) { return ((T*)this)[i]; }
+    const T& operator[](int i) const { return ((T*)this)[i]; }
+    bool operator==(const tvec3& v) const { return x == v.x && y == v.y && z == v.z; }
+    bool operator!=(const tvec3& v) const { return !((*this) == v); }
 
-    void assign(const float *v)
+    template<class U> void assign(const U *v)
     {
-        *this = { v[0], v[1], v[2] };
-    }
-    void assign(const double *v)
-    {
-        *this = { (float)v[0], (float)v[1], (float)v[2] };
+        *this = { (T)v[0], (T)v[1], (T)v[2] };
     }
 
-    static float3 zero() { return{ 0.0f, 0.0f, 0.0f }; }
-    static float3 one() { return{ 1.0f, 1.0f, 1.0f }; }
+    static tvec3 zero() { return{ (T)0, (T)0, (T)0 }; }
+    static tvec3 one() { return{ (T)1, (T)1, (T)1 }; }
 };
-struct float4
+using float3 = tvec3<float>;
+using double3 = tvec3<double>;
+
+template<class T>
+struct tvec4
 {
-    float x, y, z, w;
-    float& operator[](int i) { return ((float*)this)[i]; }
-    const float& operator[](int i) const { return ((float*)this)[i]; }
-    bool operator==(const float4& v) const { return x == v.x && y == v.y && z == v.z && w == v.w; }
-    bool operator!=(const float4& v) const { return !((*this) == v); }
+    T x, y, z, w;
+    T& operator[](int i) { return ((T*)this)[i]; }
+    const T& operator[](int i) const { return ((T*)this)[i]; }
+    bool operator==(const tvec4& v) const { return x == v.x && y == v.y && z == v.z && w == v.w; }
+    bool operator!=(const tvec4& v) const { return !((*this) == v); }
 
-    void assign(const float *v)
+    template<class U> void assign(const U *v)
     {
-        *this = { v[0], v[1], v[2], v[3] };
-    }
-    void assign(const double *v)
-    {
-        *this = { (float)v[0], (float)v[1], (float)v[2], (float)v[3] };
+        *this = { (T)v[0], (T)v[1], (T)v[2], (T)v[3] };
     }
 
-    static float4 zero() { return{ 0.0f, 0.0f, 0.0f, 0.0f }; }
-    static float4 one() { return{ 1.0f, 1.0f, 1.0f, 1.0f }; }
+    static tvec4 zero() { return{ (T)0, (T)0, (T)0, (T)0 }; }
+    static tvec4 one() { return{ (T)1, (T)1, (T)1, (T)1 }; }
 };
-struct quatf
+using float4 = tvec4<float>;
+using double4 = tvec4<double>;
+
+template<class T>
+struct tquat
 {
-    float x, y, z, w;
-    float& operator[](int i) { return ((float*)this)[i]; }
-    const float& operator[](int i) const { return ((float*)this)[i]; }
-    bool operator==(const quatf& v) const { return x == v.x && y == v.y && z == v.z && w == v.w; }
-    bool operator!=(const quatf& v) const { return !((*this) == v); }
+    T x, y, z, w;
+    T& operator[](int i) { return ((T*)this)[i]; }
+    const T& operator[](int i) const { return ((T*)this)[i]; }
+    bool operator==(const tquat& v) const { return x == v.x && y == v.y && z == v.z && w == v.w; }
+    bool operator!=(const tquat& v) const { return !((*this) == v); }
 
-    void assign(const float *v)
+    template<class U> void assign(const U *v)
     {
-        *this = { v[0], v[1], v[2], v[3] };
-    }
-    void assign(const double *v)
-    {
-        *this = { (float)v[0], (float)v[1], (float)v[2], (float)v[3] };
+        *this = { (T)v[0], (T)v[1], (T)v[2], (T)v[3] };
     }
 
-    static quatf identity() { return{ 0.0f, 0.0f, 0.0f, 1.0f }; }
+    static tquat identity() { return{ (T)0, (T)0, (T)0, (T)1 }; }
 };
+using quatf = tquat<float>;
+using quatd = tquat<double>;
 
-struct float3x3
+template<class T>
+struct tmat3x3
 {
-    float3 m[3];
-    float3& operator[](int i) { return m[i]; }
+    tvec3<T> m[3];
+    tvec3<T>& operator[](int i) { return m[i]; }
     const float3& operator[](int i) const { return m[i]; }
-    bool operator==(const float3x3& v) const { return memcmp(m, v.m, sizeof(*this)) == 0; }
-    bool operator!=(const float3x3& v) const { return !((*this) == v); }
+    bool operator==(const tmat3x3& v) const { return memcmp(m, v.m, sizeof(*this)) == 0; }
+    bool operator!=(const tmat3x3& v) const { return !((*this) == v); }
 
-    void assign(const float *v)
-    {
-        memcpy(this, v, sizeof(*this));
-    }
-    void assign(const double *v)
+    template<class U> void assign(const U *v)
     {
         *this = { {
-            { (float)v[0], (float)v[1], (float)v[2] },
-            { (float)v[3], (float)v[4], (float)v[5] },
-            { (float)v[6], (float)v[7], (float)v[8] }
+            { (T)v[0], (T)v[1], (T)v[2] },
+            { (T)v[3], (T)v[4], (T)v[5] },
+            { (T)v[6], (T)v[7], (T)v[8] }
         } };
     }
 
-    static float3x3 identity()
+    static tmat3x3 identity()
     {
         return{ {
-            { 1.0f, 0.0f, 0.0f },
-            { 0.0f, 1.0f, 0.0f },
-            { 0.0f, 0.0f, 1.0f },
+            { (T)1, (T)0, (T)0 },
+            { (T)0, (T)1, (T)0 },
+            { (T)0, (T)0, (T)1 },
         } };
     }
 };
-struct float4x4 
-{
-    float4 m[4];
-    float4& operator[](int i) { return m[i]; }
-    const float4& operator[](int i) const { return m[i]; }
-    bool operator==(const float4x4& v) const { return memcmp(m, v.m, sizeof(*this)) == 0; }
-    bool operator!=(const float4x4& v) const { return !((*this) == v); }
+using float3x3 = tmat3x3<float>;
+using double3x3 = tmat3x3<double>;
 
-    void assign(const float *v)
+template<class T>
+struct tmat4x4
+{
+    tvec4<T> m[4];
+    tvec4<T>& operator[](int i) { return m[i]; }
+    const tvec4<T>& operator[](int i) const { return m[i]; }
+    bool operator==(const tmat4x4& v) const { return memcmp(m, v.m, sizeof(*this)) == 0; }
+    bool operator!=(const tmat4x4& v) const { return !((*this) == v); }
+
+    void assign(const T *v)
     {
         memcpy(this, v, sizeof(*this));
     }
-    void assign(const double *v)
+    template<class U> void assign(const U *v)
     {
         *this = { {
-            { (float)v[0], (float)v[1], (float)v[2], (float)v[3] },
-            { (float)v[4], (float)v[5], (float)v[6], (float)v[7] },
-            { (float)v[8], (float)v[9], (float)v[10],(float)v[11]},
-            { (float)v[12],(float)v[13],(float)v[14],(float)v[15]}
+            { (T)v[0], (T)v[1], (T)v[2], (T)v[3] },
+            { (T)v[4], (T)v[5], (T)v[6], (T)v[7] },
+            { (T)v[8], (T)v[9], (T)v[10],(T)v[11]},
+            { (T)v[12],(T)v[13],(T)v[14],(T)v[15]}
         } };
     }
 
-    static float4x4 identity()
+    static tmat4x4 identity()
     {
         return{ {
-            { 1.0f, 0.0f, 0.0f, 0.0f },
-            { 0.0f, 1.0f, 0.0f, 0.0f },
-            { 0.0f, 0.0f, 1.0f, 0.0f },
-            { 0.0f, 0.0f, 0.0f, 1.0f },
+            { (T)1, (T)0, (T)0, (T)0 },
+            { (T)0, (T)1, (T)0, (T)0 },
+            { (T)0, (T)0, (T)1, (T)0 },
+            { (T)0, (T)0, (T)0, (T)1 },
         } };
     }
 };
+using float4x4 = tmat4x4<float>;
+using double4x4 = tmat4x4<double>;
 
 
-inline bool near_equal(float a, float b, float epsilon = muEpsilon)
-{
-    return std::abs(a - b) < epsilon;
-}
-inline bool near_equal(const float2& a, const float2& b, float e = muEpsilon)
-{
-    return near_equal(a.x, b.x, e) && near_equal(a.y, b.y, e);
-}
-inline bool near_equal(const float3& a, const float3& b, float e = muEpsilon)
-{
-    return near_equal(a.x, b.x, e) && near_equal(a.y, b.y, e) && near_equal(a.z, b.z, e);
-}
-inline bool near_equal(const float4& a, const float4& b, float e = muEpsilon)
-{
-    return near_equal(a.x, b.x, e) && near_equal(a.y, b.y, e) && near_equal(a.z, b.z, e) && near_equal(a.w, b.w, e);
-}
-inline bool near_equal(const quatf& a, const quatf& b, float e = muEpsilon)
-{
-    return near_equal(a.x, b.x, e) && near_equal(a.y, b.y, e) && near_equal(a.z, b.z, e) && near_equal(a.w, b.w, e);
-}
-inline bool near_equal(const float3x3& a, const float3x3& b, float e = muEpsilon)
-{
-    return near_equal(a[0], b[0], e) && near_equal(a[1], b[1], e) && near_equal(a[2], b[2], e);
-}
-inline bool near_equal(const float4x4& a, const float4x4& b, float e = muEpsilon)
-{
-    return near_equal(a[0], b[0], e) && near_equal(a[1], b[1], e) && near_equal(a[2], b[2], e) && near_equal(a[3], b[3], e);
-}
+template<class T> inline tvec2<T> operator-(const tvec2<T>& v) { return{ -v.x, -v.y }; }
+template<class T> inline tvec2<T> operator+(const tvec2<T>& l, const tvec2<T>& r) { return{ l.x + r.x, l.y + r.y }; }
+template<class T> inline tvec2<T> operator-(const tvec2<T>& l, const tvec2<T>& r) { return{ l.x - r.x, l.y - r.y }; }
+template<class T> inline tvec2<T> operator*(const tvec2<T>& l, const tvec2<T>& r) { return{ l.x * r.x, l.y * r.y }; }
+template<class T> inline tvec2<T> operator/(const tvec2<T>& l, const tvec2<T>& r) { return{ l.x / r.x, l.y / r.y }; }
+template<class T> inline tvec2<T> operator+(T l, const tvec2<T>& r) { return{ l + r.x, l + r.y }; }
+template<class T> inline tvec2<T> operator-(T l, const tvec2<T>& r) { return{ l - r.x, l - r.y }; }
+template<class T> inline tvec2<T> operator*(T l, const tvec2<T>& r) { return{ l * r.x, l * r.y }; }
+template<class T> inline tvec2<T> operator/(T l, const tvec2<T>& r) { return{ l / r.x, l / r.y }; }
+template<class T> inline tvec2<T> operator+(const tvec2<T>& l, T r) { return{ l.x + r, l.y + r }; }
+template<class T> inline tvec2<T> operator-(const tvec2<T>& l, T r) { return{ l.x - r, l.y - r }; }
+template<class T> inline tvec2<T> operator*(const tvec2<T>& l, T r) { return{ l.x * r, l.y * r }; }
+template<class T> inline tvec2<T> operator/(const tvec2<T>& l, T r) { return{ l.x / r, l.y / r }; }
+template<class T> inline tvec2<T>& operator+=(tvec2<T>& l, const tvec2<T>& r) { l.x += r.x; l.y += r.y; return l; }
+template<class T> inline tvec2<T>& operator-=(tvec2<T>& l, const tvec2<T>& r) { l.x -= r.x; l.y -= r.y; return l; }
+template<class T> inline tvec2<T>& operator*=(tvec2<T>& l, const tvec2<T>& r) { l.x *= r.x; l.y *= r.y; return l; }
+template<class T> inline tvec2<T>& operator/=(tvec2<T>& l, const tvec2<T>& r) { l.x /= r.x; l.y /= r.y; return l; }
+template<class T> inline tvec2<T>& operator+=(tvec2<T>& l, T r) { l.x += r; l.y += r; return l; }
+template<class T> inline tvec2<T>& operator-=(tvec2<T>& l, T r) { l.x -= r; l.y -= r; return l; }
+template<class T> inline tvec2<T>& operator*=(tvec2<T>& l, T r) { l.x *= r; l.y *= r; return l; }
+template<class T> inline tvec2<T>& operator/=(tvec2<T>& l, T r) { l.x /= r; l.y /= r; return l; }
 
-template<class Int>
-inline Int ceildiv(Int v, Int d)
-{
-    return v / d + (v % d == 0 ? 0 : 1);
-}
+template<class T> inline tvec3<T> operator-(const tvec3<T>& v) { return{ -v.x, -v.y, -v.z }; }
+template<class T> inline tvec3<T> operator+(const tvec3<T>& l, const tvec3<T>& r) { return{ l.x + r.x, l.y + r.y, l.z + r.z }; }
+template<class T> inline tvec3<T> operator-(const tvec3<T>& l, const tvec3<T>& r) { return{ l.x - r.x, l.y - r.y, l.z - r.z }; }
+template<class T> inline tvec3<T> operator*(const tvec3<T>& l, const tvec3<T>& r) { return{ l.x * r.x, l.y * r.y, l.z * r.z }; }
+template<class T> inline tvec3<T> operator/(const tvec3<T>& l, const tvec3<T>& r) { return{ l.x / r.x, l.y / r.y, l.z / r.z }; }
+template<class T> inline tvec3<T> operator+(T l, const tvec3<T>& r) { return{ l + r.x, l + r.y, l + r.z }; }
+template<class T> inline tvec3<T> operator-(T l, const tvec3<T>& r) { return{ l - r.x, l - r.y, l - r.z }; }
+template<class T> inline tvec3<T> operator*(T l, const tvec3<T>& r) { return{ l * r.x, l * r.y, l * r.z }; }
+template<class T> inline tvec3<T> operator/(T l, const tvec3<T>& r) { return{ l / r.x, l / r.y, l / r.z }; }
+template<class T> inline tvec3<T> operator+(const tvec3<T>& l, T r) { return{ l.x + r, l.y + r, l.z + r }; }
+template<class T> inline tvec3<T> operator-(const tvec3<T>& l, T r) { return{ l.x - r, l.y - r, l.z - r }; }
+template<class T> inline tvec3<T> operator*(const tvec3<T>& l, T r) { return{ l.x * r, l.y * r, l.z * r }; }
+template<class T> inline tvec3<T> operator/(const tvec3<T>& l, T r) { return{ l.x / r, l.y / r, l.z / r }; }
+template<class T> inline tvec3<T>& operator+=(tvec3<T>& l, const tvec3<T>& r) { l.x += r.x; l.y += r.y; l.z += r.z; return l; }
+template<class T> inline tvec3<T>& operator-=(tvec3<T>& l, const tvec3<T>& r) { l.x -= r.x; l.y -= r.y; l.z -= r.z; return l; }
+template<class T> inline tvec3<T>& operator*=(tvec3<T>& l, const tvec3<T>& r) { l.x *= r.x; l.y *= r.y; l.z *= r.z; return l; }
+template<class T> inline tvec3<T>& operator/=(tvec3<T>& l, const tvec3<T>& r) { l.x /= r.x; l.y /= r.y; l.z /= r.z; return l; }
+template<class T> inline tvec3<T>& operator+=(tvec3<T>& l, T r) { l.x += r; l.y += r; l.z += r; return l; }
+template<class T> inline tvec3<T>& operator-=(tvec3<T>& l, T r) { l.x -= r; l.y -= r; l.z -= r; return l; }
+template<class T> inline tvec3<T>& operator*=(tvec3<T>& l, T r) { l.x *= r; l.y *= r; l.z *= r; return l; }
+template<class T> inline tvec3<T>& operator/=(tvec3<T>& l, T r) { l.x /= r; l.y /= r; l.z /= r; return l; }
 
-
-inline float2 operator+(const float2& l, const float2& r)
-{
-    return{ l.x + r.x, l.y + r.y };
-}
-inline float2 operator-(const float2& v)
-{
-    return{ -v.x, -v.y };
-}
-inline float2 operator-(const float2& l, const float2& r)
-{
-    return{ l.x - r.x, l.y - r.y };
-}
-inline float2 operator*(const float2& l, float r)
-{
-    return{ l.x * r, l.y * r };
-}
-inline float2 operator*(const float2& l, const float2& r)
-{
-    return{ l.x * r.x, l.y * r.y };
-}
-inline float2 operator/(const float2& l, float r)
-{
-    return{ l.x / r, l.y / r };
-}
-inline float2 operator/(const float2& l, const float2& r)
-{
-    return{ l.x / r.x, l.y / r.y };
-}
-
-inline float2& operator+=(float2& l, const float2& r)
-{
-    l = l + r;
-    return l;
-}
-inline float2& operator-=(float2& l, const float2& r)
-{
-    l = l - r;
-    return l;
-}
-inline float2& operator*=(float2& l, float r)
-{
-    l = l * r;
-    return l;
-}
-inline float2& operator*=(float2& l, const float2& r)
-{
-    l = l * r;
-    return l;
-}
-inline float2& operator/=(float2& l, float r)
-{
-    l = l / r;
-    return l;
-}
-inline float2& operator/=(float2& l, const float2& r)
-{
-    l = l / r;
-    return l;
-}
-
-inline float3 operator+(const float3& l, const float3& r)
-{
-    return{ l.x + r.x, l.y + r.y, l.z + r.z };
-}
-inline float3 operator-(const float3& v)
-{
-    return{-v.x, -v.y, -v.z};
-}
-inline float3 operator-(const float3& l, const float3& r)
-{
-    return{ l.x - r.x, l.y - r.y, l.z - r.z };
-}
-inline float3 operator*(const float3& l, float r)
-{
-    return{ l.x * r, l.y * r, l.z * r };
-}
-inline float3 operator*(const float3& l, const float3& r)
-{
-    return{ l.x * r.x, l.y * r.y, l.z * r.z };
-}
-inline float3 operator/(const float3& l, float r)
-{
-    return{ l.x / r, l.y / r, l.z / r };
-}
-inline float3 operator/(const float3& l, const float3& r)
-{
-    return{ l.x / r.x, l.y / r.y, l.z / r.z };
-}
-
-inline float3& operator+=(float3& l, const float3& r)
-{
-    l = l + r;
-    return l;
-}
-inline float3& operator-=(float3& l, const float3& r)
-{
-    l = l - r;
-    return l;
-}
-inline float3& operator*=(float3& l, float r)
-{
-    l = l * r;
-    return l;
-}
-inline float3& operator*=(float3& l, const float3& r)
-{
-    l = l * r;
-    return l;
-}
-inline float3& operator/=(float3& l, float r)
-{
-    l = l / r;
-    return l;
-}
-inline float3& operator/=(float3& l, const float3& r)
-{
-    l = l / r;
-    return l;
-}
+template<class T> inline tvec4<T> operator-(const tvec4<T>& v) { return{ -v.x, -v.y, -v.z, -v.w }; }
+template<class T> inline tvec4<T> operator+(const tvec4<T>& l, const tvec4<T>& r) { return{ l.x + r.x, l.y + r.y, l.z + r.z, l.w + r.w }; }
+template<class T> inline tvec4<T> operator-(const tvec4<T>& l, const tvec4<T>& r) { return{ l.x - r.x, l.y - r.y, l.z - r.z, l.w - r.w }; }
+template<class T> inline tvec4<T> operator*(const tvec4<T>& l, const tvec4<T>& r) { return{ l.x * r.x, l.y * r.y, l.z * r.z, l.w * r.w }; }
+template<class T> inline tvec4<T> operator/(const tvec4<T>& l, const tvec4<T>& r) { return{ l.x / r.x, l.y / r.y, l.z / r.z, l.w / r.w }; }
+template<class T> inline tvec4<T> operator+(T l, const tvec4<T>& r) { return{ l + r.x, l + r.y, l + r.z, l + r.w }; }
+template<class T> inline tvec4<T> operator-(T l, const tvec4<T>& r) { return{ l - r.x, l - r.y, l - r.z, l - r.w }; }
+template<class T> inline tvec4<T> operator*(T l, const tvec4<T>& r) { return{ l * r.x, l * r.y, l * r.z, l * r.w }; }
+template<class T> inline tvec4<T> operator/(T l, const tvec4<T>& r) { return{ l / r.x, l / r.y, l / r.z, l / r.w }; }
+template<class T> inline tvec4<T> operator+(const tvec4<T>& l, T r) { return{ l.x + r, l.y + r, l.z + r, l.w + r }; }
+template<class T> inline tvec4<T> operator-(const tvec4<T>& l, T r) { return{ l.x - r, l.y - r, l.z - r, l.w - r }; }
+template<class T> inline tvec4<T> operator*(const tvec4<T>& l, T r) { return{ l.x * r, l.y * r, l.z * r, l.w * r }; }
+template<class T> inline tvec4<T> operator/(const tvec4<T>& l, T r) { return{ l.x / r, l.y / r, l.z / r, l.w / r }; }
+template<class T> inline tvec4<T>& operator+=(tvec4<T>& l, const tvec4<T>& r) { l.x += r.x; l.y += r.y; l.z += r.z; l.w += r.w; return l; }
+template<class T> inline tvec4<T>& operator-=(tvec4<T>& l, const tvec4<T>& r) { l.x -= r.x; l.y -= r.y; l.z -= r.z; l.w -= r.w; return l; }
+template<class T> inline tvec4<T>& operator*=(tvec4<T>& l, const tvec4<T>& r) { l.x *= r.x; l.y *= r.y; l.z *= r.z; l.w *= r.w; return l; }
+template<class T> inline tvec4<T>& operator/=(tvec4<T>& l, const tvec4<T>& r) { l.x /= r.x; l.y /= r.y; l.z /= r.z; l.w /= r.w; return l; }
+template<class T> inline tvec4<T>& operator+=(tvec4<T>& l, T r) { l.x += r; l.y += r; l.z += r; l.w += r; return l; }
+template<class T> inline tvec4<T>& operator-=(tvec4<T>& l, T r) { l.x -= r; l.y -= r; l.z -= r; l.w -= r; return l; }
+template<class T> inline tvec4<T>& operator*=(tvec4<T>& l, T r) { l.x *= r; l.y *= r; l.z *= r; l.w *= r; return l; }
+template<class T> inline tvec4<T>& operator/=(tvec4<T>& l, T r) { l.x /= r; l.y /= r; l.z /= r; l.w /= r; return l; }
 
 
-inline float4 operator+(const float4& l, const float4& r)
-{
-    return{ l.x + r.x, l.y + r.y, l.z + r.z, l.w + r.w };
-}
-inline float4 operator-(const float4& v)
-{
-    return{ -v.x, -v.y, -v.z, -v.w };
-}
-inline float4 operator-(const float4& l, const float4& r)
-{
-    return{ l.x - r.x, l.y - r.y, l.z - r.z, l.w - r.w };
-}
-inline float4 operator*(const float4& l, float r)
-{
-    return{ l.x * r, l.y * r, l.z * r, l.w * r };
-}
-inline float4 operator*(const float4& l, const float4& r)
-{
-    return{ l.x * r.x, l.y * r.y, l.z * r.z, l.w * r.w };
-}
-inline float4 operator/(const float4& l, float r)
-{
-    return{ l.x / r, l.y / r, l.z / r, l.w / r };
-}
-inline float4 operator/(const float4& l, const float4& r)
-{
-    return{ l.x / r.x, l.y / r.y, l.z / r.z, l.w / r.w };
-}
-
-inline float4& operator+=(float4& l, const float4& r)
-{
-    l = l + r;
-    return l;
-}
-inline float4& operator-=(float4& l, const float4& r)
-{
-    l = l - r;
-    return l;
-}
-inline float4& operator*=(float4& l, float r)
-{
-    l = l * r;
-    return l;
-}
-inline float4& operator*=(float4& l, const float4& r)
-{
-    l = l * r;
-    return l;
-}
-inline float4& operator/=(float4& l, float r)
-{
-    l = l / r;
-    return l;
-}
-inline float4& operator/=(float4& l, const float4& r)
-{
-    l = l / r;
-    return l;
-}
-
-
-inline quatf operator*(const quatf& l, float r)
-{
-    return{ l.x*r, l.y*r, l.z*r, l.w*r };
-}
-
-inline quatf operator*(const quatf& l, const quatf& r)
+template<class T> inline tquat<T> operator*(const tquat<T>& l, float r) { return{ l.x*r, l.y*r, l.z*r, l.w*r }; }
+template<class T> inline tquat<T> operator*(const tquat<T>& l, const tquat<T>& r)
 {
     return{
         l.w*r.x + l.x*r.w + l.y*r.z - l.z*r.y,
@@ -395,19 +242,18 @@ inline quatf operator*(const quatf& l, const quatf& r)
         l.w*r.w - l.x*r.x - l.y*r.y - l.z*r.z,
     };
 }
-
-inline quatf& operator*=(quatf& l, float r)
+template<class T> inline tquat<T>& operator*=(tquat<T>& l, float r)
 {
     l = l * r;
     return l;
 }
-inline quatf& operator*=(quatf& l, const quatf& r)
+template<class T> inline tquat<T>& operator*=(tquat<T>& l, const tquat<T>& r)
 {
     l = l * r;
     return l;
 }
 
-inline float3 operator*(const float3x3& m, const float3& v)
+template<class T> inline tvec3<T> operator*(const tmat3x3<T>& m, const tvec3<T>& v)
 {
     return{
         m[0][0] * v[0] + m[1][0] * v[1] + m[2][0] * v[2],
@@ -415,7 +261,7 @@ inline float3 operator*(const float3x3& m, const float3& v)
         m[0][2] * v[0] + m[1][2] * v[1] + m[2][2] * v[2],
     };
 }
-inline float3 operator*(const float4x4& m, const float3& v)
+template<class T> inline tvec3<T> operator*(const tmat4x4<T>& m, const tvec3<T>& v)
 {
     return{
         m[0][0] * v[0] + m[1][0] * v[1] + m[2][0] * v[2],
@@ -423,7 +269,7 @@ inline float3 operator*(const float4x4& m, const float3& v)
         m[0][2] * v[0] + m[1][2] * v[1] + m[2][2] * v[2],
     };
 }
-inline float4 operator*(const float4x4& m, const float4& v)
+template<class T> inline tvec4<T> operator*(const tmat4x4<T>& m, const tvec4<T>& v)
 {
     return{
         m[0][0] * v[0] + m[1][0] * v[1] + m[2][0] * v[2] + m[3][0] * v[3],
@@ -432,13 +278,12 @@ inline float4 operator*(const float4x4& m, const float4& v)
         m[0][3] * v[0] + m[1][3] * v[1] + m[2][3] * v[2] + m[3][3] * v[3],
     };
 }
-
-inline float4x4 operator*(const float4x4 &a, const float4x4 &b)
+template<class T> inline tmat4x4<T> operator*(const tmat4x4<T> &a, const tmat4x4<T> &b)
 {
-    float4x4 c;
+    tmat4x4<T> c;
     const float *ap = &a[0][0];
     const float *bp = &b[0][0];
-          float *cp = &c[0][0];
+    float *cp = &c[0][0];
     float a0, a1, a2, a3;
 
     a0 = ap[0];
@@ -482,10 +327,45 @@ inline float4x4 operator*(const float4x4 &a, const float4x4 &b)
     cp[15] = a0 * bp[3] + a1 * bp[7] + a2 * bp[11] + a3 * bp[15];
     return c;
 }
-inline float4x4& operator*=(float4x4& a, const float4x4 &b)
+template<class T> inline tmat4x4<T>& operator*=(tmat4x4<T>& a, const tmat4x4<T> &b)
 {
     a = a * b;
     return a;
+}
+
+inline bool near_equal(float a, float b, float epsilon = muEpsilon)
+{
+    return std::abs(a - b) < epsilon;
+}
+inline bool near_equal(const float2& a, const float2& b, float e = muEpsilon)
+{
+    return near_equal(a.x, b.x, e) && near_equal(a.y, b.y, e);
+}
+inline bool near_equal(const float3& a, const float3& b, float e = muEpsilon)
+{
+    return near_equal(a.x, b.x, e) && near_equal(a.y, b.y, e) && near_equal(a.z, b.z, e);
+}
+inline bool near_equal(const float4& a, const float4& b, float e = muEpsilon)
+{
+    return near_equal(a.x, b.x, e) && near_equal(a.y, b.y, e) && near_equal(a.z, b.z, e) && near_equal(a.w, b.w, e);
+}
+inline bool near_equal(const quatf& a, const quatf& b, float e = muEpsilon)
+{
+    return near_equal(a.x, b.x, e) && near_equal(a.y, b.y, e) && near_equal(a.z, b.z, e) && near_equal(a.w, b.w, e);
+}
+inline bool near_equal(const float3x3& a, const float3x3& b, float e = muEpsilon)
+{
+    return near_equal(a[0], b[0], e) && near_equal(a[1], b[1], e) && near_equal(a[2], b[2], e);
+}
+inline bool near_equal(const float4x4& a, const float4x4& b, float e = muEpsilon)
+{
+    return near_equal(a[0], b[0], e) && near_equal(a[1], b[1], e) && near_equal(a[2], b[2], e) && near_equal(a[3], b[3], e);
+}
+
+template<class Int>
+inline Int ceildiv(Int v, Int d)
+{
+    return v / d + (v % d == 0 ? 0 : 1);
 }
 
 inline float3 swap_handedness(const float3& v) { return { -v.x, v.y, v.z }; }
