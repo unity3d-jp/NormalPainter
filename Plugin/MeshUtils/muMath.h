@@ -343,27 +343,27 @@ template<class T> inline tmat4x4<T>& operator*=(tmat4x4<T>& a, const tmat4x4<T> 
 
 inline bool near_equal(float a, float b, float epsilon = muEpsilon) { return std::abs(a - b) < epsilon; }
 inline bool near_equal(double a, double b, double epsilon = muEpsilon) { return std::abs(a - b) < epsilon; }
-template<class T> inline bool near_equal(const tvec2<T>& a, const tvec2<T>& b, float e = muEpsilon)
+template<class T> inline bool near_equal(const tvec2<T>& a, const tvec2<T>& b, T e = muEpsilon)
 {
     return near_equal(a.x, b.x, e) && near_equal(a.y, b.y, e);
 }
-template<class T> inline bool near_equal(const tvec3<T>& a, const tvec3<T>& b, float e = muEpsilon)
+template<class T> inline bool near_equal(const tvec3<T>& a, const tvec3<T>& b, T e = muEpsilon)
 {
     return near_equal(a.x, b.x, e) && near_equal(a.y, b.y, e) && near_equal(a.z, b.z, e);
 }
-template<class T> inline bool near_equal(const tvec4<T>& a, const tvec4<T>& b, float e = muEpsilon)
+template<class T> inline bool near_equal(const tvec4<T>& a, const tvec4<T>& b, T e = muEpsilon)
 {
     return near_equal(a.x, b.x, e) && near_equal(a.y, b.y, e) && near_equal(a.z, b.z, e) && near_equal(a.w, b.w, e);
 }
-template<class T> inline bool near_equal(const tquat<T>& a, const tquat<T>& b, float e = muEpsilon)
+template<class T> inline bool near_equal(const tquat<T>& a, const tquat<T>& b, T e = muEpsilon)
 {
     return near_equal(a.x, b.x, e) && near_equal(a.y, b.y, e) && near_equal(a.z, b.z, e) && near_equal(a.w, b.w, e);
 }
-template<class T> inline bool near_equal(const tmat3x3<T>& a, const tmat3x3<T>& b, float e = muEpsilon)
+template<class T> inline bool near_equal(const tmat3x3<T>& a, const tmat3x3<T>& b, T e = muEpsilon)
 {
     return near_equal(a[0], b[0], e) && near_equal(a[1], b[1], e) && near_equal(a[2], b[2], e);
 }
-template<class T> inline bool near_equal(const tmat4x4<T>& a, const tmat4x4<T>& b, float e = muEpsilon)
+template<class T> inline bool near_equal(const tmat4x4<T>& a, const tmat4x4<T>& b, T e = muEpsilon)
 {
     return near_equal(a[0], b[0], e) && near_equal(a[1], b[1], e) && near_equal(a[2], b[2], e) && near_equal(a[3], b[3], e);
 }
@@ -642,64 +642,64 @@ template<class T> inline tmat4x4<T> swap_handedness(const tmat4x4<T>& m)
     } };
 }
 
-inline float3x3 to_float3x3(const quatf& q)
+template<class T> inline tmat3x3<T> to_mat3x3(const tquat<T>& q)
 {
     return {{
-        {1.0f-2.0f*q.y*q.y - 2.0f*q.z*q.z, 2.0f*q.x*q.y - 2.0f*q.z*q.w,        2.0f*q.x*q.z + 2.0f*q.y*q.w,      },
-        {2.0f*q.x*q.y + 2.0f*q.z*q.w,      1.0f - 2.0f*q.x*q.x - 2.0f*q.z*q.z, 2.0f*q.y*q.z - 2.0f*q.x*q.w,      },
-        {2.0f*q.x*q.z - 2.0f*q.y*q.w,      2.0f*q.y*q.z + 2.0f*q.x*q.w,        1.0f - 2.0f*q.x*q.x - 2.0f*q.y*q.y}
+        {T(1.0)-T(2.0)*q.y*q.y - T(2.0)*q.z*q.z,T(2.0)*q.x*q.y - T(2.0)*q.z*q.w,         T(2.0)*q.x*q.z + T(2.0)*q.y*q.w,        },
+        {T(2.0)*q.x*q.y + T(2.0)*q.z*q.w,       T(1.0) - T(2.0)*q.x*q.x - T(2.0)*q.z*q.z,T(2.0)*q.y*q.z - T(2.0)*q.x*q.w,        },
+        {T(2.0)*q.x*q.z - T(2.0)*q.y*q.w,       T(2.0)*q.y*q.z + T(2.0)*q.x*q.w,         T(1.0) - T(2.0)*q.x*q.x - T(2.0)*q.y*q.y}
     }};
 }
-inline float4x4 to_float4x4(const quatf& q)
+template<class T> inline tmat4x4<T> to_mat4x4(const tquat<T>& q)
 {
     return {{
-        {1.0f-2.0f*q.y*q.y - 2.0f*q.z*q.z, 2.0f*q.x*q.y - 2.0f*q.z*q.w,        2.0f*q.x*q.z + 2.0f*q.y*q.w,        0.0},
-        {2.0f*q.x*q.y + 2.0f*q.z*q.w,      1.0f - 2.0f*q.x*q.x - 2.0f*q.z*q.z, 2.0f*q.y*q.z - 2.0f*q.x*q.w,        0.0},
-        {2.0f*q.x*q.z - 2.0f*q.y*q.w,      2.0f*q.y*q.z + 2.0f*q.x*q.w,        1.0f - 2.0f*q.x*q.x - 2.0f*q.y*q.y, 0.0},
-        {0.0,                              0.0,                                0.0,                                1.0}
-    }};
-}
-
-inline float4x4 translate(const float3& t)
-{
-    return {{
-        { 1.0f, 0.0f, 0.0f, 0.0f },
-        { 0.0f, 1.0f, 0.0f, 0.0f },
-        { 0.0f, 0.0f, 1.0f, 0.0f },
-        {  t.x,  t.y,  t.z, 1.0f }
+        {T(1.0)-T(2.0)*q.y*q.y - T(2.0)*q.z*q.z,T(2.0)*q.x*q.y - T(2.0)*q.z*q.w,         T(2.0)*q.x*q.z + T(2.0)*q.y*q.w,         T(0.0)},
+        {T(2.0)*q.x*q.y + T(2.0)*q.z*q.w,       T(1.0) - T(2.0)*q.x*q.x - T(2.0)*q.z*q.z,T(2.0)*q.y*q.z - T(2.0)*q.x*q.w,         T(0.0)},
+        {T(2.0)*q.x*q.z - T(2.0)*q.y*q.w,       T(2.0)*q.y*q.z + T(2.0)*q.x*q.w,         T(1.0) - T(2.0)*q.x*q.x - T(2.0)*q.y*q.y,T(0.0)},
+        {T(0.0),                                T(0.0),                                  T(0.0),                                  T(1.0)}
     }};
 }
 
-inline float3x3 scale33(const float3& t)
+template<class T> inline tmat4x4<T> translate(const tvec3<T>& t)
+{
+    return {{
+        { T(1.0), T(0.0), T(0.0), T(0.0) },
+        { T(0.0), T(1.0), T(0.0), T(0.0) },
+        { T(0.0), T(0.0), T(1.0), T(0.0) },
+        {    t.x,    t.y,    t.z, T(1.0) }
+    }};
+}
+
+template<class T> inline tmat3x3<T> scale33(const tvec3<T>& t)
 {
     return{{
-        {  t.x, 0.0f, 0.0f },
-        { 0.0f,  t.y, 0.0f },
-        { 0.0f, 0.0f,  t.z },
+        {    t.x, T(0.0), T(0.0) },
+        { T(0.0),    t.y, T(0.0) },
+        { T(0.0), T(0.0),    t.z },
     }};
 }
-inline float4x4 scale44(const float3& t)
+template<class T> inline tmat4x4<T> scale44(const tvec3<T>& t)
 {
     return{{
-        {  t.x, 0.0f, 0.0f, 0.0f },
-        { 0.0f,  t.y, 0.0f, 0.0f },
-        { 0.0f, 0.0f,  t.z, 0.0f },
-        { 0.0f, 0.0f, 0.0f, 1.0f }
+        {    t.x, T(0.0), T(0.0), T(0.0) },
+        { T(0.0),    t.y, T(0.0), T(0.0) },
+        { T(0.0), T(0.0),    t.z, T(0.0) },
+        { T(0.0), T(0.0), T(0.0), T(1.0) }
     }};
 }
 
-inline float4x4 transform(const float3& t, const quatf& r, const float3& s)
+template<class T> inline tmat4x4<T> transform(const tvec3<T>& t, const tquat<T>& r, const tvec3<T>& s)
 {
     auto ret = scale44(s);
-    ret *= to_float4x4(r);
+    ret *= to_mat4x4(r);
     ret *= translate(t);
     return ret;
 }
 
-inline float3x3 invert(const float3x3& x)
+template<class T> inline tmat3x3<T> invert(const tmat3x3<T>& x)
 {
     if (x[0][2] != 0 || x[1][2] != 0 || x[2][2] != 1) {
-        float3x3 s = {
+        tmat3x3<T> s = {
             x[1][1] * x[2][2] - x[2][1] * x[1][2],
             x[2][1] * x[0][2] - x[0][1] * x[2][2],
             x[0][1] * x[1][2] - x[1][1] * x[0][2],
@@ -712,9 +712,9 @@ inline float3x3 invert(const float3x3& x)
             x[2][0] * x[0][1] - x[0][0] * x[2][1],
             x[0][0] * x[1][1] - x[1][0] * x[0][1] };
 
-        float r = x[0][0] * s[0][0] + x[0][1] * s[1][0] + x[0][2] * s[2][0];
+        T r = x[0][0] * s[0][0] + x[0][1] * s[1][0] + x[0][2] * s[2][0];
 
-        if (std::abs(r) >= 1) {
+        if (std::abs(r) >= T(1.0)) {
             for (int i = 0; i < 3; ++i) {
                 for (int j = 0; j < 3; ++j) {
                     s[i][j] /= r;
@@ -722,7 +722,7 @@ inline float3x3 invert(const float3x3& x)
             }
         }
         else {
-            float mr = std::abs(r) / std::numeric_limits<float>::min();
+            T mr = std::abs(r) / std::numeric_limits<T>::min();
 
             for (int i = 0; i < 3; ++i) {
                 for (int j = 0; j < 3; ++j) {
@@ -731,7 +731,7 @@ inline float3x3 invert(const float3x3& x)
                     }
                     else {
                         // singular
-                        return float3x3::identity();
+                        return tmat3x3<T>::identity();
                     }
                 }
             }
@@ -740,12 +740,12 @@ inline float3x3 invert(const float3x3& x)
         return s;
     }
     else {
-        float3x3 s = {
+        tmat3x3<T> s = {
              x[1][1], -x[0][1], 0,
             -x[1][0],  x[0][0], 0,
                    0,        0, 1 };
 
-        float r = x[0][0] * x[1][1] - x[1][0] * x[0][1];
+        T r = x[0][0] * x[1][1] - x[1][0] * x[0][1];
 
         if (std::abs(r) >= 1) {
             for (int i = 0; i < 2; ++i) {
@@ -755,7 +755,7 @@ inline float3x3 invert(const float3x3& x)
             }
         }
         else {
-            float mr = std::abs(r) / std::numeric_limits<float>::min();
+            T mr = std::abs(r) / std::numeric_limits<T>::min();
 
             for (int i = 0; i < 2; ++i) {
                 for (int j = 0; j < 2; ++j) {
@@ -764,9 +764,8 @@ inline float3x3 invert(const float3x3& x)
                     }
                     else
                     {
-                        
                         // singular
-                        return float3x3::identity();
+                        return tmat3x3<T>::identity();
                     }
                 }
             }
@@ -774,14 +773,13 @@ inline float3x3 invert(const float3x3& x)
 
         s[2][0] = -x[2][0] * s[0][0] - x[2][1] * s[1][0];
         s[2][1] = -x[2][0] * s[0][1] - x[2][1] * s[1][1];
-
         return s;
     }
 }
 
-inline float4x4 invert(const float4x4& x)
+template<class T> inline tmat4x4<T> invert(const tmat4x4<T>& x)
 {
-    float4x4 s = {
+    tmat4x4<T> s = {
         x[1][1] * x[2][2] - x[2][1] * x[1][2],
         x[2][1] * x[0][2] - x[0][1] * x[2][2],
         x[0][1] * x[1][2] - x[1][1] * x[0][2],
@@ -810,7 +808,7 @@ inline float4x4 invert(const float4x4& x)
         }
     }
     else {
-        auto mr = std::abs(r) / std::numeric_limits<float>::min();
+        auto mr = std::abs(r) / std::numeric_limits<T>::min();
 
         for (int i = 0; i < 3; ++i) {
             for (int j = 0; j < 3; ++j) {
@@ -819,7 +817,7 @@ inline float4x4 invert(const float4x4& x)
                 }
                 else {
                     // error
-                    return float4x4::identity();
+                    return tmat4x4<T>::identity();
                 }
             }
         }
@@ -831,10 +829,10 @@ inline float4x4 invert(const float4x4& x)
     return s;
 }
 
-template<class TMatrix>
-inline tquat<typename TMatrix::scalar_t> to_quat_impl(const TMatrix& m)
+template<class TMat>
+inline tquat<typename TMat::scalar_t> to_quat_impl(const TMat& m)
 {
-    using T = typename TMatrix::scalar_t;
+    using T = typename TMat::scalar_t;
     T tr, s;
     T q[4];
     int i, j, k;
@@ -845,9 +843,9 @@ inline tquat<typename TMatrix::scalar_t> to_quat_impl(const TMatrix& m)
 
     // check the diagonal
     if (tr > 0.0) {
-        s = std::sqrt(tr + 1.0f);
-        quat.w = s / 2.0f;
-        s = 0.5f / s;
+        s = std::sqrt(tr + T(1.0));
+        quat.w = s / T(2.0);
+        s = T(0.5) / s;
 
         quat.x = (m[1][2] - m[2][1]) * s;
         quat.y = (m[2][0] - m[0][2]) * s;
@@ -863,11 +861,11 @@ inline tquat<typename TMatrix::scalar_t> to_quat_impl(const TMatrix& m)
 
         j = nxt[i];
         k = nxt[j];
-        s = std::sqrt((m[i][i] - (m[j][j] + m[k][k])) + 1.0f);
+        s = std::sqrt((m[i][i] - (m[j][j] + m[k][k])) + T(1.0));
 
-        q[i] = s * 0.5f;
-        if (s != 0.0f)
-            s = 0.5f / s;
+        q[i] = s * T(0.5);
+        if (s != T(0.0))
+            s = T(0.5) / s;
 
         q[3] = (m[j][k] - m[k][j]) * s;
         q[j] = (m[i][j] + m[j][i]) * s;
@@ -882,103 +880,104 @@ inline tquat<typename TMatrix::scalar_t> to_quat_impl(const TMatrix& m)
     return quat;
 }
 
-inline quatf to_quat(const float3x3& m)
+template<class T> inline quatf to_quat(const tmat3x3<T>& m)
 {
     return to_quat_impl(m);
 }
-inline quatf to_quat(const float4x4& m)
+template<class T> inline quatf to_quat(const tmat4x4<T>& m)
 {
     return to_quat_impl(m);
 }
 
 // aperture and focal_length must be millimeter. return fov in degree
-inline float compute_fov(float aperture, float focal_length)
+template<class T> inline T compute_fov(T aperture, T focal_length)
 {
-    return 2.0f * std::atan(aperture / (2.0f * focal_length)) * Rad2Deg;
+    return T(2.0) * std::atan(aperture / (T(2.0) * focal_length)) * Rad2Deg;
 }
 
 // aperture: millimeter
 // fov: degree
-inline float compute_focal_length(float aperture, float fov)
+template<class T> inline T compute_focal_length(T aperture, T fov)
 {
-    return aperture / std::tan(fov * Deg2Rad / 2.0f) / 2.0f;
+    return aperture / std::tan(fov * Deg2Rad / T(2.0)) / T(2.0);
 }
 
 
-inline bool ray_triangle_intersection(float3 pos, float3 dir, float3 p1, float3 p2, float3 p3, float& distance)
+template<class T>
+inline bool ray_triangle_intersection(
+    const tvec3<T>& pos, const tvec3<T>& dir, const tvec3<T>& p1, const tvec3<T>& p2, const tvec3<T>& p3, T& distance)
 {
-    const float epsdet = 1e-10f;
-    const float eps = 1e-4f;
+    const T epsdet = 1e-10f;
+    const T eps = 1e-4f;
 
-    float3 e1 = p2 - p1;
-    float3 e2 = p3 - p1;
-    float3 p = cross(dir, e2);
-    float det = dot(e1, p);
+    auto e1 = p2 - p1;
+    auto e2 = p3 - p1;
+    auto p = cross(dir, e2);
+    auto det = dot(e1, p);
     if (std::abs(det) < epsdet) return false;
-    float inv_det = 1.0f / det;
-    float3 t = pos - p1;
-    float u = dot(t, p) * inv_det;
+    auto inv_det = T(1.0) / det;
+    auto t = pos - p1;
+    auto u = dot(t, p) * inv_det;
     if (u < -eps || u  > 1 + eps) return false;
-    float3 q = cross(t, e1);
-    float v = dot(dir, q) * inv_det;
+    auto q = cross(t, e1);
+    auto v = dot(dir, q) * inv_det;
     if (v < -eps || u + v > 1 + eps) return false;
 
     distance = dot(e2, q) * inv_det;
-    return distance >= 0.0f;
+    return distance >= T(0.0);
 }
 
 // pos must be on the triangle
-template<class T>
-inline T triangle_interpolation(float3 pos, float3 p1, float3 p2, float3 p3, T x1, T x2, T x3)
+template<class T, class U>
+inline U triangle_interpolation(
+    const tvec3<T>& pos, const tvec3<T>& p1, const tvec3<T>& p2, const tvec3<T>& p3, U x1, U x2, U x3)
 {
     auto f1 = p1 - pos;
     auto f2 = p2 - pos;
     auto f3 = p3 - pos;
-    float a = 1.0f / length(cross(p1 - p2, p1 - p3));
-    float a1 = length(cross(f2, f3)) * a;
-    float a2 = length(cross(f3, f1)) * a;
-    float a3 = length(cross(f1, f2)) * a;
+    auto a = T(1.0) / length(cross(p1 - p2, p1 - p3));
+    auto a1 = length(cross(f2, f3)) * a;
+    auto a2 = length(cross(f3, f1)) * a;
+    auto a3 = length(cross(f1, f2)) * a;
     return x1 * a1 + x2 * a2 + x3 * a3;
 }
 
-inline float ray_point_distance(float3 pos, float3 dir, float3 p)
+template<class T> inline T ray_point_distance(const tvec3<T>& pos, const tvec3<T>& dir, const tvec3<T>& p)
 {
     return length(cross(dir, p - pos));
 }
 
-inline float plane_distance(float3 p, float3 pn, float pd)  { return dot(p, pn) - pd; }
-inline float plane_distance(float3 p, float3 pn)            { return dot(p, pn); }
-inline float3 plane_mirror(float3 p, float3 pn, float pd)   { return p - pn * (plane_distance(p, pn, pd) * 2.0f); }
-inline float3 plane_mirror(float3 p, float3 pn)             { return p - pn * (plane_distance(p, pn) * 2.0f); }
+template<class T> inline T plane_distance(const tvec3<T>& p, const tvec3<T>& pn, T pd) { return dot(p, pn) - pd; }
+template<class T> inline T plane_distance(const tvec3<T>& p, const tvec3<T>& pn)       { return dot(p, pn); }
+template<class T> inline tvec3<T> plane_mirror(const tvec3<T>& p, const tvec3<T>& pn, T pd) { return p - pn * (plane_distance(p, pn, pd) * T(2.0)); }
+template<class T> inline tvec3<T> plane_mirror(const tvec3<T>& p, const tvec3<T>& pn)       { return p - pn * (plane_distance(p, pn) * T(2.0)); }
 
-
-inline void compute_triangle_tangent(
-    const float3(&vertices)[3], const float2(&uv)[3], float3(&dst_tangent)[3], float3(&dst_binormal)[3])
+template<class T> inline void compute_triangle_tangent(
+    const tvec3<T>(&vertices)[3], const tvec2<T>(&uv)[3], tvec3<T>(&dst_tangent)[3], tvec3<T>(&dst_binormal)[3])
 {
-    float3 p = vertices[1] - vertices[0];
-    float3 q = vertices[2] - vertices[0];
-    float2 s = { uv[1].x - uv[0].x, uv[2].x - uv[0].x };
-    float2 t = { uv[1].y - uv[0].y, uv[2].y - uv[0].y };
+    auto p = vertices[1] - vertices[0];
+    auto q = vertices[2] - vertices[0];
+    auto s = tvec2<T>{ uv[1].x - uv[0].x, uv[2].x - uv[0].x };
+    auto t = tvec2<T>{ uv[1].y - uv[0].y, uv[2].y - uv[0].y };
 
-    float div = s.x * t.y - s.y * t.x;
-    float area = std::abs(div);
-    float rdiv = 1.0f / div;
+    T div = s.x * t.y - s.y * t.x;
+    T area = std::abs(div);
+    T rdiv = T(1.0) / div;
     s *= rdiv;
     t *= rdiv;
 
-    float3 tangent = normalize(float3{
+    auto tangent = normalize(tvec3<T>{
         t.y * p.x - t.x * q.x,
         t.y * p.y - t.x * q.y,
         t.y * p.z - t.x * q.z
     }) * area;
-
-    float3 binormal = normalize(float3{
+    auto binormal = normalize(tvec3<T>{
         s.x * q.x - s.y * p.x,
         s.x * q.y - s.y * p.y,
         s.x * q.z - s.y * p.z
     }) * area;
 
-    float angles[3] = {
+    T angles[3] = {
         angle_between2(vertices[2], vertices[1], vertices[0]),
         angle_between2(vertices[0], vertices[2], vertices[1]),
         angle_between2(vertices[1], vertices[0], vertices[2]),
@@ -990,52 +989,53 @@ inline void compute_triangle_tangent(
     }
 }
 
-inline float4 orthogonalize_tangent(float3 tangent, float3 binormal, float3 normal)
+template<class T> inline tvec4<T> orthogonalize_tangent(
+    tvec3<T> tangent, tvec3<T> binormal, tvec3<T> normal)
 {
-    float NdotT = dot(normal, tangent);
+    auto NdotT = dot(normal, tangent);
     tangent -= normal * NdotT;
-    float magT = length(tangent);
+    auto magT = length(tangent);
     tangent = tangent / magT;
 
-    float NdotB = dot(normal, binormal);
-    float TdotB = dot(tangent, binormal) * magT;
+    auto NdotB = dot(normal, binormal);
+    auto TdotB = dot(tangent, binormal) * magT;
     binormal -= normal * NdotB - tangent * TdotB;;
-    float magB = length(binormal);
+    auto magB = length(binormal);
     binormal = binormal / magB;
 
 #if 0
-    const float epsilon = 1e-6f;
+    const auto epsilon = 1e-6f;
     if (magT <= epsilon || magB <= epsilon)
     {
-        float3 axis1, axis2;
+        tvec3<T> axis1, axis2;
 
-        float dpXN = std::abs(dot({ 1.0f, 0.0f, 0.0f }, normal));
-        float dpYN = std::abs(dot({ 0.0f, 1.0f, 0.0f }, normal));
-        float dpZN = std::abs(dot({ 0.0f, 0.0f, 1.0f }, normal));
+        auto dpXN = std::abs(dot({ T(1.0), T(0.0), T(0.0) }, normal));
+        auto dpYN = std::abs(dot({ T(0.0), T(1.0), T(0.0) }, normal));
+        auto dpZN = std::abs(dot({ T(0.0), T(0.0), T(1.0) }, normal));
 
         if (dpXN <= dpYN && dpXN <= dpZN)
         {
-            axis1 = { 1.0f, 0.0f, 0.0f };
+            axis1 = { T(1.0), T(0.0), T(0.0) };
             if (dpYN <= dpZN)
-                axis2 = { 0.0f, 1.0f, 0.0f };
+                axis2 = { T(0.0), T(1.0), T(0.0) };
             else
-                axis2 = { 0.0f, 0.0f, 1.0f };
+                axis2 = { T(0.0), T(0.0), T(1.0) };
         }
         else if (dpYN <= dpXN && dpYN <= dpZN)
         {
-            axis1 = { 0.0f, 1.0f, 0.0f };
+            axis1 = { T(0.0), T(1.0), T(0.0) };
             if (dpXN <= dpZN)
-                axis2 = { 1.0f, 0.0f, 0.0f };
+                axis2 = { T(1.0), T(0.0), T(0.0) };
             else
-                axis2 = { 0.0f, 0.0f, 1.0f };
+                axis2 = { T(0.0), T(0.0), T(1.0) };
         }
         else
         {
-            axis1 = { 0.0f, 0.0f, 1.0f };
+            axis1 = { T(0.0), T(0.0), T(1.0) };
             if (dpXN <= dpYN)
-                axis2 = { 1.0f, 0.0f, 0.0f };
+                axis2 = { T(1.0), T(0.0), T(0.0) };
             else
-                axis2 = { 0.0f, 1.0f, 0.0f };
+                axis2 = { T(0.0), T(1.0), T(0.0) };
         }
         tangent = normalize(axis1 - normal * dot(normal, axis1));
         binormal = normalize(axis2 - normal * dot(normal, axis2) - normalize(tangent) * dot(tangent, axis2));
@@ -1043,7 +1043,7 @@ inline float4 orthogonalize_tangent(float3 tangent, float3 binormal, float3 norm
 #endif
 
     return { tangent.x, tangent.y, tangent.z,
-        dot(cross(normal, tangent), binormal) > 0.0f ? 1.0f : -1.0f };
+        dot(cross(normal, tangent), binormal) > T(0.0) ? T(1.0) : -T(1.0) };
 }
 
 #ifdef muMath_AddNamespace

@@ -530,11 +530,11 @@ npAPI void npRotate(
     auto normals = model->normals;
     auto selection = model->selection;
 
-    auto ptrans = to_float4x4(invert(pivot_rot));
+    auto ptrans = to_mat4x4(invert(pivot_rot));
     auto iptrans = invert(ptrans);
     auto trans = model->transform;
     auto itrans = invert(trans);
-    auto rot = to_float4x4(invert(value));
+    auto rot = to_mat4x4(invert(value));
 
     auto to_lspace = trans * iptrans * rot * ptrans * itrans;
 
@@ -569,14 +569,14 @@ npAPI void npRotatePivot(
     auto normals = model->normals;
     auto selection = model->selection;
 
-    auto ptrans = to_float4x4(invert(pivot_rot)) * translate(pivot_pos);
+    auto ptrans = to_mat4x4(invert(pivot_rot)) * translate(pivot_pos);
     auto iptrans = invert(ptrans);
     auto trans = model->transform;
     auto itrans = invert(trans);
 
     auto to_pspace = trans * iptrans;
     auto to_lspace = ptrans * itrans;
-    auto rot = to_float3x3(value);
+    auto rot = to_mat3x3(value);
 
     for (int vi = 0; vi < num_vertices; ++vi) {
         float s = selection[vi];
@@ -605,7 +605,7 @@ npAPI void npScale(
     auto normals = model->normals;
     auto selection = model->selection;
 
-    auto ptrans = to_float4x4(invert(pivot_rot)) * translate(pivot_pos);
+    auto ptrans = to_mat4x4(invert(pivot_rot)) * translate(pivot_pos);
     auto iptrans = invert(ptrans);
     auto trans = model->transform;
     auto itrans = invert(trans);
