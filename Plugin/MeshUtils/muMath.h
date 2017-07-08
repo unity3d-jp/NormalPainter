@@ -22,6 +22,7 @@ extern const float Rad2Deg;
 template<class T>
 struct tvec2
 {
+    using scalar_t = T;
     T x, y;
     T& operator[](int i) { return ((T*)this)[i]; }
     const T& operator[](int i) const { return ((T*)this)[i]; }
@@ -42,6 +43,7 @@ using double2 = tvec2<double>;
 template<class T>
 struct tvec3
 {
+    using scalar_t = T;
     T x, y, z;
     T& operator[](int i) { return ((T*)this)[i]; }
     const T& operator[](int i) const { return ((T*)this)[i]; }
@@ -62,6 +64,7 @@ using double3 = tvec3<double>;
 template<class T>
 struct tvec4
 {
+    using scalar_t = T;
     T x, y, z, w;
     T& operator[](int i) { return ((T*)this)[i]; }
     const T& operator[](int i) const { return ((T*)this)[i]; }
@@ -82,6 +85,7 @@ using double4 = tvec4<double>;
 template<class T>
 struct tquat
 {
+    using scalar_t = T;
     T x, y, z, w;
     T& operator[](int i) { return ((T*)this)[i]; }
     const T& operator[](int i) const { return ((T*)this)[i]; }
@@ -101,9 +105,11 @@ using quatd = tquat<double>;
 template<class T>
 struct tmat3x3
 {
+    using scalar_t = T;
+    using vector_t = tvec3<T>;
     tvec3<T> m[3];
     tvec3<T>& operator[](int i) { return m[i]; }
-    const float3& operator[](int i) const { return m[i]; }
+    const tvec3<T>& operator[](int i) const { return m[i]; }
     bool operator==(const tmat3x3& v) const { return memcmp(m, v.m, sizeof(*this)) == 0; }
     bool operator!=(const tmat3x3& v) const { return !((*this) == v); }
 
@@ -131,6 +137,8 @@ using double3x3 = tmat3x3<double>;
 template<class T>
 struct tmat4x4
 {
+    using scalar_t = T;
+    using vector_t = tvec4<T>;
     tvec4<T> m[4];
     tvec4<T>& operator[](int i) { return m[i]; }
     const tvec4<T>& operator[](int i) const { return m[i]; }
@@ -232,7 +240,7 @@ template<class T> inline tvec4<T>& operator*=(tvec4<T>& l, T r) { l.x *= r; l.y 
 template<class T> inline tvec4<T>& operator/=(tvec4<T>& l, T r) { l.x /= r; l.y /= r; l.z /= r; l.w /= r; return l; }
 
 
-template<class T> inline tquat<T> operator*(const tquat<T>& l, float r) { return{ l.x*r, l.y*r, l.z*r, l.w*r }; }
+template<class T> inline tquat<T> operator*(const tquat<T>& l, T r) { return{ l.x*r, l.y*r, l.z*r, l.w*r }; }
 template<class T> inline tquat<T> operator*(const tquat<T>& l, const tquat<T>& r)
 {
     return{
@@ -242,7 +250,7 @@ template<class T> inline tquat<T> operator*(const tquat<T>& l, const tquat<T>& r
         l.w*r.w - l.x*r.x - l.y*r.y - l.z*r.z,
     };
 }
-template<class T> inline tquat<T>& operator*=(tquat<T>& l, float r)
+template<class T> inline tquat<T>& operator*=(tquat<T>& l, T r)
 {
     l = l * r;
     return l;
@@ -281,10 +289,10 @@ template<class T> inline tvec4<T> operator*(const tmat4x4<T>& m, const tvec4<T>&
 template<class T> inline tmat4x4<T> operator*(const tmat4x4<T> &a, const tmat4x4<T> &b)
 {
     tmat4x4<T> c;
-    const float *ap = &a[0][0];
-    const float *bp = &b[0][0];
-    float *cp = &c[0][0];
-    float a0, a1, a2, a3;
+    const T *ap = &a[0][0];
+    const T *bp = &b[0][0];
+    T *cp = &c[0][0];
+    T a0, a1, a2, a3;
 
     a0 = ap[0];
     a1 = ap[1];
@@ -333,31 +341,29 @@ template<class T> inline tmat4x4<T>& operator*=(tmat4x4<T>& a, const tmat4x4<T> 
     return a;
 }
 
-inline bool near_equal(float a, float b, float epsilon = muEpsilon)
-{
-    return std::abs(a - b) < epsilon;
-}
-inline bool near_equal(const float2& a, const float2& b, float e = muEpsilon)
+inline bool near_equal(float a, float b, float epsilon = muEpsilon) { return std::abs(a - b) < epsilon; }
+inline bool near_equal(double a, double b, double epsilon = muEpsilon) { return std::abs(a - b) < epsilon; }
+template<class T> inline bool near_equal(const tvec2<T>& a, const tvec2<T>& b, float e = muEpsilon)
 {
     return near_equal(a.x, b.x, e) && near_equal(a.y, b.y, e);
 }
-inline bool near_equal(const float3& a, const float3& b, float e = muEpsilon)
+template<class T> inline bool near_equal(const tvec3<T>& a, const tvec3<T>& b, float e = muEpsilon)
 {
     return near_equal(a.x, b.x, e) && near_equal(a.y, b.y, e) && near_equal(a.z, b.z, e);
 }
-inline bool near_equal(const float4& a, const float4& b, float e = muEpsilon)
+template<class T> inline bool near_equal(const tvec4<T>& a, const tvec4<T>& b, float e = muEpsilon)
 {
     return near_equal(a.x, b.x, e) && near_equal(a.y, b.y, e) && near_equal(a.z, b.z, e) && near_equal(a.w, b.w, e);
 }
-inline bool near_equal(const quatf& a, const quatf& b, float e = muEpsilon)
+template<class T> inline bool near_equal(const tquat<T>& a, const tquat<T>& b, float e = muEpsilon)
 {
     return near_equal(a.x, b.x, e) && near_equal(a.y, b.y, e) && near_equal(a.z, b.z, e) && near_equal(a.w, b.w, e);
 }
-inline bool near_equal(const float3x3& a, const float3x3& b, float e = muEpsilon)
+template<class T> inline bool near_equal(const tmat3x3<T>& a, const tmat3x3<T>& b, float e = muEpsilon)
 {
     return near_equal(a[0], b[0], e) && near_equal(a[1], b[1], e) && near_equal(a[2], b[2], e);
 }
-inline bool near_equal(const float4x4& a, const float4x4& b, float e = muEpsilon)
+template<class T> inline bool near_equal(const tmat4x4<T>& a, const tmat4x4<T>& b, float e = muEpsilon)
 {
     return near_equal(a[0], b[0], e) && near_equal(a[1], b[1], e) && near_equal(a[2], b[2], e) && near_equal(a[3], b[3], e);
 }
@@ -368,16 +374,22 @@ inline Int ceildiv(Int v, Int d)
     return v / d + (v % d == 0 ? 0 : 1);
 }
 
-inline float3 swap_handedness(const float3& v) { return { -v.x, v.y, v.z }; }
-inline float4 swap_handedness(const float4& v) { return { -v.x, v.y, v.z, v.w }; }
+template<class T> inline T clamp(T v, T vmin, T vmax) { return std::min<T>(std::max<T>(v, vmin), vmax); }
+template<class T> inline T clamp01(T v) { return clamp(v, T(0), T(1)); }
+template<class T> inline T saturate(T v) { return clamp(v, T(-1), T(1)); }
 
-inline static float clamp01(float v) { return std::max<float>(std::min<float>(v, 1.0f), 0.0f); }
-inline static float clamp11(float v) { return std::max<float>(std::min<float>(v, 1.0f), -1.0f); }
-inline static int clamp01(int v) { return std::max<int>(std::min<int>(v, 1), 0); }
-inline static int clamp11(int v) { return std::max<int>(std::min<int>(v, 1), -1); }
+template<class T> inline tvec2<T> clamp(const tvec2<T>& v, const tvec2<T>& vmin, const tvec2<T>& vmax) { return { clamp<T>(v.x, vmin.x, vmax.x), clamp<T>(v.y, vmin.y, vmax.y) }; }
+template<class T> inline tvec3<T> clamp(const tvec3<T>& v, const tvec3<T>& vmin, const tvec3<T>& vmax) { return { clamp<T>(v.x, vmin.x, vmax.x), clamp<T>(v.y, vmin.y, vmax.y), clamp<T>(v.z, vmin.z, vmax.z) }; }
+template<class T> inline tvec4<T> clamp(const tvec4<T>& v, const tvec4<T>& vmin, const tvec4<T>& vmax) { return { clamp<T>(v.x, vmin.x, vmax.x), clamp<T>(v.y, vmin.y, vmax.y), clamp<T>(v.z, vmin.z, vmax.z), clamp<T>(v.w, vmin.w, vmax.w) }; }
+template<class T> inline tvec2<T> clamp01(const tvec2<T>& v) { return { clamp01<T>(v.x), clamp01<T>(v.y) }; }
+template<class T> inline tvec3<T> clamp01(const tvec3<T>& v) { return { clamp01<T>(v.x), clamp01<T>(v.y), clamp01<T>(v.z) }; }
+template<class T> inline tvec4<T> clamp01(const tvec4<T>& v) { return { clamp01<T>(v.x), clamp01<T>(v.y), clamp01<T>(v.z), clamp01<T>(v.w) }; }
+template<class T> inline tvec2<T> saturate(const tvec2<T>& v) { return { saturate<T>(v.x), saturate<T>(v.y) }; }
+template<class T> inline tvec3<T> saturate(const tvec3<T>& v) { return { saturate<T>(v.x), saturate<T>(v.y), saturate<T>(v.z) }; }
+template<class T> inline tvec4<T> saturate(const tvec4<T>& v) { return { saturate<T>(v.x), saturate<T>(v.y), saturate<T>(v.z), saturate<T>(v.w) }; }
 
-
-inline static float3 mul_v(const float4x4& m, const float3& v)
+template<class T>
+inline static tvec3<T> mul_v(const tmat4x4<T>& m, const tvec3<T>& v)
 {
     return {
         m[0][0] * v[0] + m[1][0] * v[1] + m[2][0] * v[2],
@@ -385,7 +397,8 @@ inline static float3 mul_v(const float4x4& m, const float3& v)
         m[0][2] * v[0] + m[1][2] * v[1] + m[2][2] * v[2],
     };
 }
-inline static float4 mul_v(const float4x4& m, const float4& v)
+template<class T>
+inline static tvec4<T> mul_v(const tmat4x4<T>& m, const tvec4<T>& v)
 {
     return {
         m[0][0] * v[0] + m[1][0] * v[1] + m[2][0] * v[2],
@@ -394,7 +407,8 @@ inline static float4 mul_v(const float4x4& m, const float4& v)
         v[3],
     };
 }
-inline static float3 mul_p(const float4x4& m, const float3& v)
+template<class T>
+inline static tvec3<T> mul_p(const tmat4x4<T>& m, const tvec3<T>& v)
 {
     return {
         m[0][0] * v[0] + m[1][0] * v[1] + m[2][0] * v[2] + m[3][0],
@@ -402,7 +416,8 @@ inline static float3 mul_p(const float4x4& m, const float3& v)
         m[0][2] * v[0] + m[1][2] * v[1] + m[2][2] * v[2] + m[3][2],
     };
 }
-inline static float4 mul4(const float4x4& m, const float3& v)
+template<class T>
+inline static tvec4<T> mul4(const tmat4x4<T>& m, const tvec3<T>& v)
 {
     return {
         m[0][0] * v[0] + m[1][0] * v[1] + m[2][0] * v[2] + m[3][0],
@@ -412,28 +427,27 @@ inline static float4 mul4(const float4x4& m, const float3& v)
     };
 }
 
-inline float2 min(float2 a, float2 b) { return{ std::min<float>(a.x, b.x), std::min<float>(a.y, b.y) }; }
-inline float3 min(float3 a, float3 b) { return{ std::min<float>(a.x, b.x), std::min<float>(a.y, b.y), std::min<float>(a.z, b.z) }; }
-inline float2 max(float2 a, float2 b) { return{ std::max<float>(a.x, b.x), std::max<float>(a.y, b.y) }; }
-inline float3 max(float3 a, float3 b) { return{ std::max<float>(a.x, b.x), std::max<float>(a.y, b.y), std::max<float>(a.z, b.z) }; }
+template<class T> inline tvec2<T> min(const tvec2<T>& a, const tvec2<T>& b) { return{ std::min<T>(a.x, b.x), std::min<T>(a.y, b.y) }; }
+template<class T> inline tvec3<T> min(const tvec3<T>& a, const tvec3<T>& b) { return{ std::min<T>(a.x, b.x), std::min<T>(a.y, b.y), std::min<T>(a.z, b.z) }; }
+template<class T> inline tvec4<T> min(const tvec4<T>& a, const tvec4<T>& b) { return{ std::min<T>(a.x, b.x), std::min<T>(a.y, b.y), std::min<T>(a.z, b.z), std::min<T>(a.w, b.w) }; }
+template<class T> inline tvec2<T> max(const tvec2<T>& a, const tvec2<T>& b) { return{ std::max<T>(a.x, b.x), std::max<T>(a.y, b.y) }; }
+template<class T> inline tvec3<T> max(const tvec3<T>& a, const tvec3<T>& b) { return{ std::max<T>(a.x, b.x), std::max<T>(a.y, b.y), std::max<T>(a.z, b.z) }; }
+template<class T> inline tvec4<T> max(const tvec4<T>& a, const tvec4<T>& b) { return{ std::max<T>(a.x, b.x), std::max<T>(a.y, b.y), std::max<T>(a.z, b.z), std::max<T>(a.w, b.w) }; }
 
-inline float  lerp(float  a, float  b, float t) { return a*(1.0f - t) + b*t; }
-inline float2 lerp(float2 a, float2 b, float t) { return a*(1.0f - t) + b*t; }
-inline float3 lerp(float3 a, float3 b, float t) { return a*(1.0f - t) + b*t; }
+inline float  lerp(float  a, float  b, float  t) { return a*(1.0f- t) + b*t; }
+inline double lerp(double a, double b, double t) { return a*(1.0 - t) + b*t; }
+template<class T> inline tvec2<T> lerp(const tvec2<T>& a, const tvec2<T>& b, T t) { return a*(T(1.0) - t) + b*t; }
+template<class T> inline tvec3<T> lerp(const tvec3<T>& a, const tvec3<T>& b, T t) { return a*(T(1.0) - t) + b*t; }
+template<class T> inline tvec4<T> lerp(const tvec4<T>& a, const tvec4<T>& b, T t) { return a*(T(1.0) - t) + b*t; }
 
-inline float dot(const float2& l, const float2& r) { return l.x*r.x + l.y*r.y; }
-inline float dot(const float3& l, const float3& r) { return l.x*r.x + l.y*r.y + l.z*r.z; }
-inline float length_sq(float2 v) { return dot(v, v); }
-inline float length_sq(float3 v) { return dot(v, v); }
-inline float length(float2 v) { return sqrt(length_sq(v)); }
-inline float length(float3 v) { return sqrt(length_sq(v)); }
-
-inline float3 normalize(const float3& v)
-{
-    return v / length(v);
-}
-
-inline float3 cross(const float3& l, const float3& r)
+template<class T> inline T dot(const tvec2<T>& l, const tvec2<T>& r) { return l.x*r.x + l.y*r.y; }
+template<class T> inline T dot(const tvec3<T>& l, const tvec3<T>& r) { return l.x*r.x + l.y*r.y + l.z*r.z; }
+template<class T> inline T length_sq(const tvec2<T>& v) { return dot(v, v); }
+template<class T> inline T length_sq(const tvec3<T>& v) { return dot(v, v); }
+template<class T> inline T length(const tvec2<T>& v) { return sqrt(length_sq(v)); }
+template<class T> inline T length(const tvec3<T>& v) { return sqrt(length_sq(v)); }
+template<class T> inline tvec3<T> normalize(const tvec3<T>& v) { return v / length(v); }
+template<class T> inline tvec3<T> cross(const tvec3<T>& l, const tvec3<T>& r)
 {
     return{
         l.y * r.z - l.z * r.y,
@@ -442,130 +456,126 @@ inline float3 cross(const float3& l, const float3& r)
 }
 
 // a & b must be normalized
-inline float angle_between(float3 a, float3 b)
+template<class T> inline T angle_between(const tvec3<T>& a, const tvec3<T>& b)
 {
     return std::acos(dot(a, b));
 }
-inline float angle_between2(float3 pos1, float3 pos2, float3 center)
+template<class T> inline T angle_between2(const tvec3<T>& pos1, const tvec3<T>& pos2, const tvec3<T>& center)
 {
     return angle_between(
         normalize(pos1 - center),
         normalize(pos2 - center));
 }
 
-inline float3 apply_rotation(const quatf& q, const float3& p)
+template<class T> inline tvec3<T> apply_rotation(const tquat<T>& q, const tvec3<T>& p)
 {
-    float3 a = cross((float3&)q, p);
-    float3 b = cross((float3&)q, a);
-    return p + (a * q.w + b) * 2.0f;
+    auto a = cross(reinterpret_cast<tvec3<T>&>(q), p);
+    auto b = cross(reinterpret_cast<tvec3<T>&>(q), a);
+    return p + (a * q.w + b) * T(2.0);
 }
 
-inline quatf invert(const quatf& v)
+template<class T> inline tquat<T> invert(const tquat<T>& v)
 {
     return{ -v.x, -v.y, -v.z, v.w };
 }
 
-inline quatf flipY(const quatf& v)
+template<class T> inline tquat<T> flipY(const tquat<T>& v)
 {
     return{ -v.z, v.w, v.x, -v.y, };
 }
 
-inline quatf rotateX(float angle)
+template<class T> inline tquat<T> rotateX(T angle)
 {
-    float c = std::cos(angle * 0.5f);
-    float s = std::sin(angle * 0.5f);
-    return{ s, 0.0f, 0.0f, c };
+    T c = std::cos(angle * T(0.5));
+    T s = std::sin(angle * T(0.5));
+    return{ s, T(0.0), T(0.0), c };
 }
-inline quatf rotateY(float angle)
+template<class T> inline tquat<T> rotateY(T angle)
 {
-    float c = std::cos(angle * 0.5f);
-    float s = std::sin(angle * 0.5f);
-    return{ 0.0f, s, 0.0f, c };
+    T c = std::cos(angle * T(0.5));
+    T s = std::sin(angle * T(0.5));
+    return{ T(0.0), s, T(0.0), c };
 }
-inline quatf rotateZ(float angle)
+template<class T> inline tquat<T> rotateZ(T angle)
 {
-    float c = std::cos(angle * 0.5f);
-    float s = std::sin(angle * 0.5f);
-    return{ 0.0f, 0.0f, s, c };
+    T c = std::cos(angle * T(0.5));
+    T s = std::sin(angle * T(0.5));
+    return{ T(0.0), T(0.0), s, c };
 }
 
 // eular -> quaternion
-inline quatf rotateXYZ(const float3& euler)
+template<class T> inline tquat<T> rotateXYZ(const tvec3<T>& euler)
 {
-    quatf qX = rotateX(euler.x);
-    quatf qY = rotateY(euler.y);
-    quatf qZ = rotateZ(euler.z);
+    auto qX = rotateX(euler.x);
+    auto qY = rotateY(euler.y);
+    auto qZ = rotateZ(euler.z);
     return (qZ * qY) * qX;
 }
-inline quatf rotateXZY(const float3& euler)
+template<class T> inline tquat<T> rotateXZY(const tvec3<T>& euler)
 {
-    quatf qX = rotateX(euler.x);
-    quatf qY = rotateY(euler.y);
-    quatf qZ = rotateZ(euler.z);
+    auto qX = rotateX(euler.x);
+    auto qY = rotateY(euler.y);
+    auto qZ = rotateZ(euler.z);
     return (qY * qZ) * qX;
 }
-inline quatf rotateYXZ(const float3& euler)
+template<class T> inline tquat<T> rotateYXZ(const tvec3<T>& euler)
 {
-    quatf qX = rotateX(euler.x);
-    quatf qY = rotateY(euler.y);
-    quatf qZ = rotateZ(euler.z);
+    auto qX = rotateX(euler.x);
+    auto qY = rotateY(euler.y);
+    auto qZ = rotateZ(euler.z);
     return (qZ * qX) * qY;
 }
-inline quatf rotateYZX(const float3& euler)
+template<class T> inline tquat<T> rotateYZX(const tvec3<T>& euler)
 {
-    quatf qX = rotateX(euler.x);
-    quatf qY = rotateY(euler.y);
-    quatf qZ = rotateZ(euler.z);
+    auto qX = rotateX(euler.x);
+    auto qY = rotateY(euler.y);
+    auto qZ = rotateZ(euler.z);
     return (qX * qZ) * qY;
 }
-inline quatf rotateZXY(const float3& euler)
+template<class T> inline tquat<T> rotateZXY(const tvec3<T>& euler)
 {
-    quatf qX = rotateX(euler.x);
-    quatf qY = rotateY(euler.y);
-    quatf qZ = rotateZ(euler.z);
+    auto qX = rotateX(euler.x);
+    auto qY = rotateY(euler.y);
+    auto qZ = rotateZ(euler.z);
     return (qY * qX) * qZ;
 }
-inline quatf rotateZYX(const float3& euler)
+template<class T> inline tquat<T> rotateZYX(const tvec3<T>& euler)
 {
-    quatf qX = rotateX(euler.x);
-    quatf qY = rotateY(euler.y);
-    quatf qZ = rotateZ(euler.z);
+    auto qX = rotateX(euler.x);
+    auto qY = rotateY(euler.y);
+    auto qZ = rotateZ(euler.z);
     return (qX * qY) * qZ;
 }
 
-inline quatf rotate(const float3& axis, float angle)
+template<class T> inline tquat<T> rotate(const tvec3<T>& axis, T angle)
 {
     return{
-        axis.x * std::sin(angle * 0.5f),
-        axis.y * std::sin(angle * 0.5f),
-        axis.z * std::sin(angle * 0.5f),
-        std::cos(angle * 0.5f)
+        axis.x * std::sin(angle * T(0.5)),
+        axis.y * std::sin(angle * T(0.5)),
+        axis.z * std::sin(angle * T(0.5)),
+        std::cos(angle * T(0.5))
     };
 }
 
-template<class T> inline float clamp(T v, T vmin, T vmax) { return std::min<T>(std::max<T>(v, vmin), vmax); }
-inline float saturate(float v) { return clamp(v, -1.0f, 1.0f); }
-
-inline float3 to_eularZXY(const quatf& q)
+template<class T> inline tvec3<T> to_eularZXY(const tquat<T>& q)
 {
-    float d[] = {
+    T d[] = {
         q.x*q.x, q.x*q.y, q.x*q.z, q.x*q.w,
         q.y*q.y, q.y*q.z, q.y*q.w,
         q.z*q.z, q.z*q.w,
         q.w*q.w
     };
 
-    float v0 = d[5] - d[3];
-    float v1 = 2.0f*(d[1] + d[8]);
-    float v2 = d[4] - d[7] - d[0] + d[9];
-    float v3 = -1.0f;
-    float v4 = 2.0f * v0;
+    T v0 = d[5] - d[3];
+    T v1 = T(2.0) * (d[1] + d[8]);
+    T v2 = d[4] - d[7] - d[0] + d[9];
+    T v3 = T(-1.0);
+    T v4 = T(2.0) * v0;
 
-    const float SINGULARITY_CUTOFF = 0.499999f;
-    if (std::abs(v0) < SINGULARITY_CUTOFF)
+    if (std::abs(v0) < T(0.499999))
     {
-        float v5 = 2.0f * (d[2] + d[6]);
-        float v6 = d[7] - d[0] - d[4] + d[9];
+        T v5 = T(2.0) * (d[2] + d[6]);
+        T v6 = d[7] - d[0] - d[4] + d[9];
 
         return{
             v3 * std::asin(saturate(v4)),
@@ -575,42 +585,35 @@ inline float3 to_eularZXY(const quatf& q)
     }
     else
     {
-        float a = d[1] + d[8];
-        float b =-d[5] + d[3];
-        float c = d[1] - d[8];
-        float e = d[5] + d[3];
-
-        float v5 = a*e + b*c;
-        float v6 = b*e - a*c;
-
+        T a = d[1] + d[8];
+        T b =-d[5] + d[3];
+        T c = d[1] - d[8];
+        T e = d[5] + d[3];
+        T v5 = a*e + b*c;
+        T v6 = b*e - a*c;
         return{
             v3 * std::asin(saturate(v4)),
             std::atan2(v5, v6),
-            0.0f
+            T(0.0)
         };
     }
 }
 
-inline void to_axis_angle(const quatf& q, float3& axis, float& angle)
+template<class T> inline void to_axis_angle(const tquat<T>& q, tvec3<T>& axis, T& angle)
 {
-    angle = 2.0f * std::acos(q.w);
+    angle = T(2.0) * std::acos(q.w);
     axis = {
-        q.x / std::sqrt(1.0f - q.w*q.w),
-        q.y / std::sqrt(1.0f - q.w*q.w),
-        q.z / std::sqrt(1.0f - q.w*q.w)
+        q.x / std::sqrt(T(1.0) - q.w*q.w),
+        q.y / std::sqrt(T(1.0) - q.w*q.w),
+        q.z / std::sqrt(T(1.0) - q.w*q.w)
     };
 }
 
-inline quatf swap_handedness(const quatf& q)
+template<class T> inline tmat3x3<T> look33(const tvec3<T>& dir, const tvec3<T>& up)
 {
-    return { q.x, -q.y, -q.z, q.w };
-}
-
-inline float3x3 look33(float3 dir, float3 up)
-{
-    float3 z = dir;
-    float3 x = normalize(cross(up, z));
-    float3 y = cross(z, x);
+    auto z = dir;
+    auto x = normalize(cross(up, z));
+    auto y = cross(z, x);
     return{ {
         { x.x, y.x, z.x },
         { x.y, y.y, z.y },
@@ -618,7 +621,10 @@ inline float3x3 look33(float3 dir, float3 up)
     } };
 }
 
-inline float3x3 swap_handedness(const float3x3& m)
+template<class T> inline tvec3<T> swap_handedness(const tvec3<T>& v) { return { -v.x, v.y, v.z }; }
+template<class T> inline tvec4<T> swap_handedness(const tvec4<T>& v) { return { -v.x, v.y, v.z, v.w }; }
+template<class T> inline tquat<T> swap_handedness(const tquat<T>& v) { return { v.x, -v.y, -v.z, v.w }; }
+template<class T> inline tmat3x3<T> swap_handedness(const tmat3x3<T>& m)
 {
     return{ {
         { m[0].x,-m[0].y,-m[0].z },
@@ -626,8 +632,7 @@ inline float3x3 swap_handedness(const float3x3& m)
         {-m[2].x, m[2].y, m[2].z },
     } };
 }
-
-inline float4x4 swap_handedness(const float4x4& m)
+template<class T> inline tmat4x4<T> swap_handedness(const tmat4x4<T>& m)
 {
     return{ {
         { m[0].x,-m[0].y,-m[0].z, m[0].w },
@@ -826,13 +831,14 @@ inline float4x4 invert(const float4x4& x)
     return s;
 }
 
-template<class T>
-inline quatf to_quat_impl(const T& m)
+template<class TMatrix>
+inline tquat<typename TMatrix::scalar_t> to_quat_impl(const TMatrix& m)
 {
-    float tr, s;
-    float q[4];
+    using T = typename TMatrix::scalar_t;
+    T tr, s;
+    T q[4];
     int i, j, k;
-    quatf quat;
+    tquat<T> quat;
 
     int nxt[3] = { 1, 2, 0 };
     tr = m[0][0] + m[1][1] + m[2][2];
@@ -960,13 +966,13 @@ inline void compute_triangle_tangent(
     s *= rdiv;
     t *= rdiv;
 
-    float3 tangent = normalize({
+    float3 tangent = normalize(float3{
         t.y * p.x - t.x * q.x,
         t.y * p.y - t.x * q.y,
         t.y * p.z - t.x * q.z
     }) * area;
 
-    float3 binormal = normalize({
+    float3 binormal = normalize(float3{
         s.x * q.x - s.y * p.x,
         s.x * q.y - s.y * p.y,
         s.x * q.z - s.y * p.z

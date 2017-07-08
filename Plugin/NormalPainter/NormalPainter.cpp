@@ -855,7 +855,7 @@ npAPI int npBrushPaint(
     auto itrans = invert(model->transform);
     return SelectInside(*model, pos, radius, [&](int vi, float d, float3 p) {
         int bsi = GetBrushSampleIndex(d, radius, num_bsamples);
-        float s = clamp11(bsamples[bsi] * strength * 2.0f);
+        float s = saturate(bsamples[bsi] * strength * 2.0f);
         if (mask) s *= selection[vi];
 
         float slope;
