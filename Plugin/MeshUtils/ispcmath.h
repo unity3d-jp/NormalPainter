@@ -586,3 +586,11 @@ static inline void SoAToAoS(uniform float3 dst[], uniform float sx[], uniform fl
         dst[i] = float3_(sx[i], sy[i], sz[i]);
     }
 }
+
+static inline void zeroclear(uniform float dst[], uniform int size)
+{
+    memset(dst, 0, size*4);
+    //foreach(i = 0 ... size) { dst[i] = 0.0f; }
+    //int size = size + (C -1) & ~(C - 1);
+    //for (uniform int bi = 0; bi < size; bi += C) { dst[bi+I] = 0.0f; }
+}

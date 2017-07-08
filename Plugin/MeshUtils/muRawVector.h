@@ -79,7 +79,7 @@ public:
     static void* allocate(size_t size) { return AlignedMalloc(size, alignment); }
     static void deallocate(void *addr, size_t /*size*/) { AlignedFree(addr); }
 
-    void reserve(size_t s, bool discard = false)
+    void reserve(size_t s)
     {
         if (s > m_capacity) {
             s = std::max<size_t>(s, m_size * 2);
@@ -87,10 +87,22 @@ public:
             size_t oldsize = sizeof(T) * m_size;
 
             T *newdata = (T*)allocate(newsize);
-            if (!discard)
-                memcpy(newdata, m_data, oldsize);
+            memcpy(newdata, m_data, oldsize);
             deallocate(m_data, oldsize);
             m_data = newdata;
+            m_capacity = s;
+        }
+    }
+
+    void reserve_discard(size_t s)
+    {
+        if (s > m_capacity) {
+            s = std::max<size_t>(s, m_size * 2);
+            size_t newsize = sizeof(T) * s;
+            size_t oldsize = sizeof(T) * m_size;
+
+            deallocate(m_data, oldsize);
+            m_data = (T*)allocate(newsize);
             m_capacity = s;
         }
     }
@@ -124,11 +136,11 @@ public:
 
     void resize_discard(size_t s)
     {
-        reserve(s, true);
+        reserve_discard(s);
         m_size = s;
     }
 
-    void resize_with_zeroclear(size_t s)
+    void resize_zeroclear(size_t s)
     {
         resize_discard(s);
         zeroclear();

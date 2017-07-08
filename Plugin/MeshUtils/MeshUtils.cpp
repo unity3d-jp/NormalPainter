@@ -150,7 +150,7 @@ bool GenerateWeightsN(RawVector<Weights<N>>& dst, IArray<int> bone_indices, IArr
     }
 
     int num_weightsN = (int)bone_indices.size() / bones_per_vertex;
-    dst.resize(num_weightsN);
+    dst.resize_discard(num_weightsN);
 
     if (bones_per_vertex <= N) {
         dst.zeroclear();

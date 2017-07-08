@@ -348,8 +348,8 @@ void GenerateTangentsTriangleIndexed_Generic(float4 *dst,
     int num_triangles, int num_vertices)
 {
     RawVector<float3> tangents, binormals;
-    tangents.resize_with_zeroclear(num_vertices);
-    binormals.resize_with_zeroclear(num_vertices);
+    tangents.resize_zeroclear(num_vertices);
+    binormals.resize_zeroclear(num_vertices);
 
     for (int ti = 0; ti < num_triangles; ++ti) {
         int ti3 = ti * 3;
@@ -376,8 +376,8 @@ void GenerateTangentsTriangleFlattened_Generic(float4 *dst,
     int num_triangles, int num_vertices)
 {
     RawVector<float3> tangents, binormals;
-    tangents.resize_with_zeroclear(num_vertices);
-    binormals.resize_with_zeroclear(num_vertices);
+    tangents.resize_zeroclear(num_vertices);
+    binormals.resize_zeroclear(num_vertices);
 
     for (int ti = 0; ti < num_triangles; ++ti) {
         int ti3 = ti * 3;
@@ -410,8 +410,8 @@ void GenerateTangentsTriangleSoA_Generic(float4 *dst,
     int num_triangles, int num_vertices)
 {
     RawVector<float3> tangents, binormals;
-    tangents.resize_with_zeroclear(num_vertices);
-    binormals.resize_with_zeroclear(num_vertices);
+    tangents.resize_zeroclear(num_vertices);
+    binormals.resize_zeroclear(num_vertices);
 
     for (int ti = 0; ti < num_triangles; ++ti) {
         int ti3 = ti * 3;

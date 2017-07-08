@@ -44,7 +44,7 @@ inline void BuildConnection(
     connection.v2f_faces.resize_discard(num_indices);
     connection.v2f_indices.resize_discard(num_indices);
 
-    connection.v2f_counts.resize_with_zeroclear(num_points);
+    connection.v2f_counts.resize_zeroclear(num_points);
     {
         int ii = 0;
         for (size_t fi = 0; fi < num_faces; ++fi) {
@@ -441,8 +441,8 @@ void GenerateTangentsPoly(float4 *dst,
     int num_faces, int num_vertices)
 {
     RawVector<float3> tangents, binormals;
-    tangents.resize_with_zeroclear(num_vertices);
-    binormals.resize_with_zeroclear(num_vertices);
+    tangents.resize_zeroclear(num_vertices);
+    binormals.resize_zeroclear(num_vertices);
 
     RawVector<float3> face_vertices;
     RawVector<float2> face_uv;

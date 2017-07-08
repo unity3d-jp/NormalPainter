@@ -531,7 +531,7 @@ export void GenerateNormalsTriangleIndexed(uniform float3 dst[],
 {
     uniform int num_vertices_aligned = (num_vertices + (C - 1)) & ~(C - 1);
     float * uniform mem_tmp = uniform new float[num_vertices_aligned * 3];
-    foreach(i=0 ... num_vertices_aligned * 3) { mem_tmp[i]=0.0f; }
+    zeroclear(mem_tmp, num_vertices_aligned * 3);
     float * uniform tnx = mem_tmp + num_vertices_aligned * 0;
     float * uniform tny = mem_tmp + num_vertices_aligned * 1;
     float * uniform tnz = mem_tmp + num_vertices_aligned * 2;
@@ -590,7 +590,7 @@ export void GenerateNormalsTriangleFlattened(uniform float3 dst[],
 {
     uniform int num_vertices_aligned = (num_vertices + (C - 1)) & ~(C - 1);
     float * uniform mem_tmp = uniform new float[num_vertices_aligned * 3];
-    foreach(i=0 ... num_vertices_aligned * 3) { mem_tmp[i]=0.0f; }
+    zeroclear(mem_tmp, num_vertices_aligned * 3);
     float * uniform tnx = mem_tmp + num_vertices_aligned * 0;
     float * uniform tny = mem_tmp + num_vertices_aligned * 1;
     float * uniform tnz = mem_tmp + num_vertices_aligned * 2;
@@ -649,7 +649,7 @@ export void GenerateNormalsTriangleSoA(uniform float3 dst[],
 {
     uniform int num_vertices_aligned = (num_vertices + (C - 1)) & ~(C - 1);
     float * uniform mem_tmp = uniform new float[num_vertices_aligned * 3];
-    foreach(i=0 ... num_vertices_aligned * 3) { mem_tmp[i]=0.0f; }
+    zeroclear(mem_tmp, num_vertices_aligned * 3);
     float * uniform tnx = mem_tmp + num_vertices_aligned * 0;
     float * uniform tny = mem_tmp + num_vertices_aligned * 1;
     float * uniform tnz = mem_tmp + num_vertices_aligned * 2;
@@ -705,7 +705,7 @@ export void GenerateTangentsTriangleIndexed(uniform float4 dst[],
 {
     uniform int num_vertices_aligned = (num_vertices + (C - 1)) & ~(C - 1);
     float * uniform mem_tmp = uniform new float[num_vertices_aligned * 6];
-    foreach(i=0 ... num_vertices_aligned * 6) { mem_tmp[i]=0.0f; }
+    zeroclear(mem_tmp, num_vertices_aligned * 6);
     float * uniform ttx = mem_tmp + num_vertices_aligned * 0;
     float * uniform tty = mem_tmp + num_vertices_aligned * 1;
     float * uniform ttz = mem_tmp + num_vertices_aligned * 2;
@@ -805,6 +805,7 @@ export void GenerateTangentsTriangleFlattened(uniform float4 dst[],
     uniform int num_vertices_aligned = (num_vertices + (C - 1)) & ~(C - 1);
     float * uniform mem_tmp = uniform new float[num_vertices_aligned * 6];
     foreach(i=0 ... num_vertices_aligned * 6) { mem_tmp[i]=0.0f; }
+    zeroclear(mem_tmp, num_vertices_aligned * 6);
     float * uniform ttx = mem_tmp + num_vertices_aligned * 0;
     float * uniform tty = mem_tmp + num_vertices_aligned * 1;
     float * uniform ttz = mem_tmp + num_vertices_aligned * 2;
@@ -914,7 +915,7 @@ export void GenerateTangentsTriangleSoA(
 {
     uniform int num_vertices_aligned = (num_vertices + (C - 1)) & ~(C - 1);
     float * uniform mem_tmp = uniform new float[num_vertices_aligned * 6];
-    foreach(i=0 ... num_vertices_aligned * 6) { mem_tmp[i]=0.0f; }
+    zeroclear(mem_tmp, num_vertices_aligned * 6);
     float * uniform ttx = mem_tmp + num_vertices_aligned * 0;
     float * uniform tty = mem_tmp + num_vertices_aligned * 1;
     float * uniform ttz = mem_tmp + num_vertices_aligned * 2;
