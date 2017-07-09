@@ -3,9 +3,7 @@
 #include "muSIMD.h"
 #include "muRawVector.h"
 
-#ifdef muMath_AddNamespace
 namespace mu {
-#endif
 
 const float PI = 3.14159265358979323846264338327950288419716939937510f;
 const float Deg2Rad = PI / 180.0f;
@@ -465,6 +463,4 @@ bool GenerateNormalsPoly(
     return true;
 }
 
-#ifdef muMath_AddNamespace
-}
-#endif
+} // namespace mu

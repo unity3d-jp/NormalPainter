@@ -146,6 +146,16 @@ TestCase(TestNormalsAndTangents)
         }
     }
 
+    auto ValidateNormals = [&](const RawVector<float3>& ns) {
+        if (!NearEqual(normals[0].data(), ns.data(), ns.size(), 0.01f)) {
+            Print("        *** validation failed ***\n");
+        }
+    };
+    auto ValidateTangents = [&](const RawVector<float4>& ts) {
+        if (!NearEqual(tangents[0].data(), ts.data(), ts.size(), 0.01f)) {
+            Print("        *** validation failed ***\n");
+        }
+    };
 
     Print(
         "    num_vertices: %d\n"
@@ -169,28 +179,36 @@ TestCase(TestNormalsAndTangents)
     TestScope("GenerateNormals indexed C++", [&]() {
         GenerateNormalsTriangleIndexed_Generic(normals[0].data(), points.data(), indices.data(), num_triangles, num_points);
     }, num_try);
+
 #ifdef muSIMD_GenerateNormalsTriangleIndexed
     TestScope("GenerateNormals indexed ISPC", [&]() {
         GenerateNormalsTriangleIndexed_ISPC(normals[1].data(), points.data(), indices.data(), num_triangles, num_points);
     }, num_try);
+    ValidateNormals(normals[1]);
 #endif
 
     TestScope("GenerateNormals flattened C++", [&]() {
         GenerateNormalsTriangleFlattened_Generic(normals[2].data(), points_f.data(), indices.data(), num_triangles, num_points);
     }, num_try);
+    ValidateNormals(normals[2]);
+
 #ifdef muSIMD_GenerateNormalsTriangleFlattened
     TestScope("GenerateNormals flattened ISPC", [&]() {
         GenerateNormalsTriangleFlattened_ISPC(normals[3].data(), points_f.data(), indices.data(), num_triangles, num_points);
     }, num_try);
+    ValidateNormals(normals[3]);
 #endif
 
     TestScope("GenerateNormals SoA C++", [&]() {
         GenerateNormalsTriangleSoA_Generic(normals[4].data(), SoAPointsArgs, indices.data(), num_triangles, num_points);
     }, num_try);
+    ValidateNormals(normals[4]);
+
 #ifdef muSIMD_GenerateNormalsTriangleSoA
     TestScope("GenerateNormals SoA ISPC", [&]() {
         GenerateNormalsTriangleSoA_ISPC(normals[5].data(), SoAPointsArgs, indices.data(), num_triangles, num_points);
     }, num_try);
+    ValidateNormals(normals[5]);
 #endif
 
 
@@ -200,33 +218,41 @@ TestCase(TestNormalsAndTangents)
         GenerateTangentsTriangleIndexed_Generic(tangents[0].data(),
             points.data(), uv.data(), normals[0].data(), indices.data(), num_triangles, num_points);
     }, num_try);
+
 #ifdef muSIMD_GenerateTangentsTriangleIndexed
     TestScope("GenerateTangents indexed ISPC", [&]() {
         GenerateTangentsTriangleIndexed_ISPC(tangents[1].data(),
             points.data(), uv.data(), normals[1].data(), indices.data(), num_triangles, num_points);
     }, num_try);
+    ValidateTangents(tangents[1]);
 #endif
 
     TestScope("GenerateTangents flattened C++", [&]() {
         GenerateTangentsTriangleFlattened_Generic(tangents[2].data(),
             points_f.data(), uv_f.data(), normals[2].data(), indices.data(), num_triangles, num_points);
     }, num_try);
+    ValidateTangents(tangents[2]);
+
 #ifdef muSIMD_GenerateTangentsTriangleFlattened
     TestScope("GenerateTangents flattened ISPC", [&]() {
         GenerateTangentsTriangleFlattened_ISPC(tangents[3].data(),
             points_f.data(), uv_f.data(), normals[3].data(), indices.data(), num_triangles, num_points);
     }, num_try);
+    ValidateTangents(tangents[3]);
 #endif
 
     TestScope("GenerateTangents SoA C++", [&]() {
         GenerateTangentsTriangleSoA_Generic(tangents[4].data(),
             SoAPointsArgs, SoAUVArgs, normals[4].data(), indices.data(), num_triangles, num_points);
     }, num_try);
-#ifdef muSIMD_GenerateTangentsTriangleFlattened
+    ValidateTangents(tangents[4]);
+
+#ifdef muSIMD_GenerateTangentsTriangleSoA
     TestScope("GenerateTangents SoA ISPC", [&]() {
         GenerateTangentsTriangleSoA_ISPC(tangents[5].data(),
             SoAPointsArgs, SoAUVArgs, normals[5].data(), indices.data(), num_triangles, num_points);
     }, num_try);
+    ValidateTangents(tangents[5]);
 #endif
 
     // try to call CalculateTangents() in Unity.exe
@@ -249,23 +275,8 @@ TestCase(TestNormalsAndTangents)
                 TestScope("CalculateTangents (Unity.exe)", [&]() {
                     CalculateTangents(viter, niter, uiter, indices.data(), num_points, num_triangles * 3, titer);
                 }, num_try);
+                ValidateTangents(tangents[6]);
             }
-        }
-        else {
-            tangents[6].clear();
-        }
-    }
-
-    for (int i = 1; i < countof(normals); ++i) {
-        if (normals[i].size() != normals[0].size()) { continue; }
-        if (!NearEqual(normals[0].data(), normals[i].data(), normals[0].size(), 0.01f)) {
-            Print("    *** validation failed: normals %d ***\n", i);
-        }
-    }
-    for (int i = 1; i < countof(tangents); ++i) {
-        if (tangents[i].size() != tangents[0].size()) { continue; }
-        if (!NearEqual(tangents[0].data(), tangents[i].data(), tangents[0].size(), 0.01f)) {
-            Print("    *** validation failed: tangents %d ***\n", i);
         }
     }
 
@@ -338,7 +349,7 @@ TestCase(TestMulPoints)
     TestScope("MulVectors C++", [&]() {
         MulVectors_Generic(matrix, src.data(), dst1.data(), num_data);
     }, num_try);
-#ifdef muSIMD_MulPoints3
+#ifdef muSIMD_MulVectors3
     TestScope("MulVectors ISPC", [&]() {
         MulVectors_ISPC(matrix, src.data(), dst2.data(), num_data);
     }, num_try);
@@ -434,7 +445,7 @@ TestCase(TestRayTrianglesIntersection)
     }, num_try);
     PrintResult();
 
-#ifdef muSIMD_RayTrianglesIntersectionIndexed
+#ifdef muSIMD_RayTrianglesIntersectionFlattened
     TestScope("RayTrianglesIntersection flattened ISPC", [&]() {
         num_hits = RayTrianglesIntersectionFlattened_ISPC(ray_pos, ray_dir, vertices_flattened.data(), num_triangles, tindex, distance);
     }, num_try);
@@ -449,7 +460,7 @@ TestCase(TestRayTrianglesIntersection)
     }, num_try);
     PrintResult();
 
-#ifdef muSIMD_RayTrianglesIntersectionIndexed
+#ifdef muSIMD_RayTrianglesIntersectionSoA
     TestScope("RayTrianglesIntersection SoA ISPC", [&]() {
         num_hits = RayTrianglesIntersectionSoA_ISPC(ray_pos, ray_dir,
             v1x.data(), v1y.data(), v1z.data(),

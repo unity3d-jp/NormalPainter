@@ -9,11 +9,8 @@
 #include "muIntrusiveArray.h"
 
 #define muEpsilon 1e-4f
-#define muMath_AddNamespace
 
-#ifdef muMath_AddNamespace
 namespace mu {
-#endif
 
 extern const float PI;
 extern const float Deg2Rad;
@@ -1040,6 +1037,4 @@ template<class T> inline tvec4<T> orthogonalize_tangent(
         dot(cross(normal, tangent), binormal) > T(0.0) ? T(1.0) : -T(1.0) };
 }
 
-#ifdef muMath_AddNamespace
 } // namespace mu
-#endif
