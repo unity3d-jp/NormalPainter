@@ -33,18 +33,18 @@
     <ClInclude Include="Test.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{11990C37-1C63-418F-9AB1-74076C470584}</ProjectGuid>
+    <ProjectGuid>{A7AC48A7-1BC7-4D9D-BADD-A88B4292A0A3}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <WindowsTargetPlatformVersion>10.0.14393.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
-  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <PlatformToolset>v140</PlatformToolset>
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Master|x64'" Label="Configuration">
     <PlatformToolset>v140</PlatformToolset>
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
@@ -59,7 +59,8 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <PostBuildEvent>
-      <Command>xcopy /Y $(SolutionDir)External\libs\win64\*.dll $(TargetDir)</Command>
+      <Command>xcopy /Y $(TargetPath) $(SolutionDir)..\NormalPainter\Assets\Tests\Plugins\x86_64\
+xcopy /Y $(SolutionDir)External\libs\win64\*.dll $(SolutionDir)..\NormalPainter\Assets\Tests\Plugins\x86_64\</Command>
     </PostBuildEvent>
     <ClCompile>
       <PrecompiledHeader>Use</PrecompiledHeader>
@@ -76,7 +77,8 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Master|x64'">
     <PostBuildEvent>
-      <Command>xcopy /Y $(SolutionDir)External\libs\win64\*.dll $(TargetDir)</Command>
+      <Command>xcopy /Y $(TargetPath) $(SolutionDir)..\NormalPainter\Assets\Tests\Plugins\x86_64\
+xcopy /Y $(SolutionDir)External\libs\win64\*.dll $(SolutionDir)..\NormalPainter\Assets\Tests\Plugins\x86_64\</Command>
     </PostBuildEvent>
     <ClCompile>
       <PrecompiledHeader>Use</PrecompiledHeader>

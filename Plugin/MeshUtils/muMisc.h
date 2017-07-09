@@ -68,14 +68,16 @@ inline void EnumerateDLLImports(HMODULE module, const F &f)
         while (pThunkOrig->u1.AddressOfData != 0) {
             const char *name = nullptr;
             DWORD ordinal = 0;
-#ifdef _M_AMD64
-            const size_t mask = 0x8000000000000000;
-#else
-            const size_t mask = 0x80000000;
-#endif
-            if ((pThunkOrig->u1.Ordinal & mask) > 0) {
-                ordinal = pThunkOrig->u1.Ordinal & 0xffff;
+
+#ifdef _WIN64
+            if (pThunkOrig->u1.Ordinal & IMAGE_ORDINAL_FLAG64) {
+                ordinal = IMAGE_ORDINAL64(pThunkOrig->u1.Ordinal);
             }
+#else
+            if (pThunkOrig->u1.Ordinal & IMAGE_ORDINAL_FLAG32) {
+                ordinal = IMAGE_ORDINAL32(pThunkOrig->u1.Ordinal);
+            }
+#endif
             else {
                 auto* pIBN = (IMAGE_IMPORT_BY_NAME*)(ImageBase + pThunkOrig->u1.AddressOfData);
                 name = pIBN->Name;
