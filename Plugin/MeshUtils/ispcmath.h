@@ -251,15 +251,23 @@ static inline float length(float3 v) { return sqrt(length_sq(v)); }
 static inline uniform float length(uniform float2 v) { return sqrt(length_sq(v)); }
 static inline uniform float length(uniform float3 v) { return sqrt(length_sq(v)); }
 
-static inline float2 normalize_precise(float2 v) { return v / length(v); }
-static inline float3 normalize_precise(float3 v) { return v / length(v); }
-static inline uniform float2 normalize_precise(uniform float2 v) { return v / length(v); }
-static inline uniform float3 normalize_precise(uniform float3 v) { return v / length(v); }
+static inline float rlength_precise(float2 v) { return 1.0f / sqrt(length_sq(v)); }
+static inline float rlength_precise(float3 v) { return 1.0f / sqrt(length_sq(v)); }
+static inline uniform float rlength_precise(uniform float2 v) { return 1.0f / sqrt(length_sq(v)); }
+static inline uniform float rlength_precise(uniform float3 v) { return 1.0f / sqrt(length_sq(v)); }
+static inline float rlength_estimate(float2 v) { return rsqrt(length_sq(v)); }
+static inline float rlength_estimate(float3 v) { return rsqrt(length_sq(v)); }
+static inline uniform float rlength_estimate(uniform float2 v) { return rsqrt(length_sq(v)); }
+static inline uniform float rlength_estimate(uniform float3 v) { return rsqrt(length_sq(v)); }
 
-static inline float2 normalize_estimate(float2 v) { return v * rsqrt(dot(v, v)); }
-static inline float3 normalize_estimate(float3 v) { return v * rsqrt(dot(v, v)); }
-static inline uniform float2 normalize_estimate(uniform float2 v) { return v * rsqrt(dot(v, v)); }
-static inline uniform float3 normalize_estimate(uniform float3 v) { return v * rsqrt(dot(v, v)); }
+static inline float2 normalize_precise(float2 v) { return v * rlength_precise(v); }
+static inline float3 normalize_precise(float3 v) { return v * rlength_precise(v); }
+static inline uniform float2 normalize_precise(uniform float2 v) { return v * rlength_precise(v); }
+static inline uniform float3 normalize_precise(uniform float3 v) { return v * rlength_precise(v); }
+static inline float2 normalize_estimate(float2 v) { return v * rlength_estimate(v); }
+static inline float3 normalize_estimate(float3 v) { return v * rlength_estimate(v); }
+static inline uniform float2 normalize_estimate(uniform float2 v) { return v * rlength_estimate(v); }
+static inline uniform float3 normalize_estimate(uniform float3 v) { return v * rlength_estimate(v); }
 
 static inline float angle_between(float3 a, float3 b) { return acos(dot(a, b)); }
 static inline uniform float angle_between(uniform float3 a, uniform float3 b) { return acos(dot(a, b)); }
@@ -305,10 +313,12 @@ static inline uniform float3 lerp(uniform float3 a, uniform float3 b, uniform fl
 
 #ifdef ispcmathEstimate
     #define rcp rcp_estimate
+    #define rlength rlength_estimate
     #define normalize normalize_estimate
     #define angle_between2 angle_between2_estimate
 #else
     #define rcp rcp_precise
+    #define rlength rlength_precise
     #define normalize normalize_precise
     #define angle_between2 angle_between2_precise
 #endif
@@ -389,22 +399,22 @@ static inline void compute_triangle_tangents(
     s = s * rd;
     t = t * rd;
 
-    float3 tangent = normalize(float3_(
+    float3 tangent = normalize_estimate(float3_(
         t.y * p.x - t.x * q.x,
         t.y * p.y - t.x * q.y,
         t.y * p.z - t.x * q.z
     )) * area;
 
-    float3 binormal = normalize(float3_(
+    float3 binormal = normalize_estimate(float3_(
         s.x * q.x - s.y * p.x,
         s.x * q.y - s.y * p.y,
         s.x * q.z - s.y * p.z
     )) * area;
 
     float angles[3] = {
-        angle_between2(vertices[2], vertices[1], vertices[0]),
-        angle_between2(vertices[0], vertices[2], vertices[1]),
-        angle_between2(vertices[1], vertices[0], vertices[2]),
+        angle_between2_estimate(vertices[2], vertices[1], vertices[0]),
+        angle_between2_estimate(vertices[0], vertices[2], vertices[1]),
+        angle_between2_estimate(vertices[1], vertices[0], vertices[2]),
     };
     for (int v = 0; v < 3; ++v) {
         dst_tangent[v] = tangent * angles[v];
@@ -426,22 +436,22 @@ static inline void compute_triangle_tangents(
     s = s * rd;
     t = t * rd;
 
-    uniform float3 tangent = normalize(float3_(
+    uniform float3 tangent = normalize_estimate(float3_(
         t.y * p.x - t.x * q.x,
         t.y * p.y - t.x * q.y,
         t.y * p.z - t.x * q.z
     )) * area;
 
-    uniform float3 binormal = normalize(float3_(
+    uniform float3 binormal = normalize_estimate(float3_(
         s.x * q.x - s.y * p.x,
         s.x * q.y - s.y * p.y,
         s.x * q.z - s.y * p.z
     )) * area;
 
     uniform float angles[3] = {
-        angle_between2(vertices[2], vertices[1], vertices[0]),
-        angle_between2(vertices[0], vertices[2], vertices[1]),
-        angle_between2(vertices[1], vertices[0], vertices[2]),
+        angle_between2_estimate(vertices[2], vertices[1], vertices[0]),
+        angle_between2_estimate(vertices[0], vertices[2], vertices[1]),
+        angle_between2_estimate(vertices[1], vertices[0], vertices[2]),
     };
     for (uniform int v = 0; v < 3; ++v) {
         dst_tangent[v] = tangent * angles[v];
