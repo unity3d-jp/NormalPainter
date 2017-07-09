@@ -1,5 +1,6 @@
 #pragma once
 
+#include "MeshUtils/MeshUtils.h"
 using namespace mu;
 
 void GenerateWaveMesh(

@@ -7,3 +7,5 @@
     #define npAPI extern "C" 
 #endif
 
+#include "MeshUtils/MeshUtils.h"
+using namespace mu;

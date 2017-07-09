@@ -1,5 +1,5 @@
 #include "pch.h"
-using namespace mu;
+#include "MeshGenerator.h"
 
 void GenerateWaveMesh(
     RawVector<int>& counts,

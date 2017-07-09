@@ -2,8 +2,6 @@
 #include "Test.h"
 #include "MeshGenerator.h"
 
-using namespace mu;
-
 static std::string g_log;
 
 void PrintImpl(const char *format, ...)

@@ -1,8 +1,6 @@
 #include "pch.h"
 #include "NormalPainter.h"
 
-using namespace mu;
-
 #define npEpsilon 0.0000001f
 
 struct npModelData
