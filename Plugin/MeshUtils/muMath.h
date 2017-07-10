@@ -332,8 +332,77 @@ template<class T> inline tmat4x4<T>& operator*=(tmat4x4<T>& a, const tmat4x4<T> 
     return a;
 }
 
-inline bool near_equal(float a, float b, float epsilon = muEpsilon) { return std::abs(a - b) < epsilon; }
-inline bool near_equal(double a, double b, double epsilon = muEpsilon) { return std::abs(a - b) < epsilon; }
+
+#define SF(T)                                                                                       \
+    inline T rcp(T v) { return T(1.0) / v; }                                                        \
+    inline T rsqrt(T v) { return T(1.0) / std::sqrt(v); }                                           \
+    inline T mod(T a, T b) { return std::fmod(a, b); }                                              \
+    inline T frac(T a) { return std::fmod(a, T(1.0)); }                                             \
+    inline T clamp(T v, T vmin, T vmax) { return std::min<T>(std::max<T>(v, vmin), vmax); }         \
+    inline T clamp01(T v) { return clamp(v, T(0), T(1)); }                                          \
+    inline T saturate(T v) { return clamp(v, T(-1), T(1)); }                                        \
+    inline T lerp(T  a, T  b, T  t) { return a * (T(1.0) - t) + b * t; }                            \
+    inline T ceildiv(T v, T d) { return (v + (d - 1)) / d; }                                        \
+    inline bool near_equal(T a, T b, T epsilon = T(muEpsilon)) { return std::abs(a - b) < epsilon; }\
+
+SF(float)
+SF(double)
+#undef SF
+
+#define VF1N(N, F)\
+    template<class T> inline tvec2<T> N(const tvec2<T>& a) { return{ F(a.x), F(a.y) }; }\
+    template<class T> inline tvec3<T> N(const tvec3<T>& a) { return{ F(a.x), F(a.y), F(a.z) }; }\
+    template<class T> inline tvec4<T> N(const tvec4<T>& a) { return{ F(a.x), F(a.y), F(a.z), F(a.w) }; }\
+
+#define VF2N(N, F)\
+    template<class T> inline tvec2<T> N(const tvec2<T>& a, const tvec2<T>& b) { return{ F(a.x, b.x), F(a.y, b.y) }; }\
+    template<class T> inline tvec3<T> N(const tvec3<T>& a, const tvec3<T>& b) { return{ F(a.x, b.x), F(a.y, b.y), F(a.z, b.z) }; }\
+    template<class T> inline tvec4<T> N(const tvec4<T>& a, const tvec4<T>& b) { return{ F(a.x, b.x), F(a.y, b.y), F(a.z, b.z), F(a.w, b.w) }; }\
+
+#define VF1(N) VF1N(N, N)
+#define VF2(N) VF2N(N, N)
+#define VF1std(N) using std::N; VF1N(N, N)
+#define VF2std(N) using std::N; VF2N(N, N)
+
+VF1std(abs)
+VF1std(round)
+VF1std(floor)
+VF1std(ceil)
+VF2std(min)
+VF2std(max)
+VF1(rcp)
+VF1std(sqrt)
+VF1(rsqrt)
+VF1std(sin)
+VF1std(cos)
+VF1std(tan)
+VF1std(asin)
+VF1std(acos)
+VF1std(atan)
+VF2std(atan2)
+VF1std(exp)
+VF1std(log)
+VF2std(pow)
+VF2(mod)
+VF1(frac)
+VF1(clamp01)
+VF1(saturate)
+
+#undef VF1N
+#undef VF2N
+#undef VF1
+#undef VF2
+#undef VF1std
+#undef VF2std
+
+template<class T> inline tvec2<T> clamp(const tvec2<T>& v, const tvec2<T>& vmin, const tvec2<T>& vmax) { return { clamp<T>(v.x, vmin.x, vmax.x), clamp<T>(v.y, vmin.y, vmax.y) }; }
+template<class T> inline tvec3<T> clamp(const tvec3<T>& v, const tvec3<T>& vmin, const tvec3<T>& vmax) { return { clamp<T>(v.x, vmin.x, vmax.x), clamp<T>(v.y, vmin.y, vmax.y), clamp<T>(v.z, vmin.z, vmax.z) }; }
+template<class T> inline tvec4<T> clamp(const tvec4<T>& v, const tvec4<T>& vmin, const tvec4<T>& vmax) { return { clamp<T>(v.x, vmin.x, vmax.x), clamp<T>(v.y, vmin.y, vmax.y), clamp<T>(v.z, vmin.z, vmax.z), clamp<T>(v.w, vmin.w, vmax.w) }; }
+
+template<class T> inline tvec2<T> lerp(const tvec2<T>& a, const tvec2<T>& b, T t) { return a*(T(1.0) - t) + b*t; }
+template<class T> inline tvec3<T> lerp(const tvec3<T>& a, const tvec3<T>& b, T t) { return a*(T(1.0) - t) + b*t; }
+template<class T> inline tvec4<T> lerp(const tvec4<T>& a, const tvec4<T>& b, T t) { return a*(T(1.0) - t) + b*t; }
+
 template<class T> inline bool near_equal(const tvec2<T>& a, const tvec2<T>& b, T e = muEpsilon)
 {
     return near_equal(a.x, b.x, e) && near_equal(a.y, b.y, e);
@@ -358,26 +427,6 @@ template<class T> inline bool near_equal(const tmat4x4<T>& a, const tmat4x4<T>& 
 {
     return near_equal(a[0], b[0], e) && near_equal(a[1], b[1], e) && near_equal(a[2], b[2], e) && near_equal(a[3], b[3], e);
 }
-
-template<class Int>
-inline Int ceildiv(Int v, Int d)
-{
-    return v / d + (v % d == 0 ? 0 : 1);
-}
-
-template<class T> inline T clamp(T v, T vmin, T vmax) { return std::min<T>(std::max<T>(v, vmin), vmax); }
-template<class T> inline T clamp01(T v) { return clamp(v, T(0), T(1)); }
-template<class T> inline T saturate(T v) { return clamp(v, T(-1), T(1)); }
-
-template<class T> inline tvec2<T> clamp(const tvec2<T>& v, const tvec2<T>& vmin, const tvec2<T>& vmax) { return { clamp<T>(v.x, vmin.x, vmax.x), clamp<T>(v.y, vmin.y, vmax.y) }; }
-template<class T> inline tvec3<T> clamp(const tvec3<T>& v, const tvec3<T>& vmin, const tvec3<T>& vmax) { return { clamp<T>(v.x, vmin.x, vmax.x), clamp<T>(v.y, vmin.y, vmax.y), clamp<T>(v.z, vmin.z, vmax.z) }; }
-template<class T> inline tvec4<T> clamp(const tvec4<T>& v, const tvec4<T>& vmin, const tvec4<T>& vmax) { return { clamp<T>(v.x, vmin.x, vmax.x), clamp<T>(v.y, vmin.y, vmax.y), clamp<T>(v.z, vmin.z, vmax.z), clamp<T>(v.w, vmin.w, vmax.w) }; }
-template<class T> inline tvec2<T> clamp01(const tvec2<T>& v) { return { clamp01<T>(v.x), clamp01<T>(v.y) }; }
-template<class T> inline tvec3<T> clamp01(const tvec3<T>& v) { return { clamp01<T>(v.x), clamp01<T>(v.y), clamp01<T>(v.z) }; }
-template<class T> inline tvec4<T> clamp01(const tvec4<T>& v) { return { clamp01<T>(v.x), clamp01<T>(v.y), clamp01<T>(v.z), clamp01<T>(v.w) }; }
-template<class T> inline tvec2<T> saturate(const tvec2<T>& v) { return { saturate<T>(v.x), saturate<T>(v.y) }; }
-template<class T> inline tvec3<T> saturate(const tvec3<T>& v) { return { saturate<T>(v.x), saturate<T>(v.y), saturate<T>(v.z) }; }
-template<class T> inline tvec4<T> saturate(const tvec4<T>& v) { return { saturate<T>(v.x), saturate<T>(v.y), saturate<T>(v.z), saturate<T>(v.w) }; }
 
 template<class T>
 inline static tvec3<T> mul_v(const tmat4x4<T>& m, const tvec3<T>& v)
@@ -417,19 +466,6 @@ inline static tvec4<T> mul4(const tmat4x4<T>& m, const tvec3<T>& v)
         m[0][3] * v[0] + m[1][3] * v[1] + m[2][3] * v[2] + m[3][3],
     };
 }
-
-template<class T> inline tvec2<T> min(const tvec2<T>& a, const tvec2<T>& b) { return{ std::min<T>(a.x, b.x), std::min<T>(a.y, b.y) }; }
-template<class T> inline tvec3<T> min(const tvec3<T>& a, const tvec3<T>& b) { return{ std::min<T>(a.x, b.x), std::min<T>(a.y, b.y), std::min<T>(a.z, b.z) }; }
-template<class T> inline tvec4<T> min(const tvec4<T>& a, const tvec4<T>& b) { return{ std::min<T>(a.x, b.x), std::min<T>(a.y, b.y), std::min<T>(a.z, b.z), std::min<T>(a.w, b.w) }; }
-template<class T> inline tvec2<T> max(const tvec2<T>& a, const tvec2<T>& b) { return{ std::max<T>(a.x, b.x), std::max<T>(a.y, b.y) }; }
-template<class T> inline tvec3<T> max(const tvec3<T>& a, const tvec3<T>& b) { return{ std::max<T>(a.x, b.x), std::max<T>(a.y, b.y), std::max<T>(a.z, b.z) }; }
-template<class T> inline tvec4<T> max(const tvec4<T>& a, const tvec4<T>& b) { return{ std::max<T>(a.x, b.x), std::max<T>(a.y, b.y), std::max<T>(a.z, b.z), std::max<T>(a.w, b.w) }; }
-
-inline float  lerp(float  a, float  b, float  t) { return a*(1.0f- t) + b*t; }
-inline double lerp(double a, double b, double t) { return a*(1.0 - t) + b*t; }
-template<class T> inline tvec2<T> lerp(const tvec2<T>& a, const tvec2<T>& b, T t) { return a*(T(1.0) - t) + b*t; }
-template<class T> inline tvec3<T> lerp(const tvec3<T>& a, const tvec3<T>& b, T t) { return a*(T(1.0) - t) + b*t; }
-template<class T> inline tvec4<T> lerp(const tvec4<T>& a, const tvec4<T>& b, T t) { return a*(T(1.0) - t) + b*t; }
 
 template<class T> inline T dot(const tvec2<T>& l, const tvec2<T>& r) { return l.x*r.x + l.y*r.y; }
 template<class T> inline T dot(const tvec3<T>& l, const tvec3<T>& r) { return l.x*r.x + l.y*r.y + l.z*r.z; }

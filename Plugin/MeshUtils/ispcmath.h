@@ -124,72 +124,46 @@ static inline uniform float frac(uniform float a)
 }
 
 
-#define define_vmath1(f)\
-    static inline float2 f(float2 a)\
-    {\
-        float2 r = { f(a.x), f(a.y) };\
-        return r;\
-    }\
-    static inline uniform float2 f(uniform float2 a)\
-    {\
-        uniform float2 r = { f(a.x), f(a.y) };\
-        return r;\
-    }\
-    static inline float3 f(float3 a)\
-    {\
-        float3 r = { f(a.x), f(a.y), f(a.z) };\
-        return r;\
-    }\
-    static inline uniform float3 f(uniform float3 a)\
-    {\
-        uniform float3 r = { f(a.x), f(a.y), f(a.z) };\
-        return r;\
-    }
+#define VF1(f)\
+    static inline float2 f(float2 a) { return float2_(f(a.x), f(a.y)); }\
+    static inline float3 f(float3 a) { return float3_(f(a.x), f(a.y), f(a.z)); }\
+    static inline float4 f(float4 a) { return float4_(f(a.x), f(a.y), f(a.z), f(a.w)); }\
+    static inline uniform float2 f(uniform float2 a) { return float2_(f(a.x), f(a.y)); }\
+    static inline uniform float3 f(uniform float3 a) { return float3_(f(a.x), f(a.y), f(a.z)); }\
+    static inline uniform float4 f(uniform float4 a) { return float4_(f(a.x), f(a.y), f(a.z), f(a.w)); }\
 
-#define define_vmath2(f)\
-    static inline float2 f(float2 a, float2 b)\
-    {\
-        float2 r = { f(a.x, b.x), f(a.y, b.y) };\
-        return r;\
-    }\
-    static inline uniform float2 f(uniform float2 a, uniform float2 b)\
-    {\
-        uniform float2 r = { f(a.x, b.x), f(a.y, b.y) };\
-        return r;\
-    }\
-    static inline float3 f(float3 a, float3 b)\
-    {\
-        float3 r = { f(a.x, b.x), f(a.y, b.y), f(a.z, b.z) };\
-        return r;\
-    }\
-    static inline uniform float3 f(uniform float3 a, uniform float3 b)\
-    {\
-        uniform float3 r = { f(a.x, b.x), f(a.y, b.y), f(a.z, b.z) };\
-        return r;\
-    }
+#define VF2(f)\
+    static inline float2 f(float2 a, float2 b) { return float2_(f(a.x, b.x), f(a.y, b.y)); }\
+    static inline float3 f(float3 a, float3 b) { return float3_(f(a.x, b.x), f(a.y, b.y), f(a.z, b.z)); }\
+    static inline float4 f(float4 a, float4 b) { return float4_(f(a.x, b.x), f(a.y, b.y), f(a.z, b.z), f(a.w, b.w)); }\
+    static inline uniform float2 f(uniform float2 a, uniform float2 b) { return float2_(f(a.x, b.x), f(a.y, b.y)); }\
+    static inline uniform float3 f(uniform float3 a, uniform float3 b) { return float3_(f(a.x, b.x), f(a.y, b.y), f(a.z, b.z)); }\
+    static inline uniform float4 f(uniform float4 a, uniform float4 b) { return float4_(f(a.x, b.x), f(a.y, b.y), f(a.z, b.z), f(a.w, b.w)); }\
 
-define_vmath1(abs)
-define_vmath1(round)
-define_vmath1(floor)
-define_vmath1(ceil)
-define_vmath2(min)
-define_vmath2(max)
-define_vmath1(rcp)
-define_vmath1(sqrt)
-define_vmath1(rsqrt)
-define_vmath1(sin)
-define_vmath1(cos)
-define_vmath1(tan)
-define_vmath1(asin)
-define_vmath1(acos)
-define_vmath1(atan)
-define_vmath2(atan2)
-define_vmath1(exp)
-define_vmath1(log)
-define_vmath2(pow)
-define_vmath2(mod)
-define_vmath1(frac)
+VF1(abs)
+VF1(round)
+VF1(floor)
+VF1(ceil)
+VF2(min)
+VF2(max)
+VF1(rcp)
+VF1(sqrt)
+VF1(rsqrt)
+VF1(sin)
+VF1(cos)
+VF1(tan)
+VF1(asin)
+VF1(acos)
+VF1(atan)
+VF2(atan2)
+VF1(exp)
+VF1(log)
+VF2(pow)
+VF2(mod)
+VF1(frac)
 
+#undef VF1
+#undef VF2
 
 
 static inline float dot(float2 a, float2 b)
