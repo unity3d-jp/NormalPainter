@@ -332,6 +332,7 @@ template<class T> inline tmat4x4<T>& operator*=(tmat4x4<T>& a, const tmat4x4<T> 
     return a;
 }
 
+inline int ceildiv(int v, int d) { return (v + (d - 1)) / d; }
 
 #define SF(T)                                                                                       \
     inline T rcp(T v) { return T(1.0) / v; }                                                        \
@@ -342,7 +343,6 @@ template<class T> inline tmat4x4<T>& operator*=(tmat4x4<T>& a, const tmat4x4<T> 
     inline T clamp01(T v) { return clamp(v, T(0), T(1)); }                                          \
     inline T saturate(T v) { return clamp(v, T(-1), T(1)); }                                        \
     inline T lerp(T  a, T  b, T  t) { return a * (T(1.0) - t) + b * t; }                            \
-    inline T ceildiv(T v, T d) { return (v + (d - 1)) / d; }                                        \
     inline bool near_equal(T a, T b, T epsilon = T(muEpsilon)) { return std::abs(a - b) < epsilon; }\
 
 SF(float)

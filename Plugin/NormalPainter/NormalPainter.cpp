@@ -54,24 +54,48 @@ inline static int RaycastWithoutTransform(
     return hit;
 }
 
+#define npVertexBlockSize 1024
+
 template<class Body>
-inline static int SelectInside(const npModelData& model, float3 pos, float radius, const Body& body)
+inline static int SelectInside(const npModelData& model, float3 pos, float radius, const Body& body, bool parallel = false)
 {
     auto num_vertices = model.num_vertices;
     auto vertices = model.vertices;
     auto transform = model.transform;
 
-    int ret = 0;
     float rq = radius * radius;
-    for (int vi = 0; vi < num_vertices; ++vi) {
+    auto do_select = [&](int vi) -> bool {
         float3 p = mul_p(transform, vertices[vi]);
         float dsq = length_sq(p - pos);
         if (dsq <= rq) {
             body(vi, std::sqrt(dsq), p);
-            ++ret;
+            return true;;
         }
+        return false;
+    };
+
+    if (parallel) {
+        std::atomic_int ret{ 0 };
+        parallel_for_blocked(0, num_vertices, npVertexBlockSize, [&](int vi, int vend) {
+            int c = 0;
+            for (; vi < vend; ++vi) {
+                if (do_select(vi)) {
+                    ++c;
+                }
+            }
+            ret += c;
+        });
+        return ret;
     }
-    return ret;
+    else {
+        int ret = 0;
+        for (int vi = 0; vi < num_vertices; ++vi) {
+            if (do_select(vi)) {
+                ++ret;
+            }
+        }
+        return ret;
+    }
 }
 
 static bool GetFurthestDistance(const npModelData& model, float3 pos, bool mask, int &vidx, float &dist)
@@ -144,8 +168,8 @@ npAPI int npSelectSingle(
     float3 lcampos = mul_p(invert(model->transform), campos);
     float2 rcenter = (rmin + rmax) * 0.5f;
 
-    const int MaxInsider = 64;
-    std::pair<int, float> insider[MaxInsider];
+    const int max_inside = 64;
+    std::pair<int, float> insider[max_inside];
     int num_inside = 0;
 
     {
@@ -176,14 +200,14 @@ npAPI int npSelectSingle(
 
                 if (hit) {
                     int ii = num_inside_a++;
-                    if (ii < MaxInsider) {
+                    if (ii < max_inside) {
                         insider[ii].first = vi;
                         insider[ii].second = length(sp - rcenter);
                     }
                 }
             }
         });
-        num_inside = std::min<int>(num_inside_a, MaxInsider);
+        num_inside = std::min<int>(num_inside_a, max_inside);
     }
 
     if (num_inside > 0) {
@@ -344,34 +368,38 @@ npAPI int npSelectRect(
     float3 lcampos = mul_p(invert(model->transform), campos);
 
     std::atomic_int ret{ 0 };
-    parallel_for(0, num_vertices, [&](int vi) {
-        float4 vp = mul4(mvp, vertices[vi]);
-        float2 sp = float2{ vp.x, vp.y } / vp.w;
-        if (sp.x >= rmin.x && sp.x <= rmax.x &&
-            sp.y >= rmin.y && sp.y <= rmax.y && vp.z > 0.0f)
-        {
-            bool hit = false;
-            if (frontface_only) {
-                float3 vpos = vertices[vi];
-                float3 dir = normalize(vpos - lcampos);
-                int ti;
-                float distance;
-                if (RaycastWithoutTransform(*model, lcampos, dir, ti, distance)) {
-                    float3 hitpos = lcampos + dir * distance;
-                    if (length(vpos - hitpos) < 0.01f) {
-                        hit = true;
+    parallel_for_blocked(0, num_vertices, npVertexBlockSize, [&](int vi, int vend) {
+        int c = 0;
+        for (; vi < vend; ++vi) {
+            float4 vp = mul4(mvp, vertices[vi]);
+            float2 sp = float2{ vp.x, vp.y } / vp.w;
+            if (sp.x >= rmin.x && sp.x <= rmax.x &&
+                sp.y >= rmin.y && sp.y <= rmax.y && vp.z > 0.0f)
+            {
+                bool hit = false;
+                if (frontface_only) {
+                    float3 vpos = vertices[vi];
+                    float3 dir = normalize(vpos - lcampos);
+                    int ti;
+                    float distance;
+                    if (RaycastWithoutTransform(*model, lcampos, dir, ti, distance)) {
+                        float3 hitpos = lcampos + dir * distance;
+                        if (length(vpos - hitpos) < 0.01f) {
+                            hit = true;
+                        }
                     }
                 }
-            }
-            else {
-                hit = true;
-            }
+                else {
+                    hit = true;
+                }
 
-            if (hit) {
-                selection[vi] = clamp01(selection[vi] + strength);
-                ++ret;
+                if (hit) {
+                    selection[vi] = clamp01(selection[vi] + strength);
+                    ++c;
+                }
             }
         }
+        ret += c;
     });
     return ret;
 }
@@ -401,32 +429,36 @@ npAPI int npSelectLasso(
     }
 
     std::atomic_int ret{ 0 };
-    parallel_for(0, num_vertices, [&](int vi) {
-        float4 vp = mul4(mvp, vertices[vi]);
-        float2 sp = float2{ vp.x, vp.y } / vp.w;
-        if (PolyInside(polyx.data(), polyy.data(), num_lasso_points, minp, maxp, sp)) {
-            bool hit = false;
-            if (frontface_only) {
-                float3 vpos = vertices[vi];
-                float3 dir = normalize(vpos - lcampos);
-                int ti;
-                float distance;
-                if (RaycastWithoutTransform(*model, lcampos, dir, ti, distance)) {
-                    float3 hitpos = lcampos + dir * distance;
-                    if (length(vpos - hitpos) < 0.01f) {
-                        hit = true;
+    parallel_for_blocked(0, num_vertices, npVertexBlockSize, [&](int vi, int vend) {
+        int c = 0;
+        for (; vi < vend; ++vi) {
+            float4 vp = mul4(mvp, vertices[vi]);
+            float2 sp = float2{ vp.x, vp.y } / vp.w;
+            if (PolyInside(polyx.data(), polyy.data(), num_lasso_points, minp, maxp, sp)) {
+                bool hit = false;
+                if (frontface_only) {
+                    float3 vpos = vertices[vi];
+                    float3 dir = normalize(vpos - lcampos);
+                    int ti;
+                    float distance;
+                    if (RaycastWithoutTransform(*model, lcampos, dir, ti, distance)) {
+                        float3 hitpos = lcampos + dir * distance;
+                        if (length(vpos - hitpos) < 0.01f) {
+                            hit = true;
+                        }
                     }
                 }
-            }
-            else {
-                hit = true;
-            }
+                else {
+                    hit = true;
+                }
 
-            if (hit) {
-                selection[vi] = clamp01(selection[vi] + strength);
-                ++ret;
+                if (hit) {
+                    selection[vi] = clamp01(selection[vi] + strength);
+                    ++c;
+                }
             }
         }
+        ret += c;
     });
     return ret;
 }
@@ -440,7 +472,7 @@ npAPI int npSelectBrush(
     return SelectInside(*model, pos, radius, [&](int vi, float d, float3 p) {
         float s = GetBrushSample(d, radius, bsamples, num_bsamples) * strength;
         selection[vi] = clamp01(selection[vi] + s);
-    });
+    }, true);
 }
 
 npAPI int npUpdateSelection(
@@ -837,7 +869,7 @@ npAPI int npBrushReplace(
         if (mask) s *= selection[vi];
 
         normals[vi] = normalize(normals[vi] + value * s);
-    });
+    }, true);
     return 0;
 }
 
@@ -892,7 +924,7 @@ npAPI int npBrushPaint(
         r = lerp(vn, r, s);
 
         normals[vi] = normalize(vn + r * s);
-    });
+    }, true);
 }
 
 npAPI int npBrushLerp(
@@ -908,7 +940,7 @@ npAPI int npBrushLerp(
 
         float sign = strength < 0.0f ? -1.0f : 1.0f;
         normals[vi] = normalize(lerp(n1[vi], n0[vi] * sign, s));
-    });
+    }, true);
 }
 
 npAPI int npBrushSmooth(

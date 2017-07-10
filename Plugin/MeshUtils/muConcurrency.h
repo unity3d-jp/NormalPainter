@@ -21,6 +21,26 @@ inline void parallel_for(Index begin, Index end, const Body& body)
 #endif
 }
 
+#if defined(muEnablePPL) || defined(muEnableTBB)
+template<class Body>
+inline void parallel_for_blocked(int begin, int end, int granularity, const Body& body)
+{
+    int num_elements = end - begin;
+    int num_blocks = ceildiv(num_elements, granularity);
+    parallel_for(0, num_blocks, [&](int i) {
+        int begin = granularity * i;
+        int end = std::min<int>(granularity * (i + 1), num_elements);
+        body(begin, end);
+    });
+}
+#else
+template<class Body>
+inline void parallel_for_blocked(int begin, int end, int /*granularity*/, const Body& body)
+{
+    body(begin, end);
+}
+#endif
+
 template<class Iter, class Body>
 inline void parallel_for_each(Iter begin, Iter end, const Body& body)
 {
