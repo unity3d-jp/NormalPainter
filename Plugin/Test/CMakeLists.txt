@@ -1,3 +1,9 @@
+if(APPLE)
+    option(ENABLE_TEST "Build tests" OFF)
+else()
+    option(ENABLE_TEST "Build tests" ON)
+endif()
+
 if(ENABLE_TEST)
     file(GLOB TEST_SOURCES *.cpp)
     file(GLOB TEST_HEADERS *.h)

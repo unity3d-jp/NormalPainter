@@ -1,5 +1,9 @@
 include(CMakeParseArguments)
 
+option(ENABLE_ISPC "Use Intel ISPC to generate SIMDified code. It can significantly boost performance." ON)
+set(ISPC "/usr/local/bin/ispc" CACHE PATH "Path to Intel ISPC")
+mark_as_advanced(FORCE ISPC)
+
 function(setup_ispc)
     if(EXISTS ${ISPC})
         return()
@@ -13,17 +17,17 @@ function(setup_ispc)
     elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
         set(ISPC_DIR "ispc-v${ISPC_VERSION}-windows-vs2015")
     endif()
-    set(ISPC "${CMAKE_CURRENT_BINARY_DIR}/${ISPC_DIR}/ispc" CACHE PATH "" FORCE)
+    set(ISPC "${CMAKE_BINARY_DIR}/${ISPC_DIR}/ispc" CACHE PATH "" FORCE)
 
     set(ISPC_ARCHIVE_FILE "${ISPC_DIR}.tar.gz")
     set(ISPC_ARCHIVE_URL "http://downloads.sourceforge.net/project/ispcmirror/v${ISPC_VERSION}/${ISPC_ARCHIVE_FILE}")
-    set(ISPC_ARCHIVE_PATH "${CMAKE_CURRENT_BINARY_DIR}/${ISPC_ARCHIVE_FILE}")
+    set(ISPC_ARCHIVE_PATH "${CMAKE_BINARY_DIR}/${ISPC_ARCHIVE_FILE}")
     if(NOT EXISTS ${ISPC_ARCHIVE_PATH})
         file(DOWNLOAD ${ISPC_ARCHIVE_URL} ${ISPC_ARCHIVE_PATH} SHOW_PROGRESS)
     endif()
     execute_process(
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-        COMMAND tar -xzvf ${ISPC_ARCHIVE_PATH}
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+        COMMAND tar -xf ${ISPC_ARCHIVE_PATH}
     )
 endfunction()
 
@@ -53,13 +57,15 @@ function(add_ispc_targets)
 
         list(APPEND _ispc_headers ${header})
         list(APPEND _ispc_objects ${objects})
+        list(APPEND _ispc_outputs ${outputs})
     endforeach()
     
     set(_ispc_headers ${_ispc_headers} PARENT_SCOPE)
     set(_ispc_objects ${_ispc_objects} PARENT_SCOPE)
+    set(_ispc_outputs ${_ispc_outputs} PARENT_SCOPE)
     
     execute_process(COMMAND mkdir -p ${arg_OUTDIR})
-    foreach(f ${_ispc_objects})
+    foreach(f ${_ispc_outputs})
         if(NOT EXISTS ${f})
             execute_process(COMMAND touch -t 200001010000 ${f})
         endif()
