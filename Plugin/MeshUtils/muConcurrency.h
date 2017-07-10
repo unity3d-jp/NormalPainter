@@ -1,6 +1,6 @@
 #pragma once
 
-
+#include "muConfig.h"
 #if defined(muEnablePPL)
     #include <ppl.h>
 #elif defined(muEnableTBB)

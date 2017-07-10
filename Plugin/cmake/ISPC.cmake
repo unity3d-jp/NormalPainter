@@ -27,32 +27,39 @@ function(setup_ispc)
     )
 endfunction()
 
-
-function(add_ispc_target source)
-    get_filename_component(name ${source} NAME_WE)
-    cmake_parse_arguments(arg OPTIONAL OUTDIR DEPENDS ${ARGN})
-
-    set(header "${arg_OUTDIR}/${name}.h")
-    set(object "${arg_OUTDIR}/${name}${CMAKE_CXX_OUTPUT_EXTENSION}")
-    set(objects 
-        ${object}
-        "${arg_OUTDIR}/${name}_sse4${CMAKE_CXX_OUTPUT_EXTENSION}"
-        "${arg_OUTDIR}/${name}_avx${CMAKE_CXX_OUTPUT_EXTENSION}"
-    )
-    set(outputs ${header} ${objects})
-
-    add_custom_command(
-        OUTPUT ${outputs}
-        COMMAND ${ISPC} ${source} -o ${object} -h ${header} --pic --target=sse4,avx --arch=x86-64 --opt=fast-masked-vload --opt=fast-math
-        DEPENDS ${arg_DEPENDS}
-    )
+# e.g:
+#add_ispc_targets(
+#    SOURCES "src1.ispc" "src2.ispc"
+#    HEADERS "header1.h" "header2.h"
+#    OUTDIR "path/to/outputs")
+function(add_ispc_targets)
+    cmake_parse_arguments(arg "" "OUTDIR" "SOURCES;HEADERS" ${ARGN})
     
-    set(_ispc_headers ${header} PARENT_SCOPE)
-    set(_ispc_objects ${objects} PARENT_SCOPE)
-    set(_ispc_outputs ${outputs} PARENT_SCOPE)
+    foreach(source ${arg_SOURCES})
+        get_filename_component(name ${source} NAME_WE)
+        set(header "${arg_OUTDIR}/${name}.h")
+        set(object "${arg_OUTDIR}/${name}${CMAKE_CXX_OUTPUT_EXTENSION}")
+        set(objects 
+            ${object}
+            "${arg_OUTDIR}/${name}_sse4${CMAKE_CXX_OUTPUT_EXTENSION}"
+            "${arg_OUTDIR}/${name}_avx${CMAKE_CXX_OUTPUT_EXTENSION}"
+        )
+        set(outputs ${header} ${objects})
+        add_custom_command(
+            OUTPUT ${outputs}
+            COMMAND ${ISPC} ${source} -o ${object} -h ${header} --pic --target=sse4,avx --arch=x86-64 --opt=fast-masked-vload --opt=fast-math
+            DEPENDS ${arg_HEADERS}
+        )
+
+        list(APPEND _ispc_headers ${header})
+        list(APPEND _ispc_objects ${objects})
+    endforeach()
+    
+    set(_ispc_headers ${_ispc_headers} PARENT_SCOPE)
+    set(_ispc_objects ${_ispc_objects} PARENT_SCOPE)
     
     execute_process(COMMAND mkdir -p ${arg_OUTDIR})
-    foreach(f ${outputs})
+    foreach(f ${_ispc_objects})
         if(NOT EXISTS ${f})
             execute_process(COMMAND touch -t 200001010000 ${f})
         endif()
