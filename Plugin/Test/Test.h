@@ -30,6 +30,10 @@ inline void TestScope(const char *name, const Body& body, int num_try = 1)
         body();
     auto end = Now();
 
-    float elapsed = NS2MS(end - begin) / num_try;
-    Print("    %s: %.2fms\n", name, elapsed);
+    float elapsed = NS2MS(end - begin);
+    Print("    %s: %.2fms", name, elapsed / num_try);
+    if (num_try > 1) {
+        Print(" (%.2fms in total)", elapsed);
+    }
+    Print("\n");
 }

@@ -11,12 +11,13 @@ if(ENABLE_ISPC)
         "${CMAKE_CURRENT_SOURCE_DIR}/MeshUtilsCore2.ispc"
     )
     add_ispc_targets(SOURCES ${sources} HEADERS ${headers} OUTDIR ${MUISPC_OUTDIR})
-    set(MUCORE_FILES ${_ispc_headers} ${_ispc_objects})
+    set(MUISPC_OUTPUTS ${_ispc_headers} ${_ispc_objects})
 endif()
 
 file(GLOB MU_SOURCES *.cpp *.c)
 file(GLOB MU_HEADERS *.h)
-add_library(MeshUtils STATIC ${MU_SOURCES} ${MU_HEADERS} ${MUCORE_FILES})
+add_library(MeshUtils STATIC ${MU_SOURCES} ${MU_HEADERS} ${MUISPC_OUTPUTS})
+install(TARGETS MeshUtils DESTINATION .)
 
 if(ENABLE_ISPC)
     add_definitions(-DmuEnableISPC)

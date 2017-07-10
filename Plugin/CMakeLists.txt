@@ -5,6 +5,13 @@ SET(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 INCLUDE(ISPC)
 FIND_PACKAGE(OpenEXR QUIET)
 
+if (NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE "Release" CACHE PATH "" FORCE)
+endif()
+if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+    set(CMAKE_INSTALL_PREFIX "dist" CACHE PATH "" FORCE)
+endif()
+
 SET(ISPC "/usr/local/bin/ispc" CACHE PATH "Path to Intel ISPC")
 MARK_AS_ADVANCED(FORCE ISPC)
 
@@ -33,42 +40,5 @@ INCLUDE_DIRECTORIES(
 )
 
 add_subdirectory(MeshUtils)
-
-
-# NormalPainterCore
-file(GLOB NP_SOURCES NormalPainter/*.cpp)
-file(GLOB NP_HEADERS NormalPainter/*.h)
-if(ENABLE_OSX_BUNDLE)
-    add_library(NormalPainterCore MODULE ${NP_SOURCES} ${NP_HEADERS})
-    set_target_properties(NormalPainterCore PROPERTIES BUNDLE ON)
-else()
-    add_library(NormalPainterCore SHARED ${NP_SOURCES} ${NP_HEADERS})
-endif()
-add_dependencies(NormalPainterCore MeshUtils)
-target_link_libraries(NormalPainterCore MeshUtils)
-
-if(ENABLE_DEPLOY)
-    set(NP_PLUGINS_DIR "${ASSETS_DIR}/UTJ/NormalPainter/Plugins/x86_64")
-    if(ENABLE_OSX_BUNDLE)
-        SET(NP_TARGET_FILENAME "NormalPainterCore.bundle")
-    else()
-        SET(NP_TARGET_FILENAME $<TARGET_FILE:NormalPainterCore>)
-    endif()
-    add_custom_target(DeployNormalPainterCore ALL
-        COMMAND rm -rf ${NP_PLUGINS_DIR}/${NP_TARGET_FILENAME}
-        COMMAND cp -r ${NP_TARGET_FILENAME} ${NP_PLUGINS_DIR}
-        DEPENDS NormalPainterCore
-    )
-endif()
-
-
-# Test
-if(ENABLE_TEST)
-    file(GLOB TEST_SOURCES Test/*.cpp)
-    file(GLOB TEST_HEADERS Test/*.h)
-
-    add_executable(Test ${TEST_SOURCES} ${TEST_HEADERS})
-    add_dependencies(Test MeshUtils)
-    target_link_libraries(Test MeshUtils)
-endif()
-
+add_subdirectory(NormalPainter)
+add_subdirectory(Test)
