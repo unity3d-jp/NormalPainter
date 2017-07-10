@@ -47,18 +47,14 @@ function(add_ispc_target source)
         DEPENDS ${arg_DEPENDS}
     )
     
-    list(APPEND _ispc_headers ${header})
-    list(APPEND _ispc_objects ${objects})
-    list(APPEND _ispc_outputs ${outputs})
-    set(_ispc_headers ${_ispc_headers} PARENT_SCOPE)
-    set(_ispc_objects ${_ispc_objects} PARENT_SCOPE)
-    set(_ispc_outputs ${_ispc_outputs} PARENT_SCOPE)
+    set(_ispc_headers ${header} PARENT_SCOPE)
+    set(_ispc_objects ${objects} PARENT_SCOPE)
+    set(_ispc_outputs ${outputs} PARENT_SCOPE)
     
+    execute_process(COMMAND mkdir -p ${arg_OUTDIR})
     foreach(f ${outputs})
         if(NOT EXISTS ${f})
-            execute_process(
-                COMMAND touch -t 200001010000 ${f}
-            )
+            execute_process(COMMAND touch -t 200001010000 ${f})
         endif()
     endforeach()
 endfunction()

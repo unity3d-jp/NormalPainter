@@ -48,9 +48,8 @@ IF(ENABLE_ISPC)
     )
     foreach(source ${sources})
         add_ispc_target(${source} DEPENDS ${headers} OUTDIR ${MUCORE_OUTDIR})
+        list(APPEND MUCORE_FILES ${_ispc_outputs})
     endforeach()
-
-    SET(MUCORE_FILES ${_ispc_outputs})
 ENDIF()
 
 # MeshUtils
@@ -60,7 +59,6 @@ ADD_LIBRARY(MeshUtils STATIC ${MU_CXX_FILES} ${MU_H_FILES} ${MUCORE_FILES})
 TARGET_INCLUDE_DIRECTORIES(MeshUtils PUBLIC ./MeshUtils)
 IF(ENABLE_ISPC)
     ADD_DEFINITIONS(-DmuEnableISPC)
-    ADD_DEPENDENCIES(MeshUtils ${MUCORE_FILES})
     TARGET_INCLUDE_DIRECTORIES(MeshUtils PUBLIC ${MUCORE_OUTDIR})
 ENDIF()
 
