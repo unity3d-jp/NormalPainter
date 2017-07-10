@@ -4,7 +4,7 @@
 #include <cstring>
 #include <algorithm>
 #ifdef muEnableHalf
-    #include "half.h"
+    #include <OpenEXR/half.h>
 #endif // muEnableHalf
 #include "muIntrusiveArray.h"
 

@@ -10,6 +10,6 @@ if(ENABLE_TEST)
 
     add_executable(Test ${TEST_SOURCES} ${TEST_HEADERS})
     add_dependencies(Test MeshUtils)
-    target_link_libraries(Test MeshUtils)
+    target_link_libraries(Test MeshUtils ${EXTERNAL_LIBS})
     install(TARGETS Test DESTINATION .)
 endif()

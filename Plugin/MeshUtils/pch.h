@@ -20,7 +20,7 @@
 
 #include "muConfig.h"
 #ifdef muEnableHalf
-    #include "half.h"
+    #include <OpenEXR/half.h>
 #endif // muEnableHalf
 
 #define muImpl
