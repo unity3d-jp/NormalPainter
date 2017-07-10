@@ -4,6 +4,9 @@
     #include <dbghelp.h>
     #include <psapi.h>
     #pragma comment(lib, "dbghelp.lib")
+#else
+    #include <unistd.h>
+    #include <sys/mman.h>
 #endif
 
 namespace mu {

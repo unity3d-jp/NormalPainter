@@ -2,6 +2,7 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 PROJECT(NormalPainterCore)
 
 SET(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
+INCLUDE(ISPC)
 FIND_PACKAGE(OpenEXR QUIET)
 
 SET(ISPC "/usr/local/bin/ispc" CACHE PATH "Path to Intel ISPC")
@@ -32,47 +33,24 @@ INCLUDE_DIRECTORIES(
 )
 
 # MeshUtilsCore
+set(MU_DIR "${CMAKE_CURRENT_SOURCE_DIR}/MeshUtils")
 IF(ENABLE_ISPC)
-    if(NOT EXISTS ${ISPC})
-        # try to download ISPC
-        SET(ISPC_VERSION 1.9.1)
-        IF(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-            SET(ISPC_DIR ispc-v${ISPC_VERSION}-linux)
-        ELSEIF(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-            SET(ISPC_DIR ispc-v${ISPC_VERSION}-osx)
-        ENDIF()
-        SET(ISPC ${CMAKE_CURRENT_SOURCE_DIR}/External/${ISPC_DIR}/ispc CACHE PATH "" FORCE)
+    setup_ispc()
 
-        if(NOT EXISTS ${ISPC})
-            SET(ISPC_ARCHIVE ${ISPC_DIR}.tar.gz)
-            FILE(DOWNLOAD http://downloads.sourceforge.net/project/ispcmirror/v${ISPC_VERSION}/${ISPC_ARCHIVE} ${CMAKE_CURRENT_BINARY_DIR}/${ISPC_ARCHIVE} SHOW_PROGRESS)
-            EXECUTE_PROCESS(
-                WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/External
-                COMMAND tar -xzvf ${CMAKE_CURRENT_BINARY_DIR}/${ISPC_ARCHIVE}
-            )
-        ENDIF()
-    ENDIF()
-
-    SET(MUCORE_DIR ${CMAKE_CURRENT_BINARY_DIR}/MeshUtilsCore)
-    ADD_CUSTOM_TARGET(MeshUtilsCore ALL
-        COMMAND ${ISPC} ${CMAKE_CURRENT_SOURCE_DIR}/MeshUtils/MeshUtilsCore.ispc -o ${MUCORE_DIR}/MeshUtilsCore${CMAKE_CXX_OUTPUT_EXTENSION} -h ${MUCORE_DIR}/MeshUtilsCore.h --pic --target=sse4,avx --arch=x86-64 --opt=fast-masked-vload --opt=fast-math
-        COMMAND ${ISPC} ${CMAKE_CURRENT_SOURCE_DIR}/MeshUtils/MeshUtilsCore2.ispc -o ${MUCORE_DIR}/MeshUtilsCore2${CMAKE_CXX_OUTPUT_EXTENSION} -h ${MUCORE_DIR}/MeshUtilsCore2.h --pic --target=sse4,avx --arch=x86-64 --opt=fast-masked-vload --opt=fast-math
+    SET(MUCORE_OUTDIR ${CMAKE_CURRENT_BINARY_DIR}/MeshUtilsCore)
+    SET(headers
+        "${MU_DIR}/ispcmath.h"
+        "${MU_DIR}/muSIMDConfig.h"
     )
-    SET(MUCORE_FILES
-        ${MUCORE_DIR}/MeshUtilsCore.h
-        ${MUCORE_DIR}/MeshUtilsCore${CMAKE_CXX_OUTPUT_EXTENSION}
-        ${MUCORE_DIR}/MeshUtilsCore_sse4${CMAKE_CXX_OUTPUT_EXTENSION}
-        ${MUCORE_DIR}/MeshUtilsCore_avx${CMAKE_CXX_OUTPUT_EXTENSION}
-        ${MUCORE_DIR}/MeshUtilsCore2.h
-        ${MUCORE_DIR}/MeshUtilsCore2${CMAKE_CXX_OUTPUT_EXTENSION}
-        ${MUCORE_DIR}/MeshUtilsCore2_sse4${CMAKE_CXX_OUTPUT_EXTENSION}
-        ${MUCORE_DIR}/MeshUtilsCore2_avx${CMAKE_CXX_OUTPUT_EXTENSION}
+    SET(sources
+        "${MU_DIR}/MeshUtilsCore.ispc"
+        "${MU_DIR}/MeshUtilsCore2.ispc"
     )
+    foreach(source ${sources})
+        add_ispc_target(${source} DEPENDS ${headers} OUTDIR ${MUCORE_OUTDIR})
+    endforeach()
 
-    # create dummy files to make cmake can find it
-    FOREACH(F ${MUCORE_FILES})
-        FILE(WRITE ${F} "")
-    ENDFOREACH(F)
+    SET(MUCORE_FILES ${_ispc_outputs})
 ENDIF()
 
 # MeshUtils
@@ -82,8 +60,8 @@ ADD_LIBRARY(MeshUtils STATIC ${MU_CXX_FILES} ${MU_H_FILES} ${MUCORE_FILES})
 TARGET_INCLUDE_DIRECTORIES(MeshUtils PUBLIC ./MeshUtils)
 IF(ENABLE_ISPC)
     ADD_DEFINITIONS(-DmuEnableISPC)
-    ADD_DEPENDENCIES(MeshUtils MeshUtilsCore)
-    TARGET_INCLUDE_DIRECTORIES(MeshUtils PUBLIC ${MUCORE_DIR})
+    ADD_DEPENDENCIES(MeshUtils ${MUCORE_FILES})
+    TARGET_INCLUDE_DIRECTORIES(MeshUtils PUBLIC ${MUCORE_OUTDIR})
 ENDIF()
 
 

@@ -16,7 +16,7 @@ void PrintImpl(const char *format, ...)
 #ifdef _WIN32
     ::OutputDebugStringA(buf);
 #endif
-    printf(buf);
+    printf("%s", buf);
     va_end(args);
     fflush(stdout);
 }
@@ -78,8 +78,4 @@ int main(int argc, char *argv[])
             RunTest(argv[i]);
         }
     }
-
-    printf("Press any key to exit\n");
-    char dummy;
-    scanf("%c", &dummy);
 }

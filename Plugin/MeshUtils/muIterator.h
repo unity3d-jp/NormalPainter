@@ -87,8 +87,8 @@ struct indexed_iterator_s
 
     reference operator*()       { return index ? data[*index] : *data; }
     pointer   operator->()      { return index ? &data[*index] : data; }
-    this_t  operator+(size_t v) { return index ? { data, index + v } : { data + v, nullptr }; }
-    this_t  operator-(size_t v) { return index ? { data, index - v } : { data - v, nullptr }; }
+    this_t  operator+(size_t v) { return index ? this_t{ data, index + v } : this_t{ data + v, nullptr }; }
+    this_t  operator-(size_t v) { return index ? this_t{ data, index - v } : this_t{ data - v, nullptr }; }
     this_t& operator+=(size_t v){ if (index) index += v; else data += v; return *this; }
     this_t& operator-=(size_t v){ if (index) index -= v; else data -= v; return *this; }
     this_t& operator++()        { if (index) ++index; else ++data; return *this; }
