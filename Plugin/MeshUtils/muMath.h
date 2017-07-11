@@ -32,8 +32,6 @@ struct tvec2
     static tvec2 zero() { return{ (T)0, (T)0 }; }
     static tvec2 one() { return{ (T)1, (T)1 }; }
 };
-using float2 = tvec2<float>;
-using double2 = tvec2<double>;
 
 template<class T>
 struct tvec3
@@ -51,8 +49,6 @@ struct tvec3
     static tvec3 zero() { return{ (T)0, (T)0, (T)0 }; }
     static tvec3 one() { return{ (T)1, (T)1, (T)1 }; }
 };
-using float3 = tvec3<float>;
-using double3 = tvec3<double>;
 
 template<class T>
 struct tvec4
@@ -70,8 +66,6 @@ struct tvec4
     static tvec4 zero() { return{ (T)0, (T)0, (T)0, (T)0 }; }
     static tvec4 one() { return{ (T)1, (T)1, (T)1, (T)1 }; }
 };
-using float4 = tvec4<float>;
-using double4 = tvec4<double>;
 
 template<class T>
 struct tquat
@@ -88,8 +82,6 @@ struct tquat
 
     static tquat identity() { return{ (T)0, (T)0, (T)0, (T)1 }; }
 };
-using quatf = tquat<float>;
-using quatd = tquat<double>;
 
 template<class T>
 struct tmat3x3
@@ -121,8 +113,6 @@ struct tmat3x3
         } };
     }
 };
-using float3x3 = tmat3x3<float>;
-using double3x3 = tmat3x3<double>;
 
 template<class T>
 struct tmat4x4
@@ -160,9 +150,29 @@ struct tmat4x4
         } };
     }
 };
-using float4x4 = tmat4x4<float>;
-using double4x4 = tmat4x4<double>;
 
+#ifdef muEnableHalf
+using half2 = tvec2<half>;
+using half3 = tvec3<half>;
+using half4 = tvec4<half>;
+using quath = tquat<half>;
+using half3x3 = tmat3x3<half>;
+using half4x4 = tmat4x4<half>;
+#endif
+
+using float2 = tvec2<float>;
+using float3 = tvec3<float>;
+using float4 = tvec4<float>;
+using quatf = tquat<float>;
+using float3x3 = tmat3x3<float>;
+using float4x4 = tmat4x4<float>;
+
+using double2 = tvec2<double>;
+using double3 = tvec3<double>;
+using double4 = tvec4<double>;
+using quatd = tquat<double>;
+using double3x3 = tmat3x3<double>;
+using double4x4 = tmat4x4<double>;
 
 template<class T> inline tvec2<T> operator-(const tvec2<T>& v) { return{ -v.x, -v.y }; }
 template<class T, class U> inline tvec2<T> operator+(const tvec2<T>& l, const tvec2<U>& r) { return{ l.x + r.x, l.y + r.y }; }
@@ -347,6 +357,9 @@ inline int ceildiv(int v, int d) { return (v + (d - 1)) / d; }
 
 SF(float)
 SF(double)
+#ifdef muEnableHalf
+SF(half)
+#endif
 #undef SF
 
 #define VF1N(N, F)\

@@ -8,6 +8,8 @@ if(ENABLE_TEST)
     file(GLOB TEST_SOURCES *.cpp)
     file(GLOB TEST_HEADERS *.h)
 
+    set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}")
+
     add_executable(Test ${TEST_SOURCES} ${TEST_HEADERS})
     add_dependencies(Test MeshUtils)
     target_link_libraries(Test MeshUtils ${EXTERNAL_LIBS})
