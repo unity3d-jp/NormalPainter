@@ -939,7 +939,7 @@ npAPI int npBrushLerp(
         if (mask) s *= selection[vi];
 
         float sign = strength < 0.0f ? -1.0f : 1.0f;
-        normals[vi] = normalize(lerp(n1[vi], n0[vi] * sign, s));
+        normals[vi] = normalize(lerp(n1[vi], n0[vi] * sign, abs(s)));
     }, true);
 }
 
@@ -967,6 +967,72 @@ npAPI int npBrushSmooth(
         normals[p.first] = normalize(normals[p.first] + average * s);
     }
     return (int)inside.size();
+}
+
+template<class RayDirs>
+inline int BrushProjectionImpl(
+    npModelData *model,
+    const float3 pos, float radius, float strength, int num_bsamples, float bsamples[], npModelData *target, const RayDirs& ray_dirs, int mask)
+{
+    auto vertices = model->vertices;
+    auto normals = model->normals;
+    auto selection = model->selection;
+
+    auto pnum_triangles = target->num_triangles;
+    auto pnormals = target->normals;
+    auto pindices = target->indices;
+
+    auto to_local = target->transform * invert(model->transform);
+    RawVector<float3> pvertices;
+    pvertices.resize(target->num_vertices);
+    for (int vi = 0; vi < target->num_vertices; ++vi) {
+        pvertices[vi] = mul_p(to_local, target->vertices[vi]);
+    }
+
+    return SelectInside(*model, pos, radius, [&](int vi, float d, float3 p) {
+        float s = GetBrushSample(d, radius, bsamples, num_bsamples) * strength;
+        if (mask) s *= selection[vi];
+
+        float3 rpos = vertices[vi];
+        float3 rdir = ray_dirs[vi];
+        int ti;
+        float distance;
+        int num_hit = RayTrianglesIntersectionIndexed(rpos, rdir, pvertices.data(), pindices, pnum_triangles, ti, distance);
+
+        if (num_hit > 0) {
+            float3 result = triangle_interpolation(
+                rpos + rdir * distance,
+                { pvertices[pindices[ti * 3 + 0]] },
+                { pvertices[pindices[ti * 3 + 1]] },
+                { pvertices[pindices[ti * 3 + 2]] },
+                pnormals[pindices[ti * 3 + 0]],
+                pnormals[pindices[ti * 3 + 1]],
+                pnormals[pindices[ti * 3 + 2]]);
+
+            result = normalize(mul_v(to_local, result));
+            float sign = strength < 0.0f ? -1.0f : 1.0f;
+            normals[vi] = normalize(lerp(normals[vi], result * sign, abs(s)));
+        }
+    }, true);
+}
+
+npAPI int npBrushProjection(
+    npModelData *model,
+    const float3 pos, float radius, float strength, int num_bsamples, float bsamples[], npModelData *target, float3 ray_dirs[], int mask)
+{
+    return BrushProjectionImpl(model, pos, radius, strength, num_bsamples, bsamples, target, ray_dirs, mask);
+}
+
+npAPI int npBrushProjection2(
+    npModelData *model,
+    const float3 pos, float radius, float strength, int num_bsamples, float bsamples[], npModelData *target, float3 ray_dir, int mask)
+{
+    struct RayDir
+    {
+        float3 ray_dir;
+        const float3& operator[](int) const { return ray_dir; }
+    } ray_dirs = { ray_dir };
+    return BrushProjectionImpl(model, pos, radius, strength, num_bsamples, bsamples, target, ray_dirs, mask);
 }
 
 
@@ -1018,8 +1084,9 @@ npAPI void npApplyMirroring(int num_vertices, const int relation[], float3 plane
 }
 
 
-npAPI void npProjectNormals(
-    npModelData *model, npModelData *target, const float3 ray_dirs[], int mask)
+template<class RayDirs>
+inline void ProjectNormalsImpl(
+    npModelData *model, npModelData *target, const RayDirs& ray_dirs, int mask)
 {
     auto num_vertices = model->num_vertices;
     auto vertices = model->vertices;
@@ -1034,7 +1101,7 @@ npAPI void npProjectNormals(
     auto to_local = target->transform * invert(model->transform);
     RawVector<float> soa[9]; // flattened + SoA-nized vertices (faster on CPU)
 
-    // flatten + SoA-nize
+                             // flatten + SoA-nize
     {
         for (int i = 0; i < 9; ++i) {
             soa[i].resize(pnum_triangles);
@@ -1050,6 +1117,9 @@ npAPI void npProjectNormals(
     }
 
     parallel_for(0, num_vertices, [&](int vi) {
+        float s = mask ? selection[vi] : 1.0f;
+        if (s == 0.0f) { return; }
+
         float3 rpos = vertices[vi];
         float3 rdir = ray_dirs[vi];
         int ti;
@@ -1071,12 +1141,28 @@ npAPI void npProjectNormals(
                 pnormals[pindices[ti * 3 + 2]]);
 
             result = normalize(mul_v(to_local, result));
-            float s = mask ? selection[vi] : 1.0f;
             normals[vi] = normalize(lerp(normals[vi], result, s));
         }
     });
 }
 
+npAPI void npProjectNormals(
+    npModelData *model, npModelData *target, const float3 ray_dirs[], int mask)
+{
+    ProjectNormalsImpl(model, target, ray_dirs, mask);
+}
+
+npAPI void npProjectNormals2(
+    npModelData *model, npModelData *target, const float3 ray_dir, int mask)
+{
+    struct RayDir
+    {
+        float3 ray_dir;
+        const float3& operator[](int) const { return ray_dir; }
+    } ray_dirs = { ray_dir };
+    ProjectNormalsImpl(model, target, ray_dirs, mask);
+
+}
 
 template<int NumInfluence>
 static void SkinningImpl(
