@@ -202,7 +202,8 @@ namespace UTJ.NormalPainter
             "Local",
             "Pivot",
         };
-        static readonly string[] strRayDirection = new string[] {
+        static readonly string[] strProjectionMode = new string[] {
+            "Vector",
             "Base Normals",
             "Current Normals",
         };
@@ -210,10 +211,6 @@ namespace UTJ.NormalPainter
             "Smoothing",
             "Welding",
             "Welding2",
-        };
-        static readonly string[] strProjectionMode = new string[] {
-            "",
-            "",
         };
 
 
@@ -379,9 +376,20 @@ namespace UTJ.NormalPainter
                 }
                 else if (settings.brushMode == BrushMode.Projection)
                 {
+                    EditorGUILayout.Space();
                     EditorGUI.BeginChangeCheck();
                     settings.brushProjectionNormalSource =
                         (GameObject)EditorGUILayout.ObjectField("Normal Source", settings.brushProjectionNormalSource, typeof(GameObject), true);
+
+                    EditorGUILayout.LabelField("Projection Mode", GUILayout.Width(EditorGUIUtility.labelWidth));
+                    settings.brushProjectionMode = GUILayout.SelectionGrid(settings.brushProjectionMode, strProjectionMode, 3);
+                    EditorGUILayout.Space();
+                    if (settings.brushProjectionMode == 0)
+                    {
+                        settings.brushProjectionDir = EditorGUILayout.Vector3Field("Projection Dir", settings.brushProjectionDir).normalized;
+                        EditorGUILayout.Space();
+                    }
+
                     if (EditorGUI.EndChangeCheck())
                     {
                         var md = new MeshData();
@@ -524,16 +532,27 @@ namespace UTJ.NormalPainter
             else if (settings.editMode == EditMode.Projection)
             {
                 settings.projectionNormalSource = EditorGUILayout.ObjectField("Normal Source", settings.projectionNormalSource, typeof(GameObject), true) as GameObject;
-                EditorGUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField("Ray Direction", GUILayout.Width(EditorGUIUtility.labelWidth));
-                settings.projectionRayDirection = GUILayout.SelectionGrid(settings.projectionRayDirection, strRayDirection, 2);
-                EditorGUILayout.EndHorizontal();
+                EditorGUILayout.LabelField("Projection Mode", GUILayout.Width(EditorGUIUtility.labelWidth));
+                settings.projectionMode = GUILayout.SelectionGrid(settings.projectionMode, strProjectionMode, 3);
                 EditorGUILayout.Space();
+                if(settings.projectionMode == 0)
+                {
+                    settings.projectionDir = EditorGUILayout.Vector3Field("Projection Dir", settings.projectionDir).normalized;
+                    EditorGUILayout.Space();
+                }
+
                 if (GUILayout.Button("Apply Projection"))
                 {
-                    var rayDirs = settings.projectionRayDirection == 0 ?
-                        m_target.normalsBase : m_target.normals;
-                    m_target.ApplyProjection(settings.projectionNormalSource, rayDirs, true);
+                    if(settings.projectionMode == 0)
+                    {
+                        m_target.ApplyProjection2(settings.projectionNormalSource, settings.projectionDir, true);
+                    }
+                    else
+                    {
+                        var rayDirs = settings.projectionMode == 1 ?
+                            m_target.normalsBase : m_target.normals;
+                        m_target.ApplyProjection(settings.projectionNormalSource, rayDirs, true);
+                    }
                 }
             }
             else if (settings.editMode == EditMode.Reset)

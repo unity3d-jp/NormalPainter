@@ -42,12 +42,6 @@ namespace UTJ.NormalPainter
         Brush,
     }
 
-    public enum ProjectionDirection
-    {
-        ArbitraryVector,
-        MeshNormals,
-    }
-
     public enum MirrorMode
     {
         None,
@@ -376,7 +370,7 @@ namespace UTJ.NormalPainter
         }
 
         public bool ApplyProjectionBrush(bool useSelection, Vector3 pos, float radius, float strength, PinnedArray<float> bsamples,
-            ref MeshData normalSource, PinnedArray<Vector3> rayDirs)
+            MeshData normalSource, PinnedList<Vector3> rayDirs)
         {
             if (normalSource == null || normalSource.empty) { return false; }
 
@@ -389,7 +383,7 @@ namespace UTJ.NormalPainter
             return false;
         }
         public bool ApplyProjectionBrush2(bool useSelection, Vector3 pos, float radius, float strength, PinnedArray<float> bsamples,
-            ref MeshData normalSource, Vector3 rayDir)
+            MeshData normalSource, Vector3 rayDir)
         {
             if (normalSource == null || normalSource.empty) { return false; }
 
@@ -570,7 +564,6 @@ namespace UTJ.NormalPainter
         {
             int prevSelected = m_numSelected;
 
-            Matrix4x4 trans = GetComponent<Transform>().localToWorldMatrix;
             m_numSelected = npUpdateSelection(ref m_npModelData, ref m_selectionPos, ref m_selectionNormal);
 
             m_selectionRot = Quaternion.identity;
@@ -579,6 +572,10 @@ namespace UTJ.NormalPainter
                 m_selectionRot = Quaternion.LookRotation(m_selectionNormal);
                 m_settings.pivotPos = m_selectionPos;
                 m_settings.pivotRot = m_selectionRot;
+            }
+            else
+            {
+                m_selectionPos = GetComponent<Transform>().position;
             }
 
             if(prevSelected == 0 && m_numSelected == 0)

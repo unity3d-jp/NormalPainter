@@ -93,6 +93,8 @@ namespace UTJ.NormalPainter
         public int brushBlendMode = 0;
         [NonSerialized] public GameObject brushProjectionNormalSource;
         [NonSerialized] public MeshData brushProjectionNormalSourceData;
+        public Vector3 brushProjectionDir = new Vector3(0, -1, 0);
+        public int brushProjectionMode = 0;
 
         public BrushData[] brushData = new BrushData[5] {
             new BrushData(),
@@ -152,10 +154,9 @@ namespace UTJ.NormalPainter
         [NonSerialized] public int weldTargetsMode = 2;
         [NonSerialized] public GameObject[] weldTargets = new GameObject[1];
 
-        [NonSerialized] public ProjectionDirection projectionDirection;
         [NonSerialized] public GameObject projectionNormalSource;
-        [NonSerialized] public Vector3 projectionRayDir;
-        [NonSerialized] public int projectionRayDirection;
+        [NonSerialized] public Vector3 projectionDir = new Vector3(0, -1, 0);
+        [NonSerialized] public int projectionMode;
 
         [NonSerialized] public ImageFormat bakeFormat = ImageFormat.PNG;
         [NonSerialized] public int bakeWidth = 1024;

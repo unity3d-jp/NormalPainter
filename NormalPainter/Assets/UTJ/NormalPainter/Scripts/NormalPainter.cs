@@ -578,6 +578,21 @@ namespace UTJ.NormalPainter
                             if (ApplySmoothBrush(m_settings.brushMaskWithSelection, m_rayPos, bd.radius, bd.strength, bd.samples))
                                 ++m_brushNumPainted;
                             break;
+                        case BrushMode.Projection:
+                            if (settings.brushProjectionMode == 0)
+                            {
+                                if (ApplyProjectionBrush2(m_settings.brushMaskWithSelection, m_rayPos, bd.radius, bd.strength, bd.samples,
+                                    m_settings.brushProjectionNormalSourceData, settings.brushProjectionDir))
+                                    ++m_brushNumPainted;
+                            }
+                            else
+                            {
+                                var rayDirs = settings.brushProjectionMode == 1 ? m_normalsBase : m_normals;
+                                if (ApplyProjectionBrush(m_settings.brushMaskWithSelection, m_rayPos, bd.radius, bd.strength, bd.samples,
+                                    m_settings.brushProjectionNormalSourceData, rayDirs))
+                                    ++m_brushNumPainted;
+                            }
+                            break;
                         case BrushMode.Reset:
                             if (ApplyResetBrush(m_settings.brushMaskWithSelection, m_rayPos, bd.radius, bd.strength, bd.samples))
                                 ++m_brushNumPainted;
@@ -746,6 +761,7 @@ namespace UTJ.NormalPainter
                 (m_settings.editMode == EditMode.Brush ||
                  (m_settings.editMode == EditMode.Select && m_settings.selectMode == SelectMode.Brush));
             bool brushReplace = brushMode && m_settings.brushMode == BrushMode.Replace;
+            bool brushProjection = brushMode && m_settings.brushMode == BrushMode.Projection;
 
             var trans = GetComponent<Transform>();
             var matrix = trans.localToWorldMatrix;
@@ -787,6 +803,8 @@ namespace UTJ.NormalPainter
                     m_matVisualize.SetVector("_Direction", PickNormal(m_rayPos, m_rayHitTriangle));
                 else if (brushReplace)
                     m_matVisualize.SetVector("_Direction", m_settings.assignValue);
+                else if (brushProjection)
+                    m_matVisualize.SetVector("_Direction", m_settings.brushProjectionDir);
             }
             else
             {
@@ -856,6 +874,11 @@ namespace UTJ.NormalPainter
                 // visualize direction
                 if (pickMode || brushReplace)
                     m_cmdDraw.DrawMesh(m_meshLine, Matrix4x4.identity, m_matVisualize, 0, 10);
+            }
+            if(brushProjection && m_settings.brushProjectionMode == 0)
+            {
+                // visualize projection direction
+                m_cmdDraw.DrawMesh(m_meshLine, Matrix4x4.identity, m_matVisualize, 0, 10);
             }
 
             // lasso lines
