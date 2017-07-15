@@ -16,7 +16,7 @@ namespace UTJ.NormalPainter
         public float strength = 0.2f;
         public AnimationCurve curve = new AnimationCurve();
 
-        [NonSerialized] public float[] samples = new float[256];
+        [NonSerialized] public PinnedArray<float> samples = new PinnedArray<float>(256);
         [NonSerialized] public RenderTexture image;
 
         public void UpdateSamples()
@@ -139,7 +139,7 @@ namespace UTJ.NormalPainter
         [NonSerialized] public Vector3  assignValue = Vector3.up;
         [NonSerialized] public Vector3  moveAmount;
         [NonSerialized] public Vector3  rotateAmount;
-        [NonSerialized] public Vector3  scaleAmount;
+        [NonSerialized] public Vector3 scaleAmount;
 
         [NonSerialized] public int smoothMode = 0;
         [NonSerialized] public float smoothRadius = 0.5f;
@@ -149,7 +149,9 @@ namespace UTJ.NormalPainter
         [NonSerialized] public int weldTargetsMode = 2;
         [NonSerialized] public GameObject[] weldTargets = new GameObject[1];
 
+        [NonSerialized] public ProjectionDirection projectionDirection;
         [NonSerialized] public GameObject projectionNormalSource;
+        [NonSerialized] public Vector3 projectionRayDir;
         [NonSerialized] public int projectionRayDirection;
 
         [NonSerialized] public ImageFormat bakeFormat = ImageFormat.PNG;

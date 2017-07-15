@@ -45,7 +45,7 @@ namespace UTJ.NormalPainter
         T[] m_data;
         GCHandle m_gch;
 
-        public PinnedArray(int size)
+        public PinnedArray(int size = 0)
         {
             m_data = new T[size];
             m_gch = GCHandle.Alloc(m_data, GCHandleType.Pinned);
@@ -105,6 +105,70 @@ namespace UTJ.NormalPainter
     }
 
 
+    public class PinnedArray2D<T> : IDisposable, IEnumerable<T>
+    {
+        T[,] m_data;
+        GCHandle m_gch;
+
+        public PinnedArray2D(int x, int y)
+        {
+            m_data = new T[x, y];
+            m_gch = GCHandle.Alloc(m_data, GCHandleType.Pinned);
+        }
+        public PinnedArray2D(T[,] data, bool clone = false)
+        {
+            m_data = clone ? (T[,])data.Clone() : data;
+            m_gch = GCHandle.Alloc(m_data, GCHandleType.Pinned);
+        }
+
+        public int Length { get { return m_data.Length; } }
+        public T this[int x, int y]
+        {
+            get { return m_data[x,y]; }
+            set { m_data[x,y] = value; }
+        }
+        public T[,] Array { get { return m_data; } }
+        public IntPtr Pointer { get { return m_data.Length == 0 ? IntPtr.Zero : m_gch.AddrOfPinnedObject(); } }
+
+        public PinnedArray2D<T> Clone() { return new PinnedArray2D<T>((T[,])m_data.Clone()); }
+        public bool Assign(T[,] source)
+        {
+            if (source != null && m_data.Length == source.Length)
+            {
+                System.Array.Copy(source, m_data, m_data.Length);
+                return true;
+            }
+            return false;
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                if (m_gch.IsAllocated)
+                    m_gch.Free();
+            }
+        }
+
+        public IEnumerator<T> GetEnumerator()
+        {
+            return (IEnumerator<T>)m_data.GetEnumerator();
+        }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+
+        public static implicit operator IntPtr(PinnedArray2D<T> v) { return v == null ? IntPtr.Zero : v.Pointer; }
+        public static implicit operator T[,] (PinnedArray2D<T> v) { return v == null ? null : v.Array; }
+    }
+
     // Pinned"List" but assume size is fixed (== functionality is same as PinnedArray).
     // this class is intended to pass to Mesh.GetNormals(), Mesh.SetNormals(), and C++ functions.
     public class PinnedList<T> : IDisposable, IEnumerable<T>
@@ -151,7 +215,7 @@ namespace UTJ.NormalPainter
         #endregion
 
 
-        public PinnedList(int size)
+        public PinnedList(int size = 0)
         {
             m_data = new T[size];
             m_list = ListCreateIntrusive(m_data);
@@ -171,7 +235,8 @@ namespace UTJ.NormalPainter
         }
 
 
-        public int Length { get { return m_data.Length; } }
+        public int Capacity { get { return m_data.Length; } }
+        public int Count { get { return m_list.Count; } }
         public T this[int i]
         {
             get { return m_data[i]; }

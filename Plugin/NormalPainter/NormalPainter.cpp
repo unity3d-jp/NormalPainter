@@ -1258,6 +1258,43 @@ npAPI void npGenerateTangents(npModelData *model, float4 dst[])
         model->vertices, model->uv, model->normals, model->indices, model->num_triangles, model->num_vertices);
 }
 
+npAPI void npGenerateTerrainMesh(
+    const float heightmap[], int width, int height, float3 size,
+    float3 dst_vertices[], float3 dst_normals[], float2 dst_uv[], int dst_indices[])
+{
+    int num_vertices = width * height;
+    int num_triangles = (width - 1) * (height - 1) * 2;
+    auto size_unit = float3{ 1.0f / (width - 1), 1.0f, 1.0f / (height - 1) } *size;
+    auto uv_unit = float2{ 1.0f / (width - 1), 1.0f / (height - 1) };
+
+    parallel_invoke(
+    [&]() {
+        for (int iy = 0; iy < height; ++iy) {
+            for (int ix = 0; ix < width; ++ix) {
+                int i = iy * width + ix;
+                dst_vertices[i] = float3{ (float)ix, heightmap[i], (float)iy } * size_unit;
+                dst_uv[i] = float2{ (float)ix, (float)iy } * uv_unit;
+            }
+        }
+    },
+    [&]() {
+        for (int iy = 0; iy < height - 1; ++iy) {
+            for (int ix = 0; ix < width - 1; ++ix) {
+                int i6 = (iy * width + ix) * 6;
+                dst_indices[i6 + 0] = width*iy + ix;
+                dst_indices[i6 + 1] = width*(iy + 1) + ix;
+                dst_indices[i6 + 2] = width*(iy + 1) + (ix + 1);
+
+                dst_indices[i6 + 3] = width*iy + ix;
+                dst_indices[i6 + 4] = width*(iy + 1) + (ix + 1);
+                dst_indices[i6 + 5] = width*iy + (ix + 1);
+            }
+        }
+    });
+
+    GenerateNormalsTriangleIndexed(dst_normals, dst_vertices, dst_indices, num_triangles, num_vertices);
+}
+
 
 float g_pen_pressure = 1.0f;
 

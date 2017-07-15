@@ -52,7 +52,7 @@ function(add_ispc_targets)
         add_custom_command(
             OUTPUT ${outputs}
             COMMAND ${ISPC} ${source} -o ${object} -h ${header} --pic --target=sse4,avx --arch=x86-64 --opt=fast-masked-vload --opt=fast-math
-            DEPENDS ${arg_HEADERS}
+            DEPENDS ${source} ${arg_HEADERS}
         )
 
         list(APPEND _ispc_headers ${header})

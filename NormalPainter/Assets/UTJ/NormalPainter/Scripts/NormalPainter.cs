@@ -104,9 +104,9 @@ namespace UTJ.NormalPainter
             get { return (float[])m_selection.Array.Clone(); }
             set
             {
-                if (value != null && value.Length == m_selection.Length)
+                if (value != null && value.Length == m_selection.Count)
                 {
-                    Array.Copy(value, m_selection, m_selection.Length);
+                    Array.Copy(value, m_selection, m_selection.Count);
                     UpdateSelection();
                 }
             }
@@ -207,7 +207,7 @@ namespace UTJ.NormalPainter
 
             if (m_meshTarget == null ||
                 m_meshTarget.vertexCount != tmesh.vertexCount ||
-                (m_points != null && m_meshTarget.vertexCount != m_points.Length))
+                (m_points != null && m_meshTarget.vertexCount != m_points.Count))
             {
                 m_meshTarget = tmesh;
                 m_points = null;
@@ -229,7 +229,7 @@ namespace UTJ.NormalPainter
                 m_uv = new PinnedList<Vector2>(m_meshTarget.uv);
 
                 m_normals = new PinnedList<Vector3>(m_meshTarget.normals);
-                if (m_normals.Length == 0)
+                if (m_normals.Count == 0)
                 {
                     m_meshTarget.RecalculateNormals();
                     m_normalsBase = m_normals = new PinnedList<Vector3>(m_meshTarget.normals);
@@ -244,7 +244,7 @@ namespace UTJ.NormalPainter
                 m_normalsBasePredeformed = m_normalsBase;
 
                 m_tangents = new PinnedList<Vector4>(m_meshTarget.tangents);
-                if (m_tangents.Length == 0)
+                if (m_tangents.Count == 0)
                 {
                     m_meshTarget.RecalculateTangents();
                     m_tangentsBase = m_tangents = new PinnedList<Vector4>(m_meshTarget.tangents);
@@ -259,10 +259,10 @@ namespace UTJ.NormalPainter
                 m_tangentsBasePredeformed = m_tangentsBase;
 
                 m_indices = new PinnedList<int>(m_meshTarget.triangles);
-                m_selection = new PinnedList<float>(m_points.Length);
+                m_selection = new PinnedList<float>(m_points.Count);
 
-                m_npModelData.num_vertices = m_points.Length;
-                m_npModelData.num_triangles = m_indices.Length / 3;
+                m_npModelData.num_vertices = m_points.Count;
+                m_npModelData.num_triangles = m_indices.Count / 3;
                 m_npModelData.indices = m_indices;
                 m_npModelData.vertices = m_points;
                 m_npModelData.normals = m_normals;
@@ -277,7 +277,7 @@ namespace UTJ.NormalPainter
 
                     m_boneWeights = new PinnedList<BoneWeight>(m_meshTarget.boneWeights);
                     m_bindposes = new PinnedList<Matrix4x4>(m_meshTarget.bindposes);
-                    m_boneMatrices = new PinnedList<Matrix4x4>(m_bindposes.Length);
+                    m_boneMatrices = new PinnedList<Matrix4x4>(m_bindposes.Count);
 
                     m_pointsPredeformed = m_points.Clone();
                     m_normalsPredeformed = m_normals.Clone();
@@ -285,8 +285,8 @@ namespace UTJ.NormalPainter
                     m_tangentsPredeformed = m_tangents.Clone();
                     m_tangentsBasePredeformed = m_tangentsBase.Clone();
 
-                    m_npSkinData.num_vertices = m_boneWeights.Length;
-                    m_npSkinData.num_bones = m_bindposes.Length;
+                    m_npSkinData.num_vertices = m_boneWeights.Count;
+                    m_npSkinData.num_bones = m_bindposes.Count;
                     m_npSkinData.weights = m_boneWeights;
                     m_npSkinData.bindposes = m_bindposes;
                     m_npSkinData.bones = m_boneMatrices;
@@ -294,35 +294,35 @@ namespace UTJ.NormalPainter
 
             }
 
-            if (m_cbPoints == null && m_points != null && m_points.Length > 0)
+            if (m_cbPoints == null && m_points != null && m_points.Count > 0)
             {
-                m_cbPoints = new ComputeBuffer(m_points.Length, 12);
+                m_cbPoints = new ComputeBuffer(m_points.Count, 12);
                 m_cbPoints.SetData(m_points);
             }
-            if (m_cbNormals == null && m_normals != null && m_normals.Length > 0)
+            if (m_cbNormals == null && m_normals != null && m_normals.Count > 0)
             {
-                m_cbNormals = new ComputeBuffer(m_normals.Length, 12);
+                m_cbNormals = new ComputeBuffer(m_normals.Count, 12);
                 m_cbNormals.SetData(m_normals);
-                m_cbBaseNormals = new ComputeBuffer(m_normalsBase.Length, 12);
+                m_cbBaseNormals = new ComputeBuffer(m_normalsBase.Count, 12);
                 m_cbBaseNormals.SetData(m_normalsBase);
             }
-            if (m_cbTangents == null && m_tangents != null && m_tangents.Length > 0)
+            if (m_cbTangents == null && m_tangents != null && m_tangents.Count > 0)
             {
-                m_cbTangents = new ComputeBuffer(m_tangents.Length, 16);
+                m_cbTangents = new ComputeBuffer(m_tangents.Count, 16);
                 m_cbTangents.SetData(m_tangents);
-                m_cbBaseTangents = new ComputeBuffer(m_tangentsBase.Length, 16);
+                m_cbBaseTangents = new ComputeBuffer(m_tangentsBase.Count, 16);
                 m_cbBaseTangents.SetData(m_tangentsBase);
             }
-            if (m_cbSelection == null && m_selection != null && m_selection.Length > 0)
+            if (m_cbSelection == null && m_selection != null && m_selection.Count > 0)
             {
-                m_cbSelection = new ComputeBuffer(m_selection.Length, 4);
+                m_cbSelection = new ComputeBuffer(m_selection.Count, 4);
                 m_cbSelection.SetData(m_selection);
             }
 
-            if (m_cbArg == null && m_points != null && m_points.Length > 0)
+            if (m_cbArg == null && m_points != null && m_points.Count > 0)
             {
                 m_cbArg = new ComputeBuffer(1, 5 * sizeof(uint), ComputeBufferType.IndirectArguments);
-                m_cbArg.SetData(new uint[5] { m_meshCube.GetIndexCount(0), (uint)m_points.Length, 0, 0, 0 });
+                m_cbArg.SetData(new uint[5] { m_meshCube.GetIndexCount(0), (uint)m_points.Count, 0, 0, 0 });
             }
 
             m_settings.InitializeBrushData();
@@ -602,7 +602,7 @@ namespace UTJ.NormalPainter
                 if (selectMode == SelectMode.Single)
                 {
                     if (!e.shift && !e.control)
-                        System.Array.Clear(m_selection, 0, m_selection.Length);
+                        System.Array.Clear(m_selection, 0, m_selection.Count);
 
                     if (settings.selectVertex && SelectVertex(e, selectSign, settings.selectFrontSideOnly))
                     {
@@ -636,7 +636,7 @@ namespace UTJ.NormalPainter
                         {
                             m_rectDragging = false;
                             if (!e.shift && !e.control)
-                                System.Array.Clear(m_selection, 0, m_selection.Length);
+                                System.Array.Clear(m_selection, 0, m_selection.Count);
 
                             m_rectEndPoint = e.mousePosition;
                             handled = true;
@@ -683,7 +683,7 @@ namespace UTJ.NormalPainter
                     else if (et == EventType.MouseUp)
                     {
                         if (!e.shift && !e.control)
-                            System.Array.Clear(m_selection, 0, m_selection.Length);
+                            System.Array.Clear(m_selection, 0, m_selection.Count);
 
                         handled = true;
                         if (!SelectLasso(m_lassoPoints.ToArray(), selectSign, settings.selectFrontSideOnly) && !m_rayHit)
@@ -697,7 +697,7 @@ namespace UTJ.NormalPainter
                 else if (selectMode == SelectMode.Brush)
                 {
                     if (et == EventType.MouseDown && !e.shift && !e.control)
-                        System.Array.Clear(m_selection, 0, m_selection.Length);
+                        System.Array.Clear(m_selection, 0, m_selection.Count);
 
                     if (et == EventType.MouseDown || et == EventType.MouseDrag)
                     {
@@ -878,7 +878,7 @@ namespace UTJ.NormalPainter
             }
         }
 
-#endif
+#endif // UNITY_EDITOR
     }
 }
 

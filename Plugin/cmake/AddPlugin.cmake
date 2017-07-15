@@ -9,6 +9,7 @@ if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 endif()
 
 if(APPLE)
+    set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
     option(ENABLE_OSX_BUNDLE "Build bundle." ON)
     set(CMAKE_MACOSX_RPATH ON)
 
