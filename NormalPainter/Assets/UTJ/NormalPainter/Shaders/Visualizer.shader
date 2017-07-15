@@ -85,6 +85,7 @@ vs_out vert_normals(ia_out v)
     float3 dir = normalize((mul(_Transform, float4(_Normals[v.instanceID], 0.0))).xyz);
 
     float s = _OnlySelected ? _Selection[v.instanceID] : 1.0f;
+    s *= abs(mul(UNITY_MATRIX_V, float4(pos, 1.0)).z);
     float4 vertex = v.vertex;
     vertex.xyz += pos + dir * v.uv.x * _NormalSize * s;
     vertex = mul(UNITY_MATRIX_VP, vertex);
@@ -103,6 +104,7 @@ vs_out vert_tangents(ia_out v)
     float3 dir = normalize((mul(_Transform, float4(tangent.xyz * tangent.w, 0.0))).xyz);
 
     float s = _OnlySelected ? _Selection[v.instanceID] : 1.0f;
+    s *= abs(mul(UNITY_MATRIX_V, float4(pos, 1.0)).z);
     float4 vertex = v.vertex;
     vertex.xyz += pos + dir * v.uv.x * _TangentSize * s;
     vertex = mul(UNITY_MATRIX_VP, vertex);
@@ -122,6 +124,7 @@ vs_out vert_binormals(ia_out v)
     float3 dir = normalize((mul(_Transform, float4(binormal, 0.0))).xyz);
 
     float s = _OnlySelected ? _Selection[v.instanceID] : 1.0f;
+    s *= abs(mul(UNITY_MATRIX_V, float4(pos, 1.0)).z);
     float4 vertex = v.vertex;
     vertex.xyz += pos + dir * v.uv.x * _BinormalSize * s;
     vertex = mul(UNITY_MATRIX_VP, vertex);
