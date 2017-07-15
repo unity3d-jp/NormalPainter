@@ -5,6 +5,7 @@ using UnityEditor;
 
 namespace UTJ.NormalPainter
 {
+#if UNITY_EDITOR
     [Serializable]
     public class BrushData
     {
@@ -215,4 +216,5 @@ namespace UTJ.NormalPainter
             }
         }
     }
+#endif // UNITY_EDITOR
 }

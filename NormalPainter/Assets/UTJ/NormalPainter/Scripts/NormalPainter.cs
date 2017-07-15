@@ -83,7 +83,7 @@ namespace UTJ.NormalPainter
         [SerializeField] History m_history = new History();
         int m_historyIndex = 0;
 
-        npModelData m_npModelData = new npModelData();
+        npMeshData m_npModelData = new npMeshData();
         npSkinData m_npSkinData = new npSkinData();
 
         public bool editing

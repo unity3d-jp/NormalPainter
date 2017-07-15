@@ -3,7 +3,7 @@
 
 #define npEpsilon 0.0000001f
 
-struct npModelData
+struct npMeshData
 {
     int         *indices = nullptr;
     float3      *vertices = nullptr;
@@ -28,7 +28,7 @@ struct npSkinData
 
 
 inline static int Raycast(
-    const npModelData& model, const float3 pos, const float3 dir, int& tindex, float& distance)
+    const npMeshData& model, const float3 pos, const float3 dir, int& tindex, float& distance)
 {
     float4x4 itrans = invert(model.transform);
     float3 rpos = mul_p(itrans, pos);
@@ -43,7 +43,7 @@ inline static int Raycast(
 }
 
 inline static int RaycastWithoutTransform(
-    const npModelData& model, const float3 pos, const float3 dir, int& tindex, float& distance)
+    const npMeshData& model, const float3 pos, const float3 dir, int& tindex, float& distance)
 {
     float d;
     int hit = RayTrianglesIntersectionIndexed(pos, dir, model.vertices, model.indices, model.num_triangles, tindex, d);
@@ -57,7 +57,7 @@ inline static int RaycastWithoutTransform(
 #define npVertexBlockSize 1024
 
 template<class Body>
-inline static int SelectInside(const npModelData& model, float3 pos, float radius, const Body& body, bool parallel = false)
+inline static int SelectInside(const npMeshData& model, float3 pos, float radius, const Body& body, bool parallel = false)
 {
     auto num_vertices = model.num_vertices;
     auto vertices = model.vertices;
@@ -98,7 +98,7 @@ inline static int SelectInside(const npModelData& model, float3 pos, float radiu
     }
 }
 
-static bool GetFurthestDistance(const npModelData& model, float3 pos, bool mask, int &vidx, float &dist)
+static bool GetFurthestDistance(const npMeshData& model, float3 pos, bool mask, int &vidx, float &dist)
 {
     auto num_vertices = model.num_vertices;
     auto vertices = model.vertices;
@@ -137,13 +137,13 @@ static inline float GetBrushSample(float distance, float bradius, float bsamples
 
 
 npAPI int npRaycast(
-    npModelData *model, const float3 pos, const float3 dir, int *tindex, float *distance)
+    npMeshData *model, const float3 pos, const float3 dir, int *tindex, float *distance)
 {
     return Raycast(*model, pos, dir, *tindex, *distance);
 }
 
 npAPI float3 npPickNormal(
-    npModelData *model, const float3 pos, int ti)
+    npMeshData *model, const float3 pos, int ti)
 {
     auto indices = model->indices;
     auto points = model->vertices;
@@ -157,7 +157,7 @@ npAPI float3 npPickNormal(
 }
 
 npAPI int npSelectSingle(
-    npModelData *model, const float4x4 *mvp_, float2 rmin, float2 rmax, float3 campos, float strength, int frontface_only)
+    npMeshData *model, const float4x4 *mvp_, float2 rmin, float2 rmax, float3 campos, float strength, int frontface_only)
 {
     auto num_vertices = model->num_vertices;
     auto vertices = model->vertices;
@@ -245,7 +245,7 @@ npAPI int npSelectSingle(
 
 
 npAPI int npSelectTriangle(
-    npModelData *model, const float3 pos, const float3 dir, float strength)
+    npMeshData *model, const float3 pos, const float3 dir, float strength)
 {
     auto indices = model->indices;
     auto selection = model->selection;
@@ -262,7 +262,7 @@ npAPI int npSelectTriangle(
 }
 
 npAPI int npSelectEdge(
-    npModelData *model, float strength, int clear, int mask)
+    npMeshData *model, float strength, int clear, int mask)
 {
     auto indices = IArray<int>(model->indices, model->num_triangles * 3);
     auto vertices = IArray<float3>(model->vertices, model->num_vertices);
@@ -296,7 +296,7 @@ npAPI int npSelectEdge(
 }
 
 npAPI int npSelectHole(
-    npModelData *model, float strength, int clear, int mask)
+    npMeshData *model, float strength, int clear, int mask)
 {
     auto indices = IArray<int>(model->indices, model->num_triangles * 3);
     auto vertices = IArray<float3>(model->vertices, model->num_vertices);
@@ -330,7 +330,7 @@ npAPI int npSelectHole(
 }
 
 npAPI int npSelectConnected(
-    npModelData *model, float strength, int clear)
+    npMeshData *model, float strength, int clear)
 {
     auto indices = IArray<int>(model->indices, model->num_triangles * 3);
     auto vertices = IArray<float3>(model->vertices, model->num_vertices);
@@ -356,7 +356,7 @@ npAPI int npSelectConnected(
 }
 
 npAPI int npSelectRect(
-    npModelData *model,
+    npMeshData *model,
     const float4x4 *mvp_, float2 rmin, float2 rmax, float3 campos, float strength, int frontface_only)
 {
     auto num_vertices = model->num_vertices;
@@ -405,7 +405,7 @@ npAPI int npSelectRect(
 }
 
 npAPI int npSelectLasso(
-    npModelData *model,
+    npMeshData *model,
     const float4x4 *mvp_, const float2 lasso[], int num_lasso_points, float3 campos, float strength, int frontface_only)
 {
     if (num_lasso_points < 3) { return 0; }
@@ -464,7 +464,7 @@ npAPI int npSelectLasso(
 }
 
 npAPI int npSelectBrush(
-    npModelData *model,
+    npMeshData *model,
     const float3 pos, float radius, float strength, int num_bsamples, float bsamples[])
 {
     auto selection = model->selection;
@@ -476,7 +476,7 @@ npAPI int npSelectBrush(
 }
 
 npAPI int npUpdateSelection(
-    npModelData *model,
+    npMeshData *model,
     float3 *selection_pos, float3 *selection_normal)
 {
     auto num_vertices = model->num_vertices;
@@ -515,7 +515,7 @@ npAPI int npUpdateSelection(
 
 
 npAPI void npAssign(
-    npModelData *model, float3 value)
+    npMeshData *model, float3 value)
 {
     auto num_vertices = model->num_vertices;
     auto normals = model->normals;
@@ -531,7 +531,7 @@ npAPI void npAssign(
 }
 
 npAPI void npMove(
-    npModelData *model, float3 value)
+    npMeshData *model, float3 value)
 {
     auto num_vertices = model->num_vertices;
     auto normals = model->normals;
@@ -547,7 +547,7 @@ npAPI void npMove(
 }
 
 npAPI void npRotate(
-    npModelData *model, quatf value, quatf pivot_rot)
+    npMeshData *model, quatf value, quatf pivot_rot)
 {
     float3 axis;
     float angle;
@@ -579,7 +579,7 @@ npAPI void npRotate(
 }
 
 npAPI void npRotatePivot(
-    npModelData *model, quatf value, float3 pivot_pos, quatf pivot_rot)
+    npMeshData *model, quatf value, float3 pivot_pos, quatf pivot_rot)
 {
     float3 axis;
     float angle;
@@ -622,7 +622,7 @@ npAPI void npRotatePivot(
 }
 
 npAPI void npScale(
-    npModelData *model, float3 value, float3 pivot_pos, quatf pivot_rot)
+    npMeshData *model, float3 value, float3 pivot_pos, quatf pivot_rot)
 {
     float furthest;
     int furthest_idx;
@@ -655,7 +655,7 @@ npAPI void npScale(
 }
 
 npAPI void npSmooth(
-    npModelData *model, float radius, float strength, int mask)
+    npMeshData *model, float radius, float strength, int mask)
 {
     auto num_vertices = model->num_vertices;
     auto vertices = model->vertices;
@@ -688,7 +688,7 @@ npAPI void npSmooth(
 }
 
 npAPI int npWeld(
-    npModelData *model, int smoothing, float weld_angle, int mask)
+    npMeshData *model, int smoothing, float weld_angle, int mask)
 {
     auto num_vertices = model->num_vertices;
     auto vertices = model->vertices;
@@ -735,7 +735,7 @@ npAPI int npWeld(
 
 
 npAPI int npWeld2(
-    npModelData *model, int num_targets, npModelData targets[],
+    npMeshData *model, int num_targets, npMeshData targets[],
     int weld_mode, float weld_angle, int mask)
 {
     auto num_vertices = model->num_vertices;
@@ -858,7 +858,7 @@ npAPI int npWeld2(
 
 
 npAPI int npBrushReplace(
-    npModelData *model,
+    npMeshData *model,
     const float3 pos, float radius, float strength, int num_bsamples, float bsamples[], float3 value, int mask)
 {
     auto normals = model->normals;
@@ -874,7 +874,7 @@ npAPI int npBrushReplace(
 }
 
 npAPI int npBrushPaint(
-    npModelData *model,
+    npMeshData *model,
     const float3 pos, float radius, float strength, int num_bsamples, float bsamples[], float3 n, int blend_mode, int mask)
 {
     auto normals = model->normals;
@@ -928,7 +928,7 @@ npAPI int npBrushPaint(
 }
 
 npAPI int npBrushLerp(
-    npModelData *model,
+    npMeshData *model,
     const float3 pos, float radius, float strength, int num_bsamples, float bsamples[], const float3 n0[], const float3 n1[], int mask)
 {
     auto normals = model->normals;
@@ -944,7 +944,7 @@ npAPI int npBrushLerp(
 }
 
 npAPI int npBrushSmooth(
-    npModelData *model,
+    npMeshData *model,
     const float3 pos, float radius, float strength, int num_bsamples, float bsamples[], int mask)
 {
     auto normals = model->normals;
@@ -971,9 +971,9 @@ npAPI int npBrushSmooth(
 
 template<class RayDirs>
 inline int BrushProjectionImpl(
-    npModelData *model,
+    npMeshData *model,
     const float3 pos, float radius, float strength, int num_bsamples, float bsamples[], int mask,
-    npModelData *normal_source, const RayDirs& ray_dirs)
+    npMeshData *normal_source, const RayDirs& ray_dirs)
 {
     auto vertices = model->vertices;
     auto normals = model->normals;
@@ -1018,17 +1018,17 @@ inline int BrushProjectionImpl(
 }
 
 npAPI int npBrushProjection(
-    npModelData *model,
+    npMeshData *model,
     const float3 pos, float radius, float strength, int num_bsamples, float bsamples[], int mask,
-    npModelData *normal_source, float3 ray_dirs[])
+    npMeshData *normal_source, float3 ray_dirs[])
 {
     return BrushProjectionImpl(model, pos, radius, strength, num_bsamples, bsamples, mask, normal_source, ray_dirs);
 }
 
 npAPI int npBrushProjection2(
-    npModelData *model,
+    npMeshData *model,
     const float3 pos, float radius, float strength, int num_bsamples, float bsamples[], int mask,
-    npModelData *normal_source, float3 ray_dir)
+    npMeshData *normal_source, float3 ray_dir)
 {
     struct RayDir
     {
@@ -1040,7 +1040,7 @@ npAPI int npBrushProjection2(
 
 
 npAPI int npBuildMirroringRelation(
-    npModelData *model, float3 plane_normal, float epsilon, int relation[])
+    npMeshData *model, float3 plane_normal, float epsilon, int relation[])
 {
     auto num_vertices = model->num_vertices;
     auto vertices = model->vertices;
@@ -1089,7 +1089,7 @@ npAPI void npApplyMirroring(int num_vertices, const int relation[], float3 plane
 
 template<class RayDirs>
 inline void ProjectNormalsImpl(
-    npModelData *model, npModelData *target, const RayDirs& ray_dirs, int mask)
+    npMeshData *model, npMeshData *target, const RayDirs& ray_dirs, int mask)
 {
     auto num_vertices = model->num_vertices;
     auto vertices = model->vertices;
@@ -1150,13 +1150,13 @@ inline void ProjectNormalsImpl(
 }
 
 npAPI void npProjectNormals(
-    npModelData *model, npModelData *target, const float3 ray_dirs[], int mask)
+    npMeshData *model, npMeshData *target, const float3 ray_dirs[], int mask)
 {
     ProjectNormalsImpl(model, target, ray_dirs, mask);
 }
 
 npAPI void npProjectNormals2(
-    npModelData *model, npModelData *target, const float3 ray_dir, int mask)
+    npMeshData *model, npMeshData *target, const float3 ray_dir, int mask)
 {
     struct RayDir
     {
@@ -1246,14 +1246,14 @@ npAPI void npApplyReverseSkinning(
 }
 
 
-npAPI void npGenerateNormals(npModelData *model, float3 dst[])
+npAPI void npGenerateNormals(npMeshData *model, float3 dst[])
 {
     if (!dst) dst = model->normals;
     if (!dst || !model->vertices || !model->indices) return;
     GenerateNormalsTriangleIndexed(dst, model->vertices, model->indices, model->num_triangles, model->num_vertices);
 }
 
-npAPI void npGenerateTangents(npModelData *model, float4 dst[])
+npAPI void npGenerateTangents(npMeshData *model, float4 dst[])
 {
     if (!dst) dst = model->tangents;
     if (!dst || !model->vertices || !model->uv || !model->normals || !model->indices) return;
