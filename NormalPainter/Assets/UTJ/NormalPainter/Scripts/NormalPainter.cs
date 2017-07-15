@@ -33,7 +33,7 @@ namespace UTJ.NormalPainter
 
 
         NormalPainterSettings m_settings;
-        
+
         // internal resources
         [SerializeField] Mesh m_meshTarget;
         [SerializeField] Mesh m_meshCube;
@@ -54,31 +54,31 @@ namespace UTJ.NormalPainter
         CommandBuffer m_cmdDraw;
 
         bool m_skinned;
-        PinnedList<Vector3>     m_points, m_pointsPredeformed;
-        PinnedList<Vector3>     m_normals, m_normalsPredeformed, m_normalsBase, m_normalsBasePredeformed;
-        PinnedList<Vector4>     m_tangents, m_tangentsPredeformed, m_tangentsBase, m_tangentsBasePredeformed;
-        PinnedList<Vector2>     m_uv;
-        PinnedList<int>         m_indices;
-        PinnedList<int>         m_mirrorRelation;
-        PinnedList<float>       m_selection;
+        PinnedList<Vector3> m_points, m_pointsPredeformed;
+        PinnedList<Vector3> m_normals, m_normalsPredeformed, m_normalsBase, m_normalsBasePredeformed;
+        PinnedList<Vector4> m_tangents, m_tangentsPredeformed, m_tangentsBase, m_tangentsBasePredeformed;
+        PinnedList<Vector2> m_uv;
+        PinnedList<int> m_indices;
+        PinnedList<int> m_mirrorRelation;
+        PinnedList<float> m_selection;
 
-        PinnedList<BoneWeight>  m_boneWeights;
-        PinnedList<Matrix4x4>   m_bindposes;
-        PinnedList<Matrix4x4>   m_boneMatrices;
+        PinnedList<BoneWeight> m_boneWeights;
+        PinnedList<Matrix4x4> m_bindposes;
+        PinnedList<Matrix4x4> m_boneMatrices;
 
-        bool        m_editing;
-        int         m_numSelected = 0;
-        bool        m_rayHit;
-        int         m_rayHitTriangle;
-        Vector3     m_rayPos;
-        Vector3     m_selectionPos;
-        Vector3     m_selectionNormal;
-        Quaternion  m_selectionRot;
-        bool        m_rectDragging;
-        Vector2     m_rectStartPoint;
-        Vector2     m_rectEndPoint;
+        bool m_editing;
+        int m_numSelected = 0;
+        bool m_rayHit;
+        int m_rayHitTriangle;
+        Vector3 m_rayPos;
+        Vector3 m_selectionPos;
+        Vector3 m_selectionNormal;
+        Quaternion m_selectionRot;
+        bool m_rectDragging;
+        Vector2 m_rectStartPoint;
+        Vector2 m_rectEndPoint;
         List<Vector2> m_lassoPoints = new List<Vector2>();
-        int         m_brushNumPainted = 0;
+        int m_brushNumPainted = 0;
 
         [SerializeField] History m_history = new History();
         int m_historyIndex = 0;
@@ -98,6 +98,8 @@ namespace UTJ.NormalPainter
         public NormalPainterSettings settings { get { return m_settings; } }
         public Mesh mesh { get { return m_meshTarget; } }
         public Vector3 selectionNormal { get { return m_selectionNormal; } }
+        public PinnedList<Vector3> normals { get { return m_normals; } }
+        public PinnedList<Vector3> normalsBase { get { return m_normalsBase; } }
 
         public float[] selection
         {

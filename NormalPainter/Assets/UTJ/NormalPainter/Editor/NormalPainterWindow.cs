@@ -194,7 +194,8 @@ namespace UTJ.NormalPainter
             "Paint [1]",
             "Replace [2]",
             "Smooth [3]",
-            "Reset [4]",
+            "Projection [4]",
+            "Reset [5]",
         };
         static readonly string[] strCoodinate = new string[] {
             "World",
@@ -210,6 +211,11 @@ namespace UTJ.NormalPainter
             "Welding",
             "Welding2",
         };
+        static readonly string[] strProjectionMode = new string[] {
+            "",
+            "",
+        };
+
 
 
         void DrawBrushPanel()
@@ -358,21 +364,32 @@ namespace UTJ.NormalPainter
             }
             else if (settings.editMode == EditMode.Brush)
             {
-                settings.brushMode = (BrushMode)GUILayout.SelectionGrid((int)settings.brushMode, strBrushTypes, 4);
+                settings.brushMode = (BrushMode)GUILayout.SelectionGrid((int)settings.brushMode, strBrushTypes, 3);
                 EditorGUILayout.Space();
 
                 settings.brushMaskWithSelection = EditorGUILayout.Toggle("Mask With Selection", settings.brushMaskWithSelection); EditorGUILayout.Space();
                 DrawBrushPanel();
 
-                if (settings.brushMode == BrushMode.Paint)
-                {
-                }
-                else if (settings.brushMode == BrushMode.Replace)
+                if (settings.brushMode == BrushMode.Replace)
                 {
                     GUILayout.BeginHorizontal();
                     settings.assignValue = EditorGUILayout.Vector3Field("Value", settings.assignValue);
                     settings.pickNormal = GUILayout.Toggle(settings.pickNormal, "Pick [P]", "Button", GUILayout.Width(100));
                     GUILayout.EndHorizontal();
+                }
+                else if (settings.brushMode == BrushMode.Projection)
+                {
+                    EditorGUI.BeginChangeCheck();
+                    settings.brushProjectionNormalSource =
+                        (GameObject)EditorGUILayout.ObjectField("Normal Source", settings.brushProjectionNormalSource, typeof(GameObject), true);
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        var md = new MeshData();
+                        if (md.Extract(settings.brushProjectionNormalSource))
+                            settings.brushProjectionNormalSourceData = md;
+                        else
+                            settings.brushProjectionNormalSourceData = null;
+                    }
                 }
             }
             else if (settings.editMode == EditMode.Assign)
@@ -514,7 +531,9 @@ namespace UTJ.NormalPainter
                 EditorGUILayout.Space();
                 if (GUILayout.Button("Apply Projection"))
                 {
-                    m_target.ApplyProjection(settings.projectionNormalSource, settings.projectionRayDirection == 0, true);
+                    var rayDirs = settings.projectionRayDirection == 0 ?
+                        m_target.normalsBase : m_target.normals;
+                    m_target.ApplyProjection(settings.projectionNormalSource, rayDirs, true);
                 }
             }
             else if (settings.editMode == EditMode.Reset)
@@ -845,7 +864,8 @@ namespace UTJ.NormalPainter
                         case KeyCode.Alpha1: settings.brushMode = BrushMode.Paint; break;
                         case KeyCode.Alpha2: settings.brushMode = BrushMode.Replace; break;
                         case KeyCode.Alpha3: settings.brushMode = BrushMode.Smooth; break;
-                        case KeyCode.Alpha4: settings.brushMode = BrushMode.Reset; break;
+                        case KeyCode.Alpha4: settings.brushMode = BrushMode.Projection; break;
+                        case KeyCode.Alpha5: settings.brushMode = BrushMode.Reset; break;
                     }
                     if (settings.brushMode != prevBrushMode)
                         handled = true;

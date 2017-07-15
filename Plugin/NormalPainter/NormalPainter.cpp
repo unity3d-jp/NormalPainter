@@ -972,21 +972,22 @@ npAPI int npBrushSmooth(
 template<class RayDirs>
 inline int BrushProjectionImpl(
     npModelData *model,
-    const float3 pos, float radius, float strength, int num_bsamples, float bsamples[], npModelData *target, const RayDirs& ray_dirs, int mask)
+    const float3 pos, float radius, float strength, int num_bsamples, float bsamples[], int mask,
+    npModelData *normal_source, const RayDirs& ray_dirs)
 {
     auto vertices = model->vertices;
     auto normals = model->normals;
     auto selection = model->selection;
 
-    auto pnum_triangles = target->num_triangles;
-    auto pnormals = target->normals;
-    auto pindices = target->indices;
+    auto pnum_triangles = normal_source->num_triangles;
+    auto pnormals = normal_source->normals;
+    auto pindices = normal_source->indices;
 
-    auto to_local = target->transform * invert(model->transform);
+    auto to_local = normal_source->transform * invert(model->transform);
     RawVector<float3> pvertices;
-    pvertices.resize(target->num_vertices);
-    for (int vi = 0; vi < target->num_vertices; ++vi) {
-        pvertices[vi] = mul_p(to_local, target->vertices[vi]);
+    pvertices.resize(normal_source->num_vertices);
+    for (int vi = 0; vi < normal_source->num_vertices; ++vi) {
+        pvertices[vi] = mul_p(to_local, normal_source->vertices[vi]);
     }
 
     return SelectInside(*model, pos, radius, [&](int vi, float d, float3 p) {
@@ -1018,21 +1019,23 @@ inline int BrushProjectionImpl(
 
 npAPI int npBrushProjection(
     npModelData *model,
-    const float3 pos, float radius, float strength, int num_bsamples, float bsamples[], npModelData *target, float3 ray_dirs[], int mask)
+    const float3 pos, float radius, float strength, int num_bsamples, float bsamples[], int mask,
+    npModelData *normal_source, float3 ray_dirs[])
 {
-    return BrushProjectionImpl(model, pos, radius, strength, num_bsamples, bsamples, target, ray_dirs, mask);
+    return BrushProjectionImpl(model, pos, radius, strength, num_bsamples, bsamples, mask, normal_source, ray_dirs);
 }
 
 npAPI int npBrushProjection2(
     npModelData *model,
-    const float3 pos, float radius, float strength, int num_bsamples, float bsamples[], npModelData *target, float3 ray_dir, int mask)
+    const float3 pos, float radius, float strength, int num_bsamples, float bsamples[], int mask,
+    npModelData *normal_source, float3 ray_dir)
 {
     struct RayDir
     {
         float3 ray_dir;
         const float3& operator[](int) const { return ray_dir; }
     } ray_dirs = { ray_dir };
-    return BrushProjectionImpl(model, pos, radius, strength, num_bsamples, bsamples, target, ray_dirs, mask);
+    return BrushProjectionImpl(model, pos, radius, strength, num_bsamples, bsamples, mask, normal_source, ray_dirs);
 }
 
 

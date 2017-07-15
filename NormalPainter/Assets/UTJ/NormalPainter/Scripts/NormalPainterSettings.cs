@@ -90,6 +90,8 @@ namespace UTJ.NormalPainter
         public bool rotatePivot = false;
         public bool brushMaskWithSelection = false;
         public int brushBlendMode = 0;
+        [NonSerialized] public GameObject brushProjectionNormalSource;
+        [NonSerialized] public MeshData brushProjectionNormalSourceData;
 
         public BrushData[] brushData = new BrushData[5] {
             new BrushData(),

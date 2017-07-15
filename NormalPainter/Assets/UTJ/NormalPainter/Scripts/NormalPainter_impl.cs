@@ -29,6 +29,7 @@ namespace UTJ.NormalPainter
         Paint,
         Replace,
         Smooth,
+        Projection,
         Reset,
     }
 
@@ -124,6 +125,8 @@ namespace UTJ.NormalPainter
             }
         }
 
+        public bool empty { get { return vertices.Count == 0; } }
+
         public bool Extract(GameObject go)
         {
             if (!go) { return false; }
@@ -154,7 +157,7 @@ namespace UTJ.NormalPainter
 
         public bool Extract(Mesh mesh)
         {
-            if (!mesh) { return false; }
+            if (!mesh || !mesh.isReadable) { return false; }
 
             vertexCount = mesh.vertexCount;
             mesh.GetVertices(vertices);
@@ -363,6 +366,33 @@ namespace UTJ.NormalPainter
         public bool ApplySmoothBrush(bool useSelection, Vector3 pos, float radius, float strength, PinnedArray<float> bsamples)
         {
             if (npBrushSmooth(ref m_npModelData, pos, radius, strength, bsamples.Length, bsamples, useSelection) > 0)
+            {
+                UpdateNormals();
+                return true;
+            }
+            return false;
+        }
+
+        public bool ApplyProjectionBrush(bool useSelection, Vector3 pos, float radius, float strength, PinnedArray<float> bsamples,
+            ref MeshData normalSource, PinnedArray<Vector3> rayDirs)
+        {
+            if (normalSource == null || normalSource.empty) { return false; }
+
+            var np = (npModelData)normalSource;
+            if (npBrushProjection(ref m_npModelData, pos, radius, strength, bsamples.Length, bsamples, useSelection, ref np, rayDirs) > 0)
+            {
+                UpdateNormals();
+                return true;
+            }
+            return false;
+        }
+        public bool ApplyProjectionBrush2(bool useSelection, Vector3 pos, float radius, float strength, PinnedArray<float> bsamples,
+            ref MeshData normalSource, Vector3 rayDir)
+        {
+            if (normalSource == null || normalSource.empty) { return false; }
+
+            var np = (npModelData)normalSource;
+            if (npBrushProjection2(ref m_npModelData, pos, radius, strength, bsamples.Length, bsamples, useSelection, ref np, rayDir) > 0)
             {
                 UpdateNormals();
                 return true;
@@ -1129,77 +1159,33 @@ namespace UTJ.NormalPainter
             return ret;
         }
 
-        public void ApplyProjection(GameObject go, bool baseNormalsAsRayDirection, bool pushUndo)
+        public void ApplyProjection(GameObject go, PinnedList<Vector3> raiDirs, bool pushUndo)
         {
-            if (go == null) { return; }
-
-            Mesh mesh = null;
-            {
-                var mf = go.GetComponent<MeshFilter>();
-                if (mf != null)
-                    mesh = mf.sharedMesh;
-                else
-                {
-                    var smi = go.GetComponent<SkinnedMeshRenderer>();
-                    if (smi != null)
-                    {
-                        mesh = new Mesh();
-                        smi.BakeMesh(mesh);
-                    }
-                }
-            }
-            if (mesh == null)
-            {
-                Debug.LogWarning("ProjectNormals(): projector has no mesh!");
-                return;
-            }
-
-            var ptrans = go.GetComponent<Transform>().localToWorldMatrix;
-            ApplyProjection(mesh, ptrans, baseNormalsAsRayDirection, pushUndo);
+            var mdata = new MeshData();
+            if (mdata.Extract(go))
+                ApplyProjection(ref mdata, raiDirs, pushUndo);
         }
-
-        public void ApplyProjection(Mesh target, Matrix4x4 ttrans, bool baseNormalsAsRayDirection, bool pushUndo)
+        public void ApplyProjection(ref MeshData mdata, PinnedList<Vector3> raiDirs, bool pushUndo)
         {
-            if (!IsValidMesh(target)) { return; }
-
-            var tpoints = new PinnedList<Vector3>(target.vertices);
-            var tnormals = new PinnedList<Vector3>(target.normals);
-            var tindices = new PinnedList<int>(target.triangles);
-
-            var tdata = new npModelData();
-            tdata.transform = ttrans;
-            tdata.num_vertices = tpoints.Count;
-            tdata.num_triangles = tindices.Count / 3;
-            tdata.vertices = tpoints;
-            tdata.normals = tnormals;
-            tdata.indices = tindices;
-
-            var rayDirections = baseNormalsAsRayDirection ? m_normalsBase : m_normals;
             bool mask = m_numSelected > 0;
-            npProjectNormals(ref m_npModelData, ref tdata, rayDirections, mask);
+            var normalSource = (npModelData)mdata;
+            npProjectNormals(ref m_npModelData, ref normalSource, raiDirs, mask);
 
             UpdateNormals();
             if (pushUndo) PushUndo();
         }
 
-        public void ApplyProjection2(Mesh target, Matrix4x4 ttrans, Vector3 rayDir, bool pushUndo)
+        public void ApplyProjection2(GameObject go, Vector3 rayDir, bool pushUndo)
         {
-            if (!IsValidMesh(target)) { return; }
-
-            var tpoints = new PinnedList<Vector3>(target.vertices);
-            var tnormals = new PinnedList<Vector3>(target.normals);
-            var tindices = new PinnedList<int>(target.triangles);
-
-            var tdata = new npModelData();
-            tdata.transform = ttrans;
-            tdata.num_vertices = tpoints.Count;
-            tdata.num_triangles = tindices.Count / 3;
-            tdata.vertices = tpoints;
-            tdata.normals = tnormals;
-            tdata.indices = tindices;
-
+            var mdata = new MeshData();
+            if (mdata.Extract(go))
+                ApplyProjection2(ref mdata, rayDir, pushUndo);
+        }
+        public void ApplyProjection2(ref MeshData mdata, Vector3 rayDir, bool pushUndo)
+        {
             bool mask = m_numSelected > 0;
-            npProjectNormals2(ref m_npModelData, ref tdata, rayDir, mask);
+            var normalSource = (npModelData)mdata;
+            npProjectNormals2(ref m_npModelData, ref normalSource, rayDir, mask);
 
             UpdateNormals();
             if (pushUndo) PushUndo();
@@ -1294,6 +1280,15 @@ namespace UTJ.NormalPainter
         [DllImport("NormalPainterCore")] static extern int npBrushSmooth(
             ref npModelData model,
             Vector3 pos, float radius, float strength, int num_bsamples, IntPtr bsamples, bool mask);
+
+        [DllImport("NormalPainterCore")] static extern int npBrushProjection(
+            ref npModelData model,
+            Vector3 pos, float radius, float strength, int num_bsamples, IntPtr bsamples, bool mask,
+            ref npModelData normal_source, IntPtr ray_dirs);
+        [DllImport("NormalPainterCore")] static extern int npBrushProjection2(
+            ref npModelData model,
+            Vector3 pos, float radius, float strength, int num_bsamples, IntPtr bsamples, bool mask,
+            ref npModelData normal_source, Vector3 ray_dir);
 
         [DllImport("NormalPainterCore")] static extern int npBrushLerp(
             ref npModelData model,
