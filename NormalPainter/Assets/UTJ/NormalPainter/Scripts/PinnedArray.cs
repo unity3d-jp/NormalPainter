@@ -244,7 +244,7 @@ namespace UTJ.NormalPainter
         }
         public T[] Array { get { return m_data; } }
         public List<T> List { get { return m_list; } }
-        public IntPtr Pointer { get { return m_data.Length == 0 ? IntPtr.Zero : m_gch.AddrOfPinnedObject(); } }
+        public IntPtr Pointer { get { return Count == 0 ? IntPtr.Zero : m_gch.AddrOfPinnedObject(); } }
 
         public void LockList(Action<List<T>> body)
         {
@@ -257,8 +257,6 @@ namespace UTJ.NormalPainter
 
         public void Resize(int size)
         {
-            if (size == m_data.Length) return;
-
             if(size > m_data.Length)
             {
                 LockList(l => {
@@ -270,8 +268,6 @@ namespace UTJ.NormalPainter
 
         public void ResizeDiscard(int size)
         {
-            if (size == m_data.Length) return;
-
             if (size > m_data.Length)
             {
                 if (m_gch.IsAllocated)
@@ -286,15 +282,28 @@ namespace UTJ.NormalPainter
             }
         }
 
-        public PinnedList<T> Clone() { return new PinnedList<T>(m_list, true); }
-        public bool Assign(T[] source)
+        public void Clear()
         {
-            if (source != null && m_data.Length == source.Length)
-            {
-                System.Array.Copy(source, m_data, m_data.Length);
-                return true;
-            }
-            return false;
+            if (m_data.Length > 0)
+                ListSetCount(m_list, 0);
+        }
+
+        public PinnedList<T> Clone()
+        {
+            return new PinnedList<T>(m_list, true);
+        }
+
+        public void Assign(T[] source)
+        {
+            ResizeDiscard(source.Length);
+            System.Array.Copy(source, m_data, source.Length);
+        }
+        public void Assign(List<T> sourceList)
+        {
+            var sourceData = ListGetInternalArray(sourceList);
+            var count = sourceList.Count;
+            ResizeDiscard(count);
+            System.Array.Copy(sourceData, m_data, count);
         }
 
         public void Dispose()

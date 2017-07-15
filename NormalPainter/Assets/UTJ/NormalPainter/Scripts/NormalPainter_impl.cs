@@ -102,6 +102,7 @@ namespace UTJ.NormalPainter
         public PinnedList<Vector3> normals = new PinnedList<Vector3>();
         public PinnedList<Vector2> uv = new PinnedList<Vector2>();
         public PinnedList<int> indices = new PinnedList<int>();
+        public Matrix4x4 transform;
 
         public int vertexCount
         {
@@ -122,6 +123,101 @@ namespace UTJ.NormalPainter
                 indices.Resize(value);
             }
         }
+
+        public bool Extract(GameObject go)
+        {
+            if (!go) { return false; }
+            transform = go.GetComponent<Transform>().localToWorldMatrix;
+
+            var terrain = go.GetComponent<Terrain>();
+            if(terrain)
+            {
+                return Extract(terrain);
+            }
+
+            var smi = go.GetComponent<SkinnedMeshRenderer>();
+            if (smi != null)
+            {
+                var mesh = new Mesh();
+                smi.BakeMesh(mesh);
+                return Extract(mesh);
+            }
+
+            var mf = go.GetComponent<MeshFilter>();
+            if (mf != null)
+            {
+                return Extract(mf.sharedMesh);
+            }
+            return false;
+
+        }
+
+        public bool Extract(Mesh mesh)
+        {
+            if (!mesh) { return false; }
+
+            vertexCount = mesh.vertexCount;
+            mesh.GetVertices(vertices);
+            mesh.GetNormals(normals);
+            mesh.GetUVs(0, uv);
+            indices = new PinnedList<int>(mesh.triangles);
+            return true;
+        }
+
+        public bool Extract(Terrain terrain)
+        {
+            if (!terrain) { return false; }
+
+            var tdata = terrain.terrainData;
+            var w = tdata.heightmapWidth;
+            var h = tdata.heightmapHeight;
+            var heightmap = new PinnedArray2D<float>(tdata.GetHeights(0, 0, w, h));
+
+            vertexCount = w * h;
+            indexCount = (w - 1) * (h - 1) * 2 * 3;
+            npGenerateTerrainMesh(heightmap, w, h, tdata.size,
+                vertices, normals, uv, indices);
+            return true;
+        }
+        [DllImport("NormalPainterCore")] static extern void npGenerateTerrainMesh(
+            IntPtr heightmap, int width, int height, Vector3 size,
+            IntPtr dst_vertices, IntPtr dst_normals, IntPtr dst_uv, IntPtr dst_indices);
+
+        public static implicit operator npModelData(MeshData v)
+        {
+            return new npModelData
+            {
+                vertices = v.vertices,
+                normals = v.normals,
+                uv = v.uv,
+                indices = v.indices,
+                num_vertices = v.vertices.Count,
+                num_triangles = v.indices.Count / 3,
+                transform = v.transform,
+            };
+        }
+    }
+
+    public struct npModelData
+    {
+        public IntPtr indices;
+        public IntPtr vertices;
+        public IntPtr normals;
+        public IntPtr tangents;
+        public IntPtr uv;
+        public IntPtr selection;
+        public int num_vertices;
+        public int num_triangles;
+        public Matrix4x4 transform;
+    }
+    public struct npSkinData
+    {
+        public IntPtr weights;
+        public IntPtr bones;
+        public IntPtr bindposes;
+        public int num_vertices;
+        public int num_bones;
+        public Matrix4x4 root;
     }
 
 
@@ -1151,66 +1247,6 @@ namespace UTJ.NormalPainter
             AssetDatabase.CreateAsset(Instantiate(m_settings), path);
         }
 
-        [MenuItem("Test/Generate Mesh From Terratin")]
-        public static void GenerateMeshDataFromTerrain()
-        {
-            var go = Selection.activeGameObject;
-            if (go != null)
-            {
-                var terrain = go.GetComponent<Terrain>();
-                if (terrain != null)
-                {
-                    var data = new MeshData();
-                    GenerateMeshDataFromTerrain(terrain, data);
-
-                    var mesh = new Mesh();
-                    mesh.SetVertices(data.vertices);
-                    mesh.SetUVs(0, data.uv);
-                    mesh.SetNormals(data.normals);
-                    mesh.SetIndices(data.indices, MeshTopology.Triangles, 0);
-                    var path = "Assets/" + terrain.name + ".asset";
-                    AssetDatabase.CreateAsset(mesh, path);
-                }
-            }
-        }
-
-        public static void GenerateMeshDataFromTerrain(Terrain terrain, MeshData data)
-        {
-            var tdata = terrain.terrainData;
-            var w = tdata.heightmapWidth;
-            var h = tdata.heightmapHeight;
-            var size = tdata.size;
-            var heightmap = new PinnedArray2D<float>(tdata.GetHeights(0, 0, w, h));
-
-            data.vertexCount = w * h;
-            data.indexCount = (w - 1) * (h - 1) * 2 * 3;
-            npGenerateTerrainMesh(heightmap, w, h, size,
-                data.vertices, data.normals, data.uv, data.indices);
-        }
-
-
-        struct npModelData
-        {
-            public IntPtr indices;
-            public IntPtr vertices;
-            public IntPtr normals;
-            public IntPtr tangents;
-            public IntPtr uv;
-            public IntPtr selection;
-            public int num_vertices;
-            public int num_triangles;
-            public Matrix4x4 transform;
-        }
-        struct npSkinData
-        {
-            public IntPtr weights;
-            public IntPtr bones;
-            public IntPtr bindposes;
-            public int num_vertices;
-            public int num_bones;
-            public Matrix4x4 root;
-        }
-
         [DllImport("NormalPainterCore")] static extern int npRaycast(
             ref npModelData model, Vector3 pos, Vector3 dir, ref int tindex, ref float distance);
 
@@ -1312,10 +1348,6 @@ namespace UTJ.NormalPainter
             ref npModelData model, IntPtr dst);
         [DllImport("NormalPainterCore")] static extern int npGenerateTangents(
             ref npModelData model, IntPtr dst);
-
-        [DllImport("NormalPainterCore")] static extern void npGenerateTerrainMesh(
-            IntPtr heightmap, int width, int height, Vector3 size,
-            IntPtr dst_vertices, IntPtr dst_normals, IntPtr dst_uv, IntPtr dst_indices);
 
         [DllImport("NormalPainterCore")] static extern void npInitializePenInput();
 #endif // UNITY_EDITOR

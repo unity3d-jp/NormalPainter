@@ -14,9 +14,8 @@ if(ENABLE_ISPC)
     set(MUISPC_OUTPUTS ${_ispc_outputs})
 endif()
 
-file(GLOB MU_SOURCES *.cpp *.c)
-file(GLOB MU_HEADERS *.h)
-add_library(MeshUtils STATIC ${MU_SOURCES} ${MU_HEADERS} ${MUISPC_OUTPUTS})
+file(GLOB sources *.cpp *.c *.h)
+add_library(MeshUtils STATIC ${sources} ${MUISPC_OUTPUTS})
 install(TARGETS MeshUtils DESTINATION .)
 
 if(ENABLE_ISPC)
