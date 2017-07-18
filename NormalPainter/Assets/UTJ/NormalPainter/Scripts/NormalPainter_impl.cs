@@ -339,6 +339,7 @@ namespace UTJ.NormalPainter
 
         public bool ApplyPaintBrush(bool useSelection, Vector3 pos, float radius, float strength, PinnedArray<float> bsamples, Vector3 baseDir, int blendMode)
         {
+            useSelection = useSelection && m_numSelected > 0;
             if (npBrushPaint(ref m_npModelData, pos, radius, strength, bsamples.Length, bsamples, baseDir, blendMode, useSelection) > 0)
             {
                 UpdateNormals();
@@ -349,6 +350,7 @@ namespace UTJ.NormalPainter
 
         public bool ApplyReplaceBrush(bool useSelection, Vector3 pos, float radius, float strength, PinnedArray<float> bsamples, Vector3 amount)
         {
+            useSelection = useSelection && m_numSelected > 0;
             amount = GetComponent<Transform>().worldToLocalMatrix.MultiplyVector(amount).normalized;
 
             if (npBrushReplace(ref m_npModelData, pos, radius, strength, bsamples.Length, bsamples, amount, useSelection) > 0)
@@ -361,6 +363,7 @@ namespace UTJ.NormalPainter
 
         public bool ApplySmoothBrush(bool useSelection, Vector3 pos, float radius, float strength, PinnedArray<float> bsamples)
         {
+            useSelection = useSelection && m_numSelected > 0;
             if (npBrushSmooth(ref m_npModelData, pos, radius, strength, bsamples.Length, bsamples, useSelection) > 0)
             {
                 UpdateNormals();
@@ -372,8 +375,13 @@ namespace UTJ.NormalPainter
         public bool ApplyProjectionBrush(bool useSelection, Vector3 pos, float radius, float strength, PinnedArray<float> bsamples,
             MeshData normalSource, PinnedList<Vector3> rayDirs)
         {
-            if (normalSource == null || normalSource.empty) { return false; }
+            if (normalSource == null || normalSource.empty)
+            {
+                Debug.LogError("\"Normal Source\" object is not set or has no readable Mesh or Terrain.");
+                return false;
+            }
 
+            useSelection = useSelection && m_numSelected > 0;
             var np = (npMeshData)normalSource;
             if (npBrushProjection(ref m_npModelData, pos, radius, strength, bsamples.Length, bsamples, useSelection, ref np, rayDirs) > 0)
             {
@@ -385,8 +393,13 @@ namespace UTJ.NormalPainter
         public bool ApplyProjectionBrush2(bool useSelection, Vector3 pos, float radius, float strength, PinnedArray<float> bsamples,
             MeshData normalSource, Vector3 rayDir)
         {
-            if (normalSource == null || normalSource.empty) { return false; }
+            if (normalSource == null || normalSource.empty)
+            {
+                Debug.LogError("\"Normal Source\" object is not set or has no readable Mesh or Terrain.");
+                return false;
+            }
 
+            useSelection = useSelection && m_numSelected > 0;
             var np = (npMeshData)normalSource;
             if (npBrushProjection2(ref m_npModelData, pos, radius, strength, bsamples.Length, bsamples, useSelection, ref np, rayDir) > 0)
             {
@@ -398,6 +411,7 @@ namespace UTJ.NormalPainter
 
         public bool ApplyResetBrush(bool useSelection, Vector3 pos, float radius, float strength, PinnedArray<float> bsamples)
         {
+            useSelection = useSelection && m_numSelected > 0;
             if (npBrushLerp(ref m_npModelData, pos, radius, strength, bsamples.Length, bsamples, m_normalsBase, m_normals, useSelection) > 0)
             {
                 UpdateNormals();

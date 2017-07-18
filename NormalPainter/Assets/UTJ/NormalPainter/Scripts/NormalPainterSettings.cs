@@ -89,7 +89,7 @@ namespace UTJ.NormalPainter
         public bool selectVertex = true;
         public bool selectTriangle = true;
         public bool rotatePivot = false;
-        public bool brushMaskWithSelection = false;
+        public bool brushMaskWithSelection = true;
         public int brushBlendMode = 0;
         [NonSerialized] public GameObject brushProjectionNormalSource;
         [NonSerialized] public MeshData brushProjectionNormalSourceData;

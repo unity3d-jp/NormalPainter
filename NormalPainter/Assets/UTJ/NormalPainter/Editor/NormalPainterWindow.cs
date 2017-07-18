@@ -208,7 +208,7 @@ namespace UTJ.NormalPainter
             "Pivot",
         };
         static readonly string[] strProjectionMode = new string[] {
-            "Vector",
+            "Directional",
             "Base Normals",
             "Current Normals",
         };
@@ -381,6 +381,9 @@ namespace UTJ.NormalPainter
                 }
                 else if (settings.brushMode == BrushMode.Projection)
                 {
+                    EditorGUILayout.LabelField("Projection Mode", GUILayout.Width(EditorGUIUtility.labelWidth));
+                    settings.brushProjectionMode = GUILayout.SelectionGrid(settings.brushProjectionMode, strProjectionMode, 3);
+
                     EditorGUILayout.Space();
                     EditorGUI.BeginChangeCheck();
                     settings.brushProjectionNormalSource =
@@ -388,9 +391,6 @@ namespace UTJ.NormalPainter
                     if (EditorGUI.EndChangeCheck())
                         settings.UpdateBrushProjectionData();
 
-                    EditorGUILayout.LabelField("Projection Mode", GUILayout.Width(EditorGUIUtility.labelWidth));
-                    settings.brushProjectionMode = GUILayout.SelectionGrid(settings.brushProjectionMode, strProjectionMode, 3);
-                    EditorGUILayout.Space();
                     if (settings.brushProjectionMode == 0)
                     {
                         settings.brushProjectionDir = EditorGUILayout.Vector3Field("Projection Dir", settings.brushProjectionDir).normalized;
@@ -529,11 +529,13 @@ namespace UTJ.NormalPainter
             }
             else if (settings.editMode == EditMode.Projection)
             {
-                settings.projectionNormalSource = EditorGUILayout.ObjectField("Normal Source", settings.projectionNormalSource, typeof(GameObject), true) as GameObject;
                 EditorGUILayout.LabelField("Projection Mode", GUILayout.Width(EditorGUIUtility.labelWidth));
                 settings.projectionMode = GUILayout.SelectionGrid(settings.projectionMode, strProjectionMode, 3);
                 EditorGUILayout.Space();
-                if(settings.projectionMode == 0)
+
+                settings.projectionNormalSource = EditorGUILayout.ObjectField("Normal Source", settings.projectionNormalSource, typeof(GameObject), true) as GameObject;
+
+                if (settings.projectionMode == 0)
                 {
                     settings.projectionDir = EditorGUILayout.Vector3Field("Projection Dir", settings.projectionDir).normalized;
                     EditorGUILayout.Space();
