@@ -91,10 +91,6 @@ namespace UTJ.NormalPainter
         public bool rotatePivot = false;
         public bool brushMaskWithSelection = true;
         public int brushBlendMode = 0;
-        [NonSerialized] public GameObject brushProjectionNormalSource;
-        [NonSerialized] public MeshData brushProjectionNormalSourceData;
-        public Vector3 brushProjectionDir = new Vector3(0, -1, 0);
-        public int brushProjectionMode = 0;
 
         public BrushData[] brushData = new BrushData[5] {
             new BrushData(),
@@ -106,6 +102,12 @@ namespace UTJ.NormalPainter
         [NonSerialized] public int brushActiveSlot = 0;
 
         [NonSerialized] public bool pickNormal = false;
+
+        public int projectionMode;
+        public Vector3 projectionDir = new Vector3(0, -1, 0);
+        public int projectionRayDir;
+        [NonSerialized] public GameObject projectionNormalSource;
+        [NonSerialized] public MeshData projectionNormalSourceData;
 
         // display options
         public bool showVertices = true;
@@ -154,10 +156,6 @@ namespace UTJ.NormalPainter
         [NonSerialized] public bool weldWithSmoothing = true;
         [NonSerialized] public int weldTargetsMode = 2;
         [NonSerialized] public GameObject[] weldTargets = new GameObject[1];
-
-        [NonSerialized] public GameObject projectionNormalSource;
-        [NonSerialized] public Vector3 projectionDir = new Vector3(0, -1, 0);
-        [NonSerialized] public int projectionMode;
 
         [NonSerialized] public ImageFormat bakeFormat = ImageFormat.PNG;
         [NonSerialized] public int bakeWidth = 1024;
@@ -218,25 +216,25 @@ namespace UTJ.NormalPainter
             }
         }
 
-        public void UpdateBrushProjectionData()
+        public void UpdateProjectionData()
         {
-            if(brushProjectionNormalSource)
+            if(projectionNormalSource)
             {
                 var md = new MeshData();
-                if (md.Extract(brushProjectionNormalSource))
-                    brushProjectionNormalSourceData = md;
+                if (md.Extract(projectionNormalSource))
+                    projectionNormalSourceData = md;
                 else
-                    brushProjectionNormalSourceData = null;
+                    projectionNormalSourceData = null;
             }
             else
             {
-                brushProjectionNormalSourceData = null;
+                projectionNormalSourceData = null;
             }
         }
 
-        public void ReleaseBrushProjectionData()
+        public void ReleaseProjectionData()
         {
-            brushProjectionNormalSourceData = null;
+            projectionNormalSourceData = null;
         }
     }
 #endif // UNITY_EDITOR

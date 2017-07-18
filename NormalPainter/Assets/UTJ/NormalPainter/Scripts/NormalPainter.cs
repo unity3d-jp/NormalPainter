@@ -335,7 +335,7 @@ namespace UTJ.NormalPainter
             }
 
             m_settings.InitializeBrushData();
-            m_settings.UpdateBrushProjectionData();
+            m_settings.UpdateProjectionData();
 
             UpdateTransform();
             UpdateNormals();
@@ -346,7 +346,7 @@ namespace UTJ.NormalPainter
         void EndEdit()
         {
             ReleaseComputeBuffers();
-            m_settings.ReleaseBrushProjectionData();
+            if(m_settings) m_settings.ReleaseProjectionData();
 
             m_editing = false;
         }
@@ -588,17 +588,17 @@ namespace UTJ.NormalPainter
                                 ++m_brushNumPainted;
                             break;
                         case BrushMode.Projection:
-                            if (settings.brushProjectionMode == 0)
+                            if (settings.projectionMode == 0)
                             {
                                 if (ApplyProjectionBrush2(m_settings.brushMaskWithSelection, m_rayPos, bd.radius, bd.strength, bd.samples,
-                                    m_settings.brushProjectionNormalSourceData, settings.brushProjectionDir))
+                                    m_settings.projectionNormalSourceData, settings.projectionDir))
                                     ++m_brushNumPainted;
                             }
                             else
                             {
-                                var rayDirs = settings.brushProjectionMode == 1 ? m_normalsBase : m_normals;
+                                var rayDirs = settings.projectionRayDir == 0 ? m_normalsBase : m_normals;
                                 if (ApplyProjectionBrush(m_settings.brushMaskWithSelection, m_rayPos, bd.radius, bd.strength, bd.samples,
-                                    m_settings.brushProjectionNormalSourceData, rayDirs))
+                                    m_settings.projectionNormalSourceData, rayDirs))
                                     ++m_brushNumPainted;
                             }
                             break;
@@ -813,7 +813,7 @@ namespace UTJ.NormalPainter
                 else if (brushReplace)
                     m_matVisualize.SetVector("_Direction", m_settings.assignValue);
                 else if (brushProjection)
-                    m_matVisualize.SetVector("_Direction", m_settings.brushProjectionDir);
+                    m_matVisualize.SetVector("_Direction", m_settings.projectionDir);
             }
             else
             {
@@ -884,7 +884,7 @@ namespace UTJ.NormalPainter
                 if (pickMode || brushReplace)
                     m_cmdDraw.DrawMesh(m_meshLine, Matrix4x4.identity, m_matVisualize, 0, 10);
             }
-            if(brushProjection && m_settings.brushProjectionMode == 0)
+            if(brushProjection && m_settings.projectionMode == 0)
             {
                 // visualize projection direction
                 m_cmdDraw.DrawMesh(m_meshLine, Matrix4x4.identity, m_matVisualize, 0, 10);

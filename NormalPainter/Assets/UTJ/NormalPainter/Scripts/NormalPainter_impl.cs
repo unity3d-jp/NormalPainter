@@ -1176,13 +1176,19 @@ namespace UTJ.NormalPainter
         {
             var mdata = new MeshData();
             if (mdata.Extract(go))
-                ApplyProjection(ref mdata, raiDirs, pushUndo);
+                ApplyProjection(mdata, raiDirs, pushUndo);
         }
-        public void ApplyProjection(ref MeshData mdata, PinnedList<Vector3> raiDirs, bool pushUndo)
+        public void ApplyProjection(MeshData normalSource, PinnedList<Vector3> raiDirs, bool pushUndo)
         {
+            if (normalSource == null || normalSource.empty)
+            {
+                Debug.LogError("\"Normal Source\" object is not set or has no readable Mesh or Terrain.");
+                return;
+            }
+
             bool mask = m_numSelected > 0;
-            var normalSource = (npMeshData)mdata;
-            npProjectNormals(ref m_npModelData, ref normalSource, raiDirs, mask);
+            var np = (npMeshData)normalSource;
+            npProjectNormals(ref m_npModelData, ref np, raiDirs, mask);
 
             UpdateNormals();
             if (pushUndo) PushUndo();
@@ -1192,17 +1198,24 @@ namespace UTJ.NormalPainter
         {
             var mdata = new MeshData();
             if (mdata.Extract(go))
-                ApplyProjection2(ref mdata, rayDir, pushUndo);
+                ApplyProjection2(mdata, rayDir, pushUndo);
         }
-        public void ApplyProjection2(ref MeshData mdata, Vector3 rayDir, bool pushUndo)
+        public void ApplyProjection2(MeshData normalSource, Vector3 rayDir, bool pushUndo)
         {
+            if (normalSource == null || normalSource.empty)
+            {
+                Debug.LogError("\"Normal Source\" object is not set or has no readable Mesh or Terrain.");
+                return;
+            }
+
             bool mask = m_numSelected > 0;
-            var normalSource = (npMeshData)mdata;
-            npProjectNormals2(ref m_npModelData, ref normalSource, rayDir, mask);
+            var np = (npMeshData)normalSource;
+            npProjectNormals2(ref m_npModelData, ref np, rayDir, mask);
 
             UpdateNormals();
             if (pushUndo) PushUndo();
         }
+
 
         public void ResetToBindpose(bool pushUndo)
         {
