@@ -259,15 +259,12 @@ namespace UTJ.NormalPainter
             GUILayout.EndHorizontal();
 
             EditorGUILayout.Space();
-            EditorGUI.BeginChangeCheck();
             settings.projectionNormalSource =
                 (GameObject)EditorGUILayout.ObjectField("Normal Source", settings.projectionNormalSource, typeof(GameObject), true);
-            if (EditorGUI.EndChangeCheck())
-                settings.UpdateProjectionData();
 
             if (settings.projectionMode == 0)
             {
-                settings.projectionDir = EditorGUILayout.Vector3Field("Projection Direction", settings.projectionDir).normalized;
+                settings.projectionDir = EditorGUILayout.Vector3Field("Ray Direction", settings.projectionDir).normalized;
             }
             else if (settings.projectionMode == 1)
             {
@@ -555,15 +552,20 @@ namespace UTJ.NormalPainter
 
                 if (GUILayout.Button("Apply Projection"))
                 {
-                    if(settings.projectionMode == 0)
+                    var normalSource = settings.projectionNormalSourceData;
+                    if (normalSource == null || normalSource.empty)
                     {
-                        m_target.ApplyProjection2(settings.projectionNormalSourceData, settings.projectionDir, true);
+                        Debug.LogError("\"Normal Source\" object is not set or has no readable Mesh or Terrain.");
+                    }
+                    else if (settings.projectionMode == 0)
+                    {
+                        m_target.ApplyProjection2(normalSource, settings.projectionDir, true);
                     }
                     else
                     {
                         var rayDirs = settings.projectionRayDir == 0 ?
                             m_target.normalsBase : m_target.normals;
-                        m_target.ApplyProjection(settings.projectionNormalSourceData, rayDirs, true);
+                        m_target.ApplyProjection(normalSource, rayDirs, true);
                     }
                 }
             }

@@ -375,12 +375,6 @@ namespace UTJ.NormalPainter
         public bool ApplyProjectionBrush(bool useSelection, Vector3 pos, float radius, float strength, PinnedArray<float> bsamples,
             MeshData normalSource, PinnedList<Vector3> rayDirs)
         {
-            if (normalSource == null || normalSource.empty)
-            {
-                Debug.LogError("\"Normal Source\" object is not set or has no readable Mesh or Terrain.");
-                return false;
-            }
-
             useSelection = useSelection && m_numSelected > 0;
             var np = (npMeshData)normalSource;
             if (npBrushProjection(ref m_npModelData, pos, radius, strength, bsamples.Length, bsamples, useSelection, ref np, rayDirs) > 0)
@@ -393,12 +387,6 @@ namespace UTJ.NormalPainter
         public bool ApplyProjectionBrush2(bool useSelection, Vector3 pos, float radius, float strength, PinnedArray<float> bsamples,
             MeshData normalSource, Vector3 rayDir)
         {
-            if (normalSource == null || normalSource.empty)
-            {
-                Debug.LogError("\"Normal Source\" object is not set or has no readable Mesh or Terrain.");
-                return false;
-            }
-
             useSelection = useSelection && m_numSelected > 0;
             var np = (npMeshData)normalSource;
             if (npBrushProjection2(ref m_npModelData, pos, radius, strength, bsamples.Length, bsamples, useSelection, ref np, rayDir) > 0)
@@ -1180,12 +1168,6 @@ namespace UTJ.NormalPainter
         }
         public void ApplyProjection(MeshData normalSource, PinnedList<Vector3> raiDirs, bool pushUndo)
         {
-            if (normalSource == null || normalSource.empty)
-            {
-                Debug.LogError("\"Normal Source\" object is not set or has no readable Mesh or Terrain.");
-                return;
-            }
-
             bool mask = m_numSelected > 0;
             var np = (npMeshData)normalSource;
             npProjectNormals(ref m_npModelData, ref np, raiDirs, mask);
@@ -1202,12 +1184,6 @@ namespace UTJ.NormalPainter
         }
         public void ApplyProjection2(MeshData normalSource, Vector3 rayDir, bool pushUndo)
         {
-            if (normalSource == null || normalSource.empty)
-            {
-                Debug.LogError("\"Normal Source\" object is not set or has no readable Mesh or Terrain.");
-                return;
-            }
-
             bool mask = m_numSelected > 0;
             var np = (npMeshData)normalSource;
             npProjectNormals2(ref m_npModelData, ref np, rayDir, mask);

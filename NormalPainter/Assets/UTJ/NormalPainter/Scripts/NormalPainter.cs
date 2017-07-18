@@ -335,7 +335,6 @@ namespace UTJ.NormalPainter
             }
 
             m_settings.InitializeBrushData();
-            m_settings.UpdateProjectionData();
 
             UpdateTransform();
             UpdateNormals();
@@ -346,7 +345,7 @@ namespace UTJ.NormalPainter
         void EndEdit()
         {
             ReleaseComputeBuffers();
-            if(m_settings) m_settings.ReleaseProjectionData();
+            if(m_settings) m_settings.projectionNormalSource = null;
 
             m_editing = false;
         }
@@ -588,7 +587,11 @@ namespace UTJ.NormalPainter
                                 ++m_brushNumPainted;
                             break;
                         case BrushMode.Projection:
-                            if (settings.projectionMode == 0)
+                            if (m_settings.projectionNormalSourceData == null || m_settings.projectionNormalSourceData.empty)
+                            {
+                                Debug.LogError("\"Normal Source\" object is not set or has no readable Mesh or Terrain.");
+                            }
+                            else if (settings.projectionMode == 0)
                             {
                                 if (ApplyProjectionBrush2(m_settings.brushMaskWithSelection, m_rayPos, bd.radius, bd.strength, bd.samples,
                                     m_settings.projectionNormalSourceData, settings.projectionDir))

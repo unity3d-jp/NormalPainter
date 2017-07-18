@@ -106,8 +106,34 @@ namespace UTJ.NormalPainter
         public int projectionMode;
         public Vector3 projectionDir = new Vector3(0, -1, 0);
         public int projectionRayDir;
-        [NonSerialized] public GameObject projectionNormalSource;
-        [NonSerialized] public MeshData projectionNormalSourceData;
+        GameObject _projectionNormalSource;
+        MeshData _projectionNormalSourceData;
+
+        public GameObject projectionNormalSource
+        {
+            get { return _projectionNormalSource; }
+            set
+            {
+                if(value != _projectionNormalSource)
+                {
+                    _projectionNormalSource = value;
+                    _projectionNormalSourceData = null;
+                }
+            }
+        }
+        public MeshData projectionNormalSourceData
+        {
+            get
+            {
+                if(_projectionNormalSourceData == null && _projectionNormalSource != null)
+                {
+                    var md = new MeshData();
+                    if (md.Extract(_projectionNormalSource))
+                        _projectionNormalSourceData = md;
+                }
+                return _projectionNormalSourceData;
+            }
+        }
 
         // display options
         public bool showVertices = true;
@@ -214,27 +240,6 @@ namespace UTJ.NormalPainter
                 }
                 bd.UpdateSamples();
             }
-        }
-
-        public void UpdateProjectionData()
-        {
-            if(projectionNormalSource)
-            {
-                var md = new MeshData();
-                if (md.Extract(projectionNormalSource))
-                    projectionNormalSourceData = md;
-                else
-                    projectionNormalSourceData = null;
-            }
-            else
-            {
-                projectionNormalSourceData = null;
-            }
-        }
-
-        public void ReleaseProjectionData()
-        {
-            projectionNormalSourceData = null;
         }
     }
 #endif // UNITY_EDITOR
