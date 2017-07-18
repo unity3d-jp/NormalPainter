@@ -140,6 +140,7 @@ namespace UTJ.NormalPainter
         {
             if (m_target != null)
             {
+                m_target.edited = m_target.editing;
                 m_target.editing = false;
             }
 
@@ -148,7 +149,11 @@ namespace UTJ.NormalPainter
             if (Selection.activeGameObject != null)
             {
                 m_target = Selection.activeGameObject.GetComponent<NormalPainter>();
-                if(m_target == null)
+                if (m_target)
+                {
+                    m_target.editing = m_target.edited;
+                }
+                else
                 {
                     var activeGameObject = Selection.activeGameObject;
                     if ( Selection.activeGameObject.GetComponent<MeshRenderer>() != null ||
@@ -380,6 +385,8 @@ namespace UTJ.NormalPainter
                     EditorGUI.BeginChangeCheck();
                     settings.brushProjectionNormalSource =
                         (GameObject)EditorGUILayout.ObjectField("Normal Source", settings.brushProjectionNormalSource, typeof(GameObject), true);
+                    if (EditorGUI.EndChangeCheck())
+                        settings.UpdateBrushProjectionData();
 
                     EditorGUILayout.LabelField("Projection Mode", GUILayout.Width(EditorGUIUtility.labelWidth));
                     settings.brushProjectionMode = GUILayout.SelectionGrid(settings.brushProjectionMode, strProjectionMode, 3);
@@ -388,15 +395,6 @@ namespace UTJ.NormalPainter
                     {
                         settings.brushProjectionDir = EditorGUILayout.Vector3Field("Projection Dir", settings.brushProjectionDir).normalized;
                         EditorGUILayout.Space();
-                    }
-
-                    if (EditorGUI.EndChangeCheck())
-                    {
-                        var md = new MeshData();
-                        if (md.Extract(settings.brushProjectionNormalSource))
-                            settings.brushProjectionNormalSourceData = md;
-                        else
-                            settings.brushProjectionNormalSourceData = null;
                     }
                 }
             }

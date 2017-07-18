@@ -217,6 +217,27 @@ namespace UTJ.NormalPainter
                 bd.UpdateSamples();
             }
         }
+
+        public void UpdateBrushProjectionData()
+        {
+            if(brushProjectionNormalSource)
+            {
+                var md = new MeshData();
+                if (md.Extract(brushProjectionNormalSource))
+                    brushProjectionNormalSourceData = md;
+                else
+                    brushProjectionNormalSourceData = null;
+            }
+            else
+            {
+                brushProjectionNormalSourceData = null;
+            }
+        }
+
+        public void ReleaseBrushProjectionData()
+        {
+            brushProjectionNormalSourceData = null;
+        }
     }
 #endif // UNITY_EDITOR
 }

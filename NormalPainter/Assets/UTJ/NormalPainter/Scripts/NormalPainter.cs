@@ -67,6 +67,7 @@ namespace UTJ.NormalPainter
         PinnedList<Matrix4x4> m_boneMatrices;
 
         bool m_editing;
+        bool m_edited;
         int m_numSelected = 0;
         bool m_rayHit;
         int m_rayHitTriangle;
@@ -89,10 +90,16 @@ namespace UTJ.NormalPainter
         public bool editing
         {
             get { return m_editing; }
-            set {
+            set
+            {
                 if (value && !m_editing) BeginEdit();
                 if (!value && m_editing) EndEdit();
             }
+        }
+        public bool edited
+        {
+            get { return m_edited; }
+            set { m_edited = value; }
         }
 
         public NormalPainterSettings settings { get { return m_settings; } }
@@ -328,6 +335,7 @@ namespace UTJ.NormalPainter
             }
 
             m_settings.InitializeBrushData();
+            m_settings.UpdateBrushProjectionData();
 
             UpdateTransform();
             UpdateNormals();
@@ -338,6 +346,7 @@ namespace UTJ.NormalPainter
         void EndEdit()
         {
             ReleaseComputeBuffers();
+            m_settings.ReleaseBrushProjectionData();
 
             m_editing = false;
         }
