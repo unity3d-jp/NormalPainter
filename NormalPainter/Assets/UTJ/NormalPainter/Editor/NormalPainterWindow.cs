@@ -191,11 +191,11 @@ namespace UTJ.NormalPainter
             "Brush [4]",
         };
         static readonly string[] strBrushTypes = new string[] {
-            "Paint [1]",
-            "Replace [2]",
-            "Smooth [3]",
-            "Projection [4]",
-            "Reset [5]",
+            "Paint",
+            "Replace",
+            "Smooth",
+            "Project",
+            "Reset",
         };
         static readonly string[] strCoodinate = new string[] {
             "World",
@@ -361,7 +361,7 @@ namespace UTJ.NormalPainter
             }
             else if (settings.editMode == EditMode.Brush)
             {
-                settings.brushMode = (BrushMode)GUILayout.SelectionGrid((int)settings.brushMode, strBrushTypes, 3);
+                settings.brushMode = (BrushMode)GUILayout.SelectionGrid((int)settings.brushMode, strBrushTypes, 5);
                 EditorGUILayout.Space();
 
                 settings.brushMaskWithSelection = EditorGUILayout.Toggle("Mask With Selection", settings.brushMaskWithSelection); EditorGUILayout.Space();
@@ -600,16 +600,22 @@ namespace UTJ.NormalPainter
                 }
 
                 EditorGUILayout.Space();
-                settings.tangentsMode = (TangentsUpdateMode)EditorGUILayout.EnumPopup("Tangents Update Mode", settings.tangentsMode);
-                if (settings.tangentsMode == TangentsUpdateMode.Manual)
+                settings.foldTangents = EditorGUILayout.Foldout(settings.foldTangents, "Tangents");
+                if (settings.foldTangents)
                 {
-                    EditorGUILayout.BeginHorizontal();
-                    EditorGUILayout.LabelField("", GUILayout.Width(indentSize));
-                    if (GUILayout.Button("Recalculate Tangents [T]"))
-                        m_target.RecalculateTangents();
-                    EditorGUILayout.EndHorizontal();
+                    EditorGUI.indentLevel++;
+                    settings.tangentsMode = (TangentsUpdateMode)EditorGUILayout.EnumPopup("Update Mode", settings.tangentsMode);
+                    if (settings.tangentsMode == TangentsUpdateMode.Manual)
+                    {
+                        EditorGUILayout.BeginHorizontal();
+                        EditorGUILayout.LabelField("", GUILayout.Width(indentSize));
+                        if (GUILayout.Button("Recalculate [T]"))
+                            m_target.RecalculateTangents();
+                        EditorGUILayout.EndHorizontal();
+                    }
+                    settings.tangentsPrecision = (TangentsPrecision)EditorGUILayout.EnumPopup("Precision", settings.tangentsPrecision);
+                    EditorGUI.indentLevel--;
                 }
-                settings.tangentsPrecision = (TangentsPrecision)EditorGUILayout.EnumPopup("Tangents Precision", settings.tangentsPrecision);
 
                 if (m_target.GetComponent<SkinnedMeshRenderer>() != null)
                 {

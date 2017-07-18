@@ -139,6 +139,7 @@ namespace UTJ.NormalPainter
         [NonSerialized] public bool foldDisplay = true;
         [NonSerialized] public int displayIndex;
         [NonSerialized] public int inexportIndex;
+        [NonSerialized] public bool foldTangents = true;
 
         [NonSerialized] public Coordinate coordinate = Coordinate.World;
         [NonSerialized] public Vector3  assignValue = Vector3.up;

@@ -47,13 +47,6 @@ struct vs_out
     float4 color : TEXCOORD0;
 };
 
-struct vs_out2
-{
-    float4 vertex : SV_POSITION;
-    float4 position : TEXCOORD0;
-    float4 aux : TEXCOORD1;
-};
-
 
 vs_out vert_vertices(ia_out v)
 {
@@ -181,14 +174,11 @@ vs_out vert_lasso(ia_out v)
     return o;
 }
 
-vs_out2 vert_brush_range(ia_out v)
+vs_out vert_brush_range(ia_out v)
 {
-    vs_out2 o;
+    vs_out o;
     o.vertex = UnityObjectToClipPos(v.vertex);
-    o.position = mul(UNITY_MATRIX_M, v.vertex);
-
-    float z = abs(mul(UNITY_MATRIX_V, float4(v.vertex.xyz, 1.0)).z);
-    o.aux = float4(z,0,0,0);
+    o.color = mul(UNITY_MATRIX_M, v.vertex);
     return o;
 }
 
@@ -222,16 +212,18 @@ float4 frag(vs_out v) : SV_Target
     return v.color;
 }
 
-float4 frag_brush_range(vs_out2 v) : SV_Target
+float4 frag_brush_range(vs_out v) : SV_Target
 {
-    float2 uv = v.position.xy / v.position.w;
+    float2 uv = v.color.xy / v.color.w;
 
-    float3 pixel_pos = v.position.xyz;
+    float3 pixel_pos = v.color.xyz;
     float3 brush_pos = _BrushPos.xyz;
     float distance = length(pixel_pos - brush_pos);
 
     float range = clamp(1.0f - distance / _BrushPos.w, 0, 1);
-    float border = 0.004 / _BrushPos.w * v.aux.x;
+    float z = abs(mul(UNITY_MATRIX_V, float4(brush_pos, 1.0)).z);
+
+    float border = 0.004 / _BrushPos.w * z;
     if (distance > _BrushPos.w || range > border) { discard; }
 
     float4 color = float4(1, 0, 0, 1);
