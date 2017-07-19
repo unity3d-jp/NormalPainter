@@ -863,12 +863,13 @@ npAPI int npBrushReplace(
 {
     auto normals = model->normals;
     auto selection = model->selection;
+    auto sign = strength < 0.0f ? -1.0f : 1.0f;
 
     return SelectInside(*model, pos, radius, [&](int vi, float d, float3 p) {
-        float s = GetBrushSample(d, radius, bsamples, num_bsamples) * strength;
+        float s = GetBrushSample(d, radius, bsamples, num_bsamples) * abs(strength);
         if (mask) s *= selection[vi];
 
-        normals[vi] = normalize(normals[vi] + value * s);
+        normals[vi] = normalize(normals[vi] + value * (s * sign));
     }, true);
     return 0;
 }
@@ -879,13 +880,14 @@ npAPI int npBrushPaint(
 {
     auto normals = model->normals;
     auto selection = model->selection;
+    auto sign = strength < 0.0f ? -1.0f : 1.0f;
 
     float3 ln = n;
     n = normalize(mul_v(model->transform, n));
     auto itrans = invert(model->transform);
     return SelectInside(*model, pos, radius, [&](int vi, float d, float3 p) {
         int bsi = GetBrushSampleIndex(d, radius, num_bsamples);
-        float s = saturate(bsamples[bsi] * strength * 2.0f);
+        float s = saturate(bsamples[bsi] * abs(strength) * 2.0f);
         if (mask) s *= selection[vi];
 
         float slope;
@@ -909,13 +911,9 @@ npAPI int npBrushPaint(
             t *= -1.0f;
             slope *= -1.0f;
         }
-        if (s < 0.0f) {
-            t *= -1.0f;
-            s *= -1.0f;
-        }
 
         float3 vn = normals[vi];
-        float3 r = lerp(n, t, clamp01(slope * 0.5f));
+        float3 r = lerp(n, t * sign, clamp01(slope * 0.5f));
         r = normalize(mul_v(itrans, r));
 
         // maybe add something here later
@@ -933,13 +931,13 @@ npAPI int npBrushLerp(
 {
     auto normals = model->normals;
     auto selection = model->selection;
+    auto sign = strength < 0.0f ? -1.0f : 1.0f;
 
     return SelectInside(*model, pos, radius, [&](int vi, float d, float3 p) {
-        float s = GetBrushSample(d, radius, bsamples, num_bsamples) * strength;
+        float s = GetBrushSample(d, radius, bsamples, num_bsamples) * abs(strength);
         if (mask) s *= selection[vi];
 
-        float sign = strength < 0.0f ? -1.0f : 1.0f;
-        normals[vi] = normalize(lerp(n1[vi], n0[vi] * sign, abs(s)));
+        normals[vi] = normalize(lerp(n1[vi], n0[vi] * sign, s));
     }, true);
 }
 
@@ -960,8 +958,10 @@ npAPI int npBrushSmooth(
         average += normals[p.first];
     }
     average = normalize(average);
+
     for (auto& p : inside) {
-        float s = GetBrushSample(p.second, radius, bsamples, num_bsamples) * strength;
+        // ignore sign of strength
+        float s = GetBrushSample(p.second, radius, bsamples, num_bsamples) * abs(strength);
         if (mask) s *= selection[p.first];
 
         normals[p.first] = normalize(normals[p.first] + average * s);
@@ -990,8 +990,10 @@ inline int BrushProjectionImpl(
         pvertices[vi] = mul_p(to_local, normal_source->vertices[vi]);
     }
 
+    auto sign = strength < 0.0f ? -1.0f : 1.0f;
+
     return SelectInside(*model, pos, radius, [&](int vi, float d, float3 p) {
-        float s = GetBrushSample(d, radius, bsamples, num_bsamples) * strength;
+        float s = GetBrushSample(d, radius, bsamples, num_bsamples) * abs(strength);
         if (mask) s *= selection[vi];
 
         float3 rpos = vertices[vi];
@@ -1011,8 +1013,7 @@ inline int BrushProjectionImpl(
                 pnormals[pindices[ti * 3 + 2]]);
 
             result = normalize(mul_v(to_local, result));
-            float sign = strength < 0.0f ? -1.0f : 1.0f;
-            normals[vi] = normalize(lerp(normals[vi], result * sign, abs(s)));
+            normals[vi] = normalize(lerp(normals[vi], result * sign, s));
         }
     }, true);
 }
