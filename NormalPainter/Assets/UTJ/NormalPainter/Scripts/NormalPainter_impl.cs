@@ -125,13 +125,16 @@ namespace UTJ.NormalPainter
         public bool Extract(GameObject go)
         {
             if (!go) { return false; }
-            transform = go.GetComponent<Transform>().localToWorldMatrix;
 
             var terrain = go.GetComponent<Terrain>();
             if(terrain)
             {
+                // terrain doesn't support rotation and scale
+                transform = Matrix4x4.TRS(go.GetComponent<Transform>().position, Quaternion.identity, Vector3.one);
                 return Extract(terrain);
             }
+
+            transform = go.GetComponent<Transform>().localToWorldMatrix;
 
             var smi = go.GetComponent<SkinnedMeshRenderer>();
             if (smi != null)

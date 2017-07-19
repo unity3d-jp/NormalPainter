@@ -589,7 +589,8 @@ namespace UTJ.NormalPainter
                         case BrushMode.Projection:
                             if (m_settings.projectionNormalSourceData == null || m_settings.projectionNormalSourceData.empty)
                             {
-                                Debug.LogError("\"Normal Source\" object is not set or has no readable Mesh or Terrain.");
+                                if (et == EventType.MouseDown)
+                                    Debug.LogError("\"Normal Source\" object is not set or has no readable Mesh or Terrain.");
                             }
                             else if (settings.projectionMode == 0)
                             {
