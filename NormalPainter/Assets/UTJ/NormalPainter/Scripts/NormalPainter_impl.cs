@@ -76,6 +76,9 @@ namespace UTJ.NormalPainter
         None,
         LocalSpaceNormals,
         TangentSpaceNormals,
+        Tangents,
+        Binormals,
+        UV,
         VertexColor,
     }
 
@@ -90,6 +93,24 @@ namespace UTJ.NormalPainter
     {
         Repaint = 1 << 0,
         SelectionChanged = 1 << 1,
+    }
+
+    public enum VisualizeType
+    {
+        Vertices,
+        Normals,
+        Tangents,
+        Binormals,
+        LocalSpaceNormalsOverlay,
+        TangentSpaceNormalsOverlay,
+        TangentsOverlay,
+        BinormalsOverlay,
+        UVOverlay,
+        VertexColorOverlay,
+        Lasso,
+        BrushRange,
+        RayPosition,
+        Direction,
     }
 
     public class MeshData

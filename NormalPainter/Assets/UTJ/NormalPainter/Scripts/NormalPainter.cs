@@ -839,64 +839,64 @@ namespace UTJ.NormalPainter
             m_cmdDraw.Clear();
 
             // overlay
-            switch (m_settings.modelOverlay)
+            if(m_settings.modelOverlay != ModelOverlay.None)
             {
-                case ModelOverlay.LocalSpaceNormals:
-                    for (int si = 0; si < m_meshTarget.subMeshCount; ++si)
-                        m_cmdDraw.DrawRenderer(renderer, m_matVisualize, si, 4);
-                    break;
-                case ModelOverlay.TangentSpaceNormals:
-                    for (int si = 0; si < m_meshTarget.subMeshCount; ++si)
-                        m_cmdDraw.DrawRenderer(renderer, m_matVisualize, si, 5);
-                    break;
-                case ModelOverlay.VertexColor:
-                    for (int si = 0; si < m_meshTarget.subMeshCount; ++si)
-                        m_cmdDraw.DrawRenderer(renderer, m_matVisualize, si, 6);
-                    break;
+                int pass = 0;
+                switch (m_settings.modelOverlay)
+                {
+                    case ModelOverlay.LocalSpaceNormals: pass = (int)VisualizeType.LocalSpaceNormalsOverlay; break;
+                    case ModelOverlay.TangentSpaceNormals: pass = (int)VisualizeType.TangentSpaceNormalsOverlay; break;
+                    case ModelOverlay.Tangents: pass = (int)VisualizeType.TangentsOverlay; break;
+                    case ModelOverlay.Binormals: pass = (int)VisualizeType.BinormalsOverlay; break;
+                    case ModelOverlay.UV: pass = (int)VisualizeType.UVOverlay; break;
+                    case ModelOverlay.VertexColor: pass = (int)VisualizeType.VertexColorOverlay; break;
+                }
+                for (int si = 0; si < m_meshTarget.subMeshCount; ++si)
+                    m_cmdDraw.DrawRenderer(renderer, m_matVisualize, si, pass);
             }
 
             // visualize brush range
             if (m_settings.showBrushRange && m_rayHit && brushMode)
-                m_cmdDraw.DrawRenderer(renderer, m_matVisualize, 0, 8);
+                m_cmdDraw.DrawRenderer(renderer, m_matVisualize, 0, (int)VisualizeType.BrushRange);
 
             if(m_settings.visualize)
             {
                 // visualize vertices
                 if (m_settings.showVertices && m_points != null)
-                    m_cmdDraw.DrawMeshInstancedIndirect(m_meshCube, 0, m_matVisualize, 0, m_cbArg);
+                    m_cmdDraw.DrawMeshInstancedIndirect(m_meshCube, 0, m_matVisualize, (int)VisualizeType.Vertices, m_cbArg);
 
                 // visualize binormals
                 if (m_settings.showBinormals && m_tangents != null)
-                    m_cmdDraw.DrawMeshInstancedIndirect(m_meshLine, 0, m_matVisualize, 3, m_cbArg);
+                    m_cmdDraw.DrawMeshInstancedIndirect(m_meshLine, 0, m_matVisualize, (int)VisualizeType.Binormals, m_cbArg);
 
                 // visualize tangents
                 if (m_settings.showTangents && m_tangents != null)
-                    m_cmdDraw.DrawMeshInstancedIndirect(m_meshLine, 0, m_matVisualize, 2, m_cbArg);
+                    m_cmdDraw.DrawMeshInstancedIndirect(m_meshLine, 0, m_matVisualize, (int)VisualizeType.Tangents, m_cbArg);
 
                 // visualize normals
                 if (m_settings.showNormals && m_normals != null)
-                    m_cmdDraw.DrawMeshInstancedIndirect(m_meshLine, 0, m_matVisualize, 1, m_cbArg);
+                    m_cmdDraw.DrawMeshInstancedIndirect(m_meshLine, 0, m_matVisualize, (int)VisualizeType.Normals, m_cbArg);
             }
 
             if (m_settings.showBrushRange && m_rayHit)
             {
                 // ray pos
                 if (pickMode || brushMode)
-                    m_cmdDraw.DrawMesh(m_meshCube, Matrix4x4.identity, m_matVisualize, 0, 9);
+                    m_cmdDraw.DrawMesh(m_meshCube, Matrix4x4.identity, m_matVisualize, 0, (int)VisualizeType.RayPosition);
 
                 // visualize direction
                 if (pickMode || brushReplace)
-                    m_cmdDraw.DrawMesh(m_meshLine, Matrix4x4.identity, m_matVisualize, 0, 10);
+                    m_cmdDraw.DrawMesh(m_meshLine, Matrix4x4.identity, m_matVisualize, 0, (int)VisualizeType.Direction);
             }
             if(brushProjection && m_settings.projectionMode == 0)
             {
                 // visualize projection direction
-                m_cmdDraw.DrawMesh(m_meshLine, Matrix4x4.identity, m_matVisualize, 0, 10);
+                m_cmdDraw.DrawMesh(m_meshLine, Matrix4x4.identity, m_matVisualize, 0, (int)VisualizeType.Direction);
             }
 
             // lasso lines
             if (m_meshLasso.vertexCount > 1)
-                m_cmdDraw.DrawMesh(m_meshLasso, Matrix4x4.identity, m_matVisualize, 0, 7);
+                m_cmdDraw.DrawMesh(m_meshLasso, Matrix4x4.identity, m_matVisualize, 0, (int)VisualizeType.Lasso);
 
             Graphics.ExecuteCommandBuffer(m_cmdDraw);
         }
