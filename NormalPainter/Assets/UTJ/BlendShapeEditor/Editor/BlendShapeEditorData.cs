@@ -18,6 +18,21 @@ namespace UTJ.BlendShapeEditor
         public bool fold = true;
         public string name = "";
         public List<BlendShapeFrameData> frames = new List<BlendShapeFrameData>();
+
+        public void ClearInvalidFrames()
+        {
+            frames.RemoveAll(item => { return item.mesh == null; });
+        }
+
+        public void NormalizeWeights()
+        {
+            int n = frames.Count;
+            float step = 100.0f / n;
+            for (int i = 0; i < n; ++i)
+            {
+                frames[i].weight = step * (i + 1);
+            }
+        }
     }
 
     [Serializable]

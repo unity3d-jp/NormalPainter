@@ -14,7 +14,7 @@ namespace UTJ.BlendShapeEditor
         bool m_foldBlendShapes = true;
         BlendShapeEditorData m_data;
 
-        static readonly int indentSize = 18;
+        static readonly int indentSize = 16;
         static readonly string dataPath = "Assets/UTJ/BlendShapeEditor/Data/BlendShapeEditorData.asset";
         #endregion
 
@@ -36,6 +36,7 @@ namespace UTJ.BlendShapeEditor
         {
             isOpen = true;
 
+            Undo.undoRedoPerformed += OnUndoRedo;
             var ds = AssetDatabase.LoadAssetAtPath<BlendShapeEditorData>(dataPath);
             if (ds != null)
                 m_data = Instantiate(ds);
@@ -47,6 +48,7 @@ namespace UTJ.BlendShapeEditor
         {
             isOpen = false;
 
+            Undo.undoRedoPerformed -= OnUndoRedo;
             AssetDatabase.DeleteAsset(dataPath);
             AssetDatabase.CreateAsset(Instantiate(m_data), dataPath);
         }
@@ -58,6 +60,11 @@ namespace UTJ.BlendShapeEditor
             DrawBlendShapeEditor();
             EditorGUILayout.EndVertical();
             EditorGUILayout.EndScrollView();
+        }
+
+        private void OnUndoRedo()
+        {
+            Repaint();
         }
 
         private void OnSelectionChange()
@@ -95,6 +102,32 @@ namespace UTJ.BlendShapeEditor
                     data.fold = EditorGUILayout.Foldout(data.fold, data.name);
                     if (data.fold)
                     {
+                        // handle drag & drop
+                        Event evt = Event.current;
+                        if (evt.type == EventType.DragUpdated || evt.type == EventType.DragPerform)
+                        {
+                            var dropArea = GUILayoutUtility.GetLastRect();
+                            if (dropArea.Contains(evt.mousePosition))
+                            {
+                                DragAndDrop.visualMode = DragAndDropVisualMode.Copy;
+
+                                if (evt.type == EventType.DragPerform)
+                                {
+                                    DragAndDrop.AcceptDrag();
+                                    Undo.RecordObject(m_data, "BlendShapeEditor");
+                                    data.ClearInvalidFrames();
+                                    foreach (var obj in DragAndDrop.objectReferences)
+                                    {
+                                        var mesh = Utils.ExtractMesh(obj);
+                                        if(mesh != null)
+                                            data.frames.Add(new BlendShapeFrameData { mesh = mesh });
+                                    }
+                                    data.NormalizeWeights();
+                                }
+                                evt.Use();
+                            }
+                        }
+
                         EditorGUI.indentLevel++;
                         EditorGUI.BeginChangeCheck();
                         var name = EditorGUILayout.TextField("Name", data.name);
@@ -131,13 +164,14 @@ namespace UTJ.BlendShapeEditor
                         }
 
                         GUILayout.BeginHorizontal();
-                        GUILayout.Space(indentSize * 3);
+                        EditorGUILayout.LabelField(" ");
                         if (GUILayout.Button("+", GUILayout.Width(20)))
                         {
                             Undo.RecordObject(m_data, "BlendShapeEditor");
                             data.frames.Add(new BlendShapeFrameData());
                         }
                         GUILayout.EndHorizontal();
+
                         EditorGUI.indentLevel--;
 
                         GUILayout.BeginHorizontal();
@@ -146,6 +180,11 @@ namespace UTJ.BlendShapeEditor
                         {
                             Undo.RecordObject(m_data, "BlendShapeEditor");
                             delBS = data;
+                        }
+                        if (GUILayout.Button("Normalize Weights", GUILayout.Width(120)))
+                        {
+                            Undo.RecordObject(m_data, "BlendShapeEditor");
+                            data.NormalizeWeights();
                         }
                         GUILayout.EndHorizontal();
 
