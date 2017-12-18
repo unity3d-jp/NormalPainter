@@ -5,34 +5,17 @@ using System.Collections.Generic;
 
 namespace UTJ.BlendShapeEditor
 {
-    [Serializable]
-    public class BlendShapeFrameData
-    {
-        public float weight;
-        public UnityEngine.Object mesh;
-    }
-
-    [Serializable]
-    public class BlendShapeData
-    {
-        public bool fold = true;
-        public string name = "";
-        public List<BlendShapeFrameData> frames = new List<BlendShapeFrameData>();
-    }
-
-
     public class BlendShapeEditorWindow : EditorWindow
     {
         #region fields
         public static bool isOpen;
 
         Vector2 m_scrollPos;
-        UnityEngine.Object m_base;
-        List<BlendShapeData> m_data = new List<BlendShapeData>();
-
         bool m_foldBlendShapes = true;
+        BlendShapeEditorData m_data;
 
         static readonly int indentSize = 18;
+        static readonly string dataPath = "Assets/UTJ/BlendShapeEditor/Data/BlendShapeEditorData.asset";
         #endregion
 
 
@@ -52,11 +35,20 @@ namespace UTJ.BlendShapeEditor
         private void OnEnable()
         {
             isOpen = true;
+
+            var ds = AssetDatabase.LoadAssetAtPath<BlendShapeEditorData>(dataPath);
+            if (ds != null)
+                m_data = Instantiate(ds);
+            if (m_data == null)
+                m_data = ScriptableObject.CreateInstance<BlendShapeEditorData>();
         }
 
         private void OnDisable()
         {
             isOpen = false;
+
+            AssetDatabase.DeleteAsset(dataPath);
+            AssetDatabase.CreateAsset(Instantiate(m_data), dataPath);
         }
 
         private void OnGUI()
@@ -76,25 +68,21 @@ namespace UTJ.BlendShapeEditor
 
         #region impl
 
-        public void Clear()
-        {
-            m_data.Clear();
-        }
-
         public void DrawBlendShapeEditor()
         {
             EditorGUI.BeginChangeCheck();
-            var baseMesh = EditorGUILayout.ObjectField("Base Mesh", m_base, typeof(UnityEngine.Object), true);
+            var baseMesh = EditorGUILayout.ObjectField("Base Mesh", m_data.baseMesh, typeof(UnityEngine.Object), true);
             if (EditorGUI.EndChangeCheck())
-                m_base = baseMesh;
+                m_data.baseMesh = baseMesh;
 
             m_foldBlendShapes = EditorGUILayout.Foldout(m_foldBlendShapes, "BlendShapes");
             if (m_foldBlendShapes)
             {
-                BlendShapeData delBS = null; ;
+                var bsData = m_data.blendShapeData;
+                BlendShapeData delBS = null;
 
                 EditorGUI.indentLevel++;
-                foreach (var data in m_data)
+                foreach (var data in bsData)
                 {
                     data.fold = EditorGUILayout.Foldout(data.fold, data.name);
                     if (data.fold)
@@ -142,7 +130,7 @@ namespace UTJ.BlendShapeEditor
                 EditorGUI.indentLevel--;
 
                 if (delBS != null)
-                    m_data.Remove(delBS);
+                    bsData.Remove(delBS);
 
                 GUILayout.Space(6);
                 GUILayout.BeginHorizontal();
@@ -150,9 +138,9 @@ namespace UTJ.BlendShapeEditor
                 if (GUILayout.Button("Add Blend Shape"))
                 {
                     var tmp = new BlendShapeData();
-                    tmp.name = "NewBlendShape" + m_data.Count;
-                    tmp.frames.Add(new BlendShapeFrameData { weight = 100.0f });
-                    m_data.Add(tmp);
+                    tmp.name = "NewBlendShape" + bsData.Count;
+                    tmp.frames.Add(new BlendShapeFrameData());
+                    bsData.Add(tmp);
                 }
                 GUILayout.EndHorizontal();
             }
@@ -172,7 +160,7 @@ namespace UTJ.BlendShapeEditor
 
         public Mesh Generate()
         {
-            var baseMesh = Utils.ExtractMesh(m_base);
+            var baseMesh = Utils.ExtractMesh(m_data.baseMesh);
             if(baseMesh == null)
             {
                 Debug.LogError("BlendShapeEditor: Base mesh is not set");
@@ -185,11 +173,50 @@ namespace UTJ.BlendShapeEditor
             var baseNormals = baseMesh.normals;
             var baseTangents = baseMesh.tangents;
 
-            var deltaVertices = new Vector3[ret.vertexCount];
-            var deltaNormals = new Vector3[ret.vertexCount];
-            var deltaTangents = new Vector3[ret.vertexCount];
+            var deltaVertices = new Vector3[baseMesh.vertexCount];
+            var deltaNormals = new Vector3[baseMesh.vertexCount];
+            var deltaTangents = new Vector3[baseMesh.vertexCount];
 
-            foreach (var shape in m_data)
+            // delete existing blend shapes if needed
+            {
+                var del = new List<string>();
+                int numBS = baseMesh.blendShapeCount;
+                for(int si = 0; si < numBS; ++si)
+                {
+                    var name = baseMesh.GetBlendShapeName(si);
+                    foreach (var shape in m_data.blendShapeData)
+                    {
+                        if (shape.name == name)
+                        {
+                            del.Add(name);
+                            break;
+                        }
+                    }
+                }
+
+                if (del.Count > 0)
+                {
+                    ret.ClearBlendShapes();
+                    for (int si = 0; si < numBS; ++si)
+                    {
+                        var name = baseMesh.GetBlendShapeName(si);
+                        if (!del.Contains(name))
+                        {
+                            int numFrames = baseMesh.GetBlendShapeFrameCount(si);
+                            for (int fi = 0; fi < numFrames; ++fi)
+                            {
+                                float weight = baseMesh.GetBlendShapeFrameWeight(si, fi);
+                                baseMesh.GetBlendShapeFrameVertices(si, fi, deltaVertices, deltaNormals, deltaTangents);
+                                ret.AddBlendShapeFrame(name, weight, deltaVertices, deltaNormals, deltaTangents);
+                            }
+                        }
+                    }
+                }
+            }
+
+
+            // add blend shape data
+            foreach (var shape in m_data.blendShapeData)
             {
                 var name = shape.name;
 
@@ -198,11 +225,11 @@ namespace UTJ.BlendShapeEditor
                     var mesh = Utils.ExtractMesh(frame.mesh);
                     if(mesh == null)
                     {
-                        Debug.LogError("BlendShapeEditor: Invalid data in " + name + " at weight " + frame.weight);
+                        Debug.LogError("BlendShapeEditor: Invalid target in " + name + " at weight " + frame.weight);
                     }
                     else if (mesh.vertexCount != baseMesh.vertexCount)
                     {
-                        Debug.LogError("BlendShapeEditor: Invalid mesh (vertex count doesn't match) in " + name + " at weight " + frame.weight);
+                        Debug.LogError("BlendShapeEditor: Invalid target (vertex count doesn't match) in " + name + " at weight " + frame.weight);
                     }
                     else
                     {
