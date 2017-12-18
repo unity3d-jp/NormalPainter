@@ -834,7 +834,7 @@ namespace UTJ.NormalPainter
             if (settings.foldEdit)
                 DrawEditPanel();
 
-            settings.foldMisc = EditorGUILayout.Foldout(settings.foldEdit, "Misc");
+            settings.foldMisc = EditorGUILayout.Foldout(settings.foldMisc, "Misc");
             if (settings.foldMisc)
                 DrawMiscPanel();
 
