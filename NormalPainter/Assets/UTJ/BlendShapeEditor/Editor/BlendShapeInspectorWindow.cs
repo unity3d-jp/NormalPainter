@@ -11,7 +11,7 @@ namespace UTJ.BlendShapeEditor
         public static bool isOpen;
 
         Vector2 m_scrollPos;
-        Mesh m_active;
+        UnityEngine.Object m_active;
 
         static readonly int indentSize = 18;
         #endregion
@@ -60,9 +60,9 @@ namespace UTJ.BlendShapeEditor
 
             var activeGameObject = Selection.activeGameObject;
             if (activeGameObject != null)
-                m_active = Utils.ExtractMesh(activeGameObject);
+                m_active = activeGameObject;
             else
-                m_active = Utils.ExtractMesh(Selection.activeObject);
+                m_active = Selection.activeObject;
             Repaint();
         }
 
@@ -73,12 +73,14 @@ namespace UTJ.BlendShapeEditor
 
         public void DrawBlendShapeInspector()
         {
-            var target = m_active;
-            if (target == null) { return; }
+            var targetObject = m_active;
+            var targetMesh = Utils.ExtractMesh(m_active);
+            if (targetMesh == null) { return; }
+            var materials = Utils.ExtractMaterials(m_active);
 
-            EditorGUILayout.ObjectField(target, typeof(Mesh), true);
+            EditorGUILayout.ObjectField(targetMesh, typeof(Mesh), true);
 
-            int numShapes = target.blendShapeCount;
+            int numShapes = targetMesh.blendShapeCount;
             if (numShapes == 0)
             {
                 EditorGUILayout.LabelField("Has no BlendShape");
@@ -93,14 +95,14 @@ namespace UTJ.BlendShapeEditor
 
                 for (int si = 0; si < numShapes; ++si)
                 {
-                    var name = target.GetBlendShapeName(si);
-                    int numFrames = target.GetBlendShapeFrameCount(si);
+                    var name = targetMesh.GetBlendShapeName(si);
+                    int numFrames = targetMesh.GetBlendShapeFrameCount(si);
 
                     EditorGUILayout.Space();
                     EditorGUILayout.BeginHorizontal();
                     GUILayout.Label(name + " (" + numFrames + " frames)");
                     if (GUILayout.Button("Extract All", GUILayout.Width(90)))
-                        ExtractBlendShapeFrames(target, si);
+                        ExtractBlendShapeFrames(targetMesh, si, -1, materials);
                     EditorGUILayout.EndHorizontal();
 
                     EditorGUILayout.BeginHorizontal();
@@ -108,11 +110,11 @@ namespace UTJ.BlendShapeEditor
                     EditorGUILayout.BeginVertical();
                     for (int fi = 0; fi < numFrames; ++fi)
                     {
-                        float weight = target.GetBlendShapeFrameWeight(si, fi);
+                        float weight = targetMesh.GetBlendShapeFrameWeight(si, fi);
                         EditorGUILayout.BeginHorizontal();
                         GUILayout.Label(weight.ToString(), GUILayout.Width(30));
                         if (GUILayout.Button("Extract", GUILayout.Width(60)))
-                            ExtractBlendShapeFrames(target, si, fi);
+                            ExtractBlendShapeFrames(targetMesh, si, fi, materials);
                         EditorGUILayout.EndHorizontal();
                     }
                     EditorGUILayout.EndVertical();
@@ -123,12 +125,12 @@ namespace UTJ.BlendShapeEditor
 
                 GUILayout.Space(6);
                 if (GUILayout.Button("Convert To Compose Data"))
-                    ConvertToComposeData(target);
+                    ConvertToComposeData(targetObject);
             }
         }
 
         // frameIndex = -1: extract all frames
-        public static GameObject[] ExtractBlendShapeFrames(Mesh target, int shapeIndex, int frameIndex = -1)
+        public static GameObject[] ExtractBlendShapeFrames(Mesh target, int shapeIndex, int frameIndex = -1, Material[] materials = null)
         {
             var name = target.GetBlendShapeName(shapeIndex);
             var numFrames = target.GetBlendShapeFrameCount(shapeIndex);
@@ -145,43 +147,32 @@ namespace UTJ.BlendShapeEditor
             stripped.ClearBlendShapes();
 
             var width = target.bounds.extents.x * 2.0f;
+            Func<Mesh, int, GameObject> body = (mesh, fi) =>
+            {
+                mesh.GetBlendShapeFrameVertices(shapeIndex, fi, deltaVertices, deltaNormals, deltaTangents);
+                ApplyDelta(mesh.vertices, deltaVertices, tmpVertices);
+                ApplyDelta(mesh.normals, deltaNormals, tmpNormals);
+                ApplyDelta(mesh.tangents, deltaTangents, tmpTangents);
+
+                var imesh = Instantiate(stripped);
+                imesh.vertices = tmpVertices;
+                imesh.normals = tmpNormals;
+                imesh.tangents = tmpTangents;
+                imesh.name = name + " [" + fi + "]";
+                var pos = new Vector3(width * (fi + 1), 0.0f, 0.0f);
+                return Utils.MeshToGameObject(imesh, pos, materials);
+            };
 
             if (frameIndex < 0)
             {
                 var ret = new GameObject[numFrames];
-                for (int f = 0; f < numFrames; ++f)
-                {
-                    target.GetBlendShapeFrameVertices(shapeIndex, f, deltaVertices, deltaNormals, deltaTangents);
-                    ApplyDelta(target.vertices, deltaVertices, tmpVertices);
-                    ApplyDelta(target.normals, deltaNormals, tmpNormals);
-                    ApplyDelta(target.tangents, deltaTangents, tmpTangents);
-
-                    stripped.vertices = tmpVertices;
-                    stripped.normals = tmpNormals;
-                    stripped.tangents = tmpTangents;
-
-                    var mesh = Instantiate(stripped);
-                    mesh.name = name + " [" + f + "]";
-                    var pos = new Vector3(width * (f + 1), 0.0f, 0.0f);
-                    ret[f] = Utils.MeshToGameObject(mesh.name, mesh, pos);
-                }
+                for (int fi = 0; fi < numFrames; ++fi)
+                    ret[fi] = body(target, fi);
                 return ret;
             }
             else if(frameIndex < numFrames)
             {
-                target.GetBlendShapeFrameVertices(shapeIndex, frameIndex, deltaVertices, deltaNormals, deltaTangents);
-                ApplyDelta(target.vertices, deltaVertices, tmpVertices);
-                ApplyDelta(target.normals, deltaNormals, tmpNormals);
-                ApplyDelta(target.tangents, deltaTangents, tmpTangents);
-
-                stripped.vertices = tmpVertices;
-                stripped.normals = tmpNormals;
-                stripped.tangents = tmpTangents;
-
-                var mesh = Instantiate(stripped);
-                mesh.name = name + " [" + frameIndex + "]";
-                var pos = new Vector3(width * (frameIndex + 1), 0.0f, 0.0f);
-                return new GameObject[1] { Utils.MeshToGameObject(mesh.name, mesh, pos) };
+                return new GameObject[1] { body(target, frameIndex) };
             }
             else
             {
@@ -210,26 +201,30 @@ namespace UTJ.BlendShapeEditor
         }
 
 
-        public static void ConvertToComposeData(Mesh target)
+        public static void ConvertToComposeData(UnityEngine.Object targetObject)
         {
-            int numShapes = target.blendShapeCount;
+            var targetMesh = Utils.ExtractMesh(targetObject);
+            if (targetMesh == null) { return; }
+            var materials = Utils.ExtractMaterials(targetObject);
+
+            int numShapes = targetMesh.blendShapeCount;
             if(numShapes == 0)
             {
                 Debug.Log("BlendShapeInspector: This mesh has no BlendShape.");
                 return;
             }
 
-            var baseMesh = Instantiate(target);
-            baseMesh.name = target.name;
+            var baseMesh = Instantiate(targetMesh);
+            baseMesh.name = targetMesh.name;
             baseMesh.ClearBlendShapes();
-            var baseGO = Utils.MeshToGameObject(baseMesh.name, baseMesh, Vector3.zero);
+            var baseGO = Utils.MeshToGameObject(baseMesh, Vector3.zero, materials);
 
             var data = new List<BlendShapeData>();
             for (int si = 0; si < numShapes; ++si)
             {
-                var name = target.GetBlendShapeName(si);
-                int numFrames = target.GetBlendShapeFrameCount(si);
-                var gos = ExtractBlendShapeFrames(target, si);
+                var name = targetMesh.GetBlendShapeName(si);
+                int numFrames = targetMesh.GetBlendShapeFrameCount(si);
+                var gos = ExtractBlendShapeFrames(targetMesh, si, -1, materials);
 
                 float step = 100.0f / numFrames;
                 float weight = step;

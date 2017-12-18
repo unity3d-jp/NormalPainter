@@ -7,12 +7,12 @@ namespace UTJ.BlendShapeEditor
 {
     static class Utils
     {
-        public static GameObject MeshToGameObject(string name, Mesh mesh, Vector3 pos, Material[] materials = null)
+        public static GameObject MeshToGameObject(Mesh mesh, Vector3 pos, Material[] materials = null)
         {
             if (materials == null)
                 materials = new Material[1] { AssetDatabase.GetBuiltinExtraResource<Material>("Default-Diffuse.mat") };
 
-            var go = new GameObject(name);
+            var go = new GameObject(mesh.name);
             var smr = go.AddComponent<SkinnedMeshRenderer>();
             smr.sharedMesh = mesh;
             smr.sharedMaterials = materials;
@@ -68,9 +68,7 @@ namespace UTJ.BlendShapeEditor
             {
                 var mat = obj as Material;
                 if(mat != null)
-                {
                     ret = new Material[1] { mat };
-                }
             }
             return ret;
         }

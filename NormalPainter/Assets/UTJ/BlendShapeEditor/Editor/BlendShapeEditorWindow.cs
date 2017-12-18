@@ -216,7 +216,7 @@ namespace UTJ.BlendShapeEditor
                 var result = Generate();
                 if (result != null)
                 {
-                    Utils.MeshToGameObject(result.name, result, Vector3.zero);
+                    Utils.MeshToGameObject(result, Vector3.zero, Utils.ExtractMaterials(m_data.baseMesh));
                 }
             }
         }
