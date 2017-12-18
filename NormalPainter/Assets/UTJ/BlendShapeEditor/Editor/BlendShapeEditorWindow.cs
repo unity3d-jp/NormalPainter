@@ -1,15 +1,22 @@
 using UnityEngine;
 using UnityEditor;
 using System;
+using System.Collections.Generic;
 
 namespace UTJ.BlendShapeEditor
 {
     [Serializable]
+    public class BlendShapeFrameData
+    {
+        public float weight;
+        public UnityEngine.Object mesh;
+    }
+
+    [Serializable]
     public class BlendShapeData
     {
         public string name;
-        public float[] weights;
-        public Mesh[] targets;
+        public List<BlendShapeFrameData> frames = new List<BlendShapeFrameData>();
     }
 
 
@@ -20,7 +27,7 @@ namespace UTJ.BlendShapeEditor
 
         Vector2 m_scrollPos;
         Mesh m_active;
-        BlendShapeData[] m_data;
+        List<BlendShapeData> m_data = new List<BlendShapeData>();
 
         static readonly int indentSize = 18;
         static readonly int spaceSize = 5;
@@ -35,7 +42,7 @@ namespace UTJ.BlendShapeEditor
         public static void Open()
         {
             var window = EditorWindow.GetWindow<BlendShapeEditorWindow>();
-            window.titleContent = new GUIContent("Blend Shape Editor");
+            window.titleContent = new GUIContent("BS Editor");
             window.Show();
             window.OnSelectionChange();
         }
@@ -59,40 +66,13 @@ namespace UTJ.BlendShapeEditor
             EditorGUILayout.BeginVertical(GUILayout.Height(windowHeight - tooltipHeight));
             m_scrollPos = EditorGUILayout.BeginScrollView(m_scrollPos);
 
-            if (m_active)
-            {
-                ListShapes(m_active);
-            }
+            DrawBlendShapeEditor();
 
             EditorGUILayout.EndScrollView();
         }
 
         private void OnSelectionChange()
         {
-            m_active = null;
-
-            var activeGameObject = Selection.activeGameObject;
-            if (activeGameObject != null)
-            {
-                var mf = activeGameObject.GetComponent<MeshFilter>();
-                if(mf != null)
-                {
-                    m_active = mf.sharedMesh;
-                }
-                else
-                {
-                    var smr = activeGameObject.GetComponent<SkinnedMeshRenderer>();
-                    if (smr != null)
-                        m_active = smr.sharedMesh;
-                }
-            }
-            else
-            {
-                var ao = Selection.activeObject as Mesh;
-                if (ao != null)
-                    m_active = ao;
-            }
-            Repaint();
         }
 
         #endregion
@@ -100,104 +80,28 @@ namespace UTJ.BlendShapeEditor
 
         #region impl
 
-        public static void ListShapes(Mesh target)
+        public void Clear()
         {
-            int numShapes = target.blendShapeCount;
-            if(numShapes > 0)
-            {
-                GUILayout.Label(numShapes + " blendshapes");
-                GUILayout.BeginHorizontal();
-
-                GUILayout.Space(indentSize);
-
-                GUILayout.BeginVertical();
-                for (int si = 0; si < numShapes; ++si)
-                {
-                    var name = target.GetBlendShapeName(si);
-                    int numFrames = target.GetBlendShapeFrameCount(si);
-
-                    GUILayout.BeginHorizontal();
-                    GUILayout.Label(name + " (" + numFrames + " frames)");
-                    if (GUILayout.Button("Extract"))
-                    {
-                        ExtractShapes(target, si);
-                    }
-                    GUILayout.EndHorizontal();
-
-                    for (int fi = 0; fi < numFrames; ++fi)
-                    {
-                        float weight = target.GetBlendShapeFrameWeight(si, fi);
-                    }
-                }
-                GUILayout.EndVertical();
-                GUILayout.EndHorizontal();
-            }
-
+            m_data.Clear();
         }
 
-
-        public static void ExtractShapes(Mesh target, int shapeIndex)
+        public void DrawBlendShapeEditor()
         {
-            var name = target.GetBlendShapeName(shapeIndex);
-            var numFrames = target.GetBlendShapeFrameCount(shapeIndex);
-
-            var tmpVertices = new Vector3[target.vertexCount];
-            var tmpNormals = new Vector3[target.vertexCount];
-            var tmpTangents = new Vector4[target.vertexCount];
-
-            var deltaVertices = new Vector3[target.vertexCount];
-            var deltaNormals = new Vector3[target.vertexCount];
-            var deltaTangents = new Vector3[target.vertexCount];
-
-            var stripped = Instantiate(target);
-            stripped.ClearBlendShapes();
-
-            var width = target.bounds.extents.x * 2.0f;
-            var mat = AssetDatabase.GetBuiltinExtraResource<Material>("Default-Diffuse.mat");
-            var outputs = new GameObject[numFrames];
-
-            for (int f = 0; f < numFrames; ++f)
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button("Add Blend Shape"))
             {
-                target.GetBlendShapeFrameVertices(shapeIndex, f, deltaVertices, deltaNormals, deltaTangents);
-                ApplyDelta(stripped.vertices, deltaVertices, tmpVertices);
-                ApplyDelta(stripped.normals, deltaNormals, tmpNormals);
-                ApplyDelta(stripped.tangents, deltaTangents, tmpTangents);
-
-                stripped.vertices = tmpVertices;
-                stripped.normals = tmpNormals;
-                stripped.tangents = tmpTangents;
-
-                var mesh = Instantiate(stripped);
-
-                var go = new GameObject(name + " [" + f + "]");
-                outputs[f] = go;
-                var mf = go.AddComponent<MeshFilter>();
-                mf.sharedMesh = mesh;
-                var mr = go.AddComponent<MeshRenderer>();
-                mr.sharedMaterial = mat;
-                go.GetComponent<Transform>().position = new Vector3(width + (f + 1), 0.0f, 0.0f);
             }
+            GUILayout.EndHorizontal();
 
-            //Selection.objects = outputs;
+            if (GUILayout.Button("Export"))
+            {
+
+            }
         }
 
-        private static void ApplyDelta(Vector3[] from, Vector3[] delta, Vector3[] dst)
+        static void DrawBlendShapeField(BlendShapeData data)
         {
-            var len = from.Length;
-            for (int i = 0; i < len; ++i)
-                dst[i] = from[i] + delta[i];
-        }
 
-        private static void ApplyDelta(Vector4[] from, Vector3[] delta, Vector4[] dst)
-        {
-            var len = from.Length;
-            for (int i = 0; i < len; ++i)
-            {
-                dst[i].x = from[i].x + delta[i].x;
-                dst[i].y = from[i].y + delta[i].y;
-                dst[i].z = from[i].z + delta[i].z;
-                dst[i].w = from[i].w;
-            }
         }
 
 
@@ -213,17 +117,22 @@ namespace UTJ.BlendShapeEditor
             {
                 var lastTarget = target;
                 var name = shape.name;
-                var frames = shape.weights.Length;
-                for (int f = 0; f < frames; ++f)
-                {
-                    var weight = shape.weights[f];
-                    var data = shape.targets[f];
-                    GenerateDelta(lastTarget.vertices, data.vertices, deltaVertices);
-                    GenerateDelta(lastTarget.normals, data.normals, deltaNormals);
-                    GenerateDelta(lastTarget.tangents, data.tangents, deltaTangents);
-                    ret.AddBlendShapeFrame(name, weight, deltaVertices, deltaNormals, deltaTangents);
 
-                    lastTarget = data;
+                foreach(var frame in shape.frames)
+                {
+                    var mesh = Utils.ExtractMesh(frame.mesh);
+                    if(mesh == null)
+                    {
+                        Debug.LogError("BlendShapeEditor: Invalid data in " + name + " at weight " + frame.weight);
+                    }
+                    else {
+                        GenerateDelta(lastTarget.vertices, mesh.vertices, deltaVertices);
+                        GenerateDelta(lastTarget.normals, mesh.normals, deltaNormals);
+                        GenerateDelta(lastTarget.tangents, mesh.tangents, deltaTangents);
+                        ret.AddBlendShapeFrame(name, frame.weight, deltaVertices, deltaNormals, deltaTangents);
+
+                        lastTarget = mesh;
+                    }
                 }
             }
             return ret;
