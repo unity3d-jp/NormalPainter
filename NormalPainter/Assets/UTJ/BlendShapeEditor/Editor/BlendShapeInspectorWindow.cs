@@ -43,11 +43,12 @@ namespace UTJ.BlendShapeEditor
         private void OnGUI()
         {
             m_scrollPos = EditorGUILayout.BeginScrollView(m_scrollPos);
-            EditorGUILayout.BeginVertical(GUILayout.Height(position.height), GUILayout.Width(position.width));
+            EditorGUILayout.BeginVertical();
             if (m_active)
             {
                 DrawBlendShapeInspector(m_active);
             }
+            EditorGUILayout.EndVertical();
             EditorGUILayout.EndScrollView();
         }
 
@@ -86,8 +87,8 @@ namespace UTJ.BlendShapeEditor
                     EditorGUILayout.Space();
                     EditorGUILayout.BeginHorizontal();
                     GUILayout.Label(name + " (" + numFrames + " frames)");
-                    if (GUILayout.Button("Extract All"))
-                        ExtractShapes(target, si);
+                    if (GUILayout.Button("Extract All", GUILayout.Width(90)))
+                        ExtractBlendShapeFrames(target, si);
                     EditorGUILayout.EndHorizontal();
 
                     EditorGUILayout.BeginHorizontal();
@@ -97,9 +98,9 @@ namespace UTJ.BlendShapeEditor
                     {
                         float weight = target.GetBlendShapeFrameWeight(si, fi);
                         EditorGUILayout.BeginHorizontal();
-                        GUILayout.Label(weight.ToString());
-                        if (GUILayout.Button("Extract"))
-                            ExtractShapes(target, si, fi);
+                        GUILayout.Label(weight.ToString(), GUILayout.Width(30));
+                        if (GUILayout.Button("Extract", GUILayout.Width(60)))
+                            ExtractBlendShapeFrames(target, si, fi);
                         EditorGUILayout.EndHorizontal();
                     }
                     EditorGUILayout.EndVertical();
@@ -107,11 +108,15 @@ namespace UTJ.BlendShapeEditor
                 }
                 EditorGUILayout.EndVertical();
                 EditorGUILayout.EndHorizontal();
+
+                GUILayout.Space(6);
+                if (GUILayout.Button("Convert To Compose Data"))
+                    ConvertToComposeData(target);
             }
         }
 
         // frameIndex = -1: extract all frames
-        public static GameObject[] ExtractShapes(Mesh target, int shapeIndex, int frameIndex = -1)
+        public static GameObject[] ExtractBlendShapeFrames(Mesh target, int shapeIndex, int frameIndex = -1)
         {
             var name = target.GetBlendShapeName(shapeIndex);
             var numFrames = target.GetBlendShapeFrameCount(shapeIndex);
@@ -192,6 +197,45 @@ namespace UTJ.BlendShapeEditor
             }
         }
 
+
+        public static void ConvertToComposeData(Mesh target)
+        {
+            int numShapes = target.blendShapeCount;
+            if(numShapes == 0)
+            {
+                Debug.Log("BlendShapeInspector: This mesh has no BlendShape.");
+                return;
+            }
+
+            var data = new List<BlendShapeData>();
+            for (int si = 0; si < numShapes; ++si)
+            {
+                var name = target.GetBlendShapeName(si);
+                int numFrames = target.GetBlendShapeFrameCount(si);
+                var gos = ExtractBlendShapeFrames(target, si);
+
+                float step = 100.0f / numFrames;
+                float weight = step;
+                var bsd = new BlendShapeData();
+                data.Add(bsd);
+                bsd.name = name;
+                foreach(var go in gos)
+                {
+                    var fd = new BlendShapeFrameData();
+                    bsd.frames.Add(fd);
+                    fd.mesh = go;
+                    fd.weight = weight;
+                    weight += step;
+                }
+            }
+
+            BlendShapeEditorWindow.Open();
+            var window = EditorWindow.GetWindow<BlendShapeEditorWindow>();
+            window.ModifyBlendShapeData(d => {
+                d.baseMesh = target;
+                d.blendShapeData = data;
+            });
+        }
 
         #endregion
 

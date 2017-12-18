@@ -54,8 +54,9 @@ namespace UTJ.BlendShapeEditor
         private void OnGUI()
         {
             m_scrollPos = EditorGUILayout.BeginScrollView(m_scrollPos);
-            EditorGUILayout.BeginVertical(GUILayout.Height(position.height), GUILayout.Width(position.width));
+            EditorGUILayout.BeginVertical();
             DrawBlendShapeEditor();
+            EditorGUILayout.EndVertical();
             EditorGUILayout.EndScrollView();
         }
 
@@ -67,6 +68,13 @@ namespace UTJ.BlendShapeEditor
 
 
         #region impl
+
+        public void ModifyBlendShapeData(Action<BlendShapeEditorData> op)
+        {
+            Undo.RecordObject(m_data, "BlendShapeEditor");
+            op(m_data);
+        }
+
 
         public void DrawBlendShapeEditor()
         {
@@ -93,13 +101,16 @@ namespace UTJ.BlendShapeEditor
                         if (EditorGUI.EndChangeCheck())
                             data.name = name;
 
+                        EditorGUILayout.LabelField("Frames (Weight : Mesh)");
+                        EditorGUI.indentLevel++;
+
                         BlendShapeFrameData delFrame = null;
                         foreach (var frame in data.frames)
                         {
                             EditorGUILayout.BeginHorizontal();
 
                             EditorGUI.BeginChangeCheck();
-                            var w = EditorGUILayout.FloatField(frame.weight, GUILayout.Width(80));
+                            var w = EditorGUILayout.FloatField(frame.weight, GUILayout.Width(100));
                             if (EditorGUI.EndChangeCheck())
                                 frame.weight = w;
 
@@ -108,20 +119,34 @@ namespace UTJ.BlendShapeEditor
                             if (EditorGUI.EndChangeCheck())
                                 frame.mesh = m;
 
-                            if (GUILayout.Button("-"))
+                            if (GUILayout.Button("-", GUILayout.Width(20)))
                                 delFrame = frame;
 
                             EditorGUILayout.EndHorizontal();
                         }
                         if(delFrame != null)
+                        {
+                            Undo.RecordObject(m_data, "BlendShapeEditor");
                             data.frames.Remove(delFrame);
+                        }
+
+                        GUILayout.BeginHorizontal();
+                        GUILayout.Space(indentSize * 3);
+                        if (GUILayout.Button("+", GUILayout.Width(20)))
+                        {
+                            Undo.RecordObject(m_data, "BlendShapeEditor");
+                            data.frames.Add(new BlendShapeFrameData());
+                        }
+                        GUILayout.EndHorizontal();
+                        EditorGUI.indentLevel--;
 
                         GUILayout.BeginHorizontal();
                         GUILayout.Space(indentSize * 2);
-                        if (GUILayout.Button("Add Frame"))
-                            data.frames.Add(new BlendShapeFrameData());
-                        if (GUILayout.Button("Delete"))
+                        if (GUILayout.Button("Delete", GUILayout.Width(80)))
+                        {
+                            Undo.RecordObject(m_data, "BlendShapeEditor");
                             delBS = data;
+                        }
                         GUILayout.EndHorizontal();
 
                         EditorGUI.indentLevel--;
