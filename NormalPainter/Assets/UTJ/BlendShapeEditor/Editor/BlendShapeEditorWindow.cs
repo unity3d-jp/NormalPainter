@@ -28,7 +28,6 @@ namespace UTJ.BlendShapeEditor
             var window = EditorWindow.GetWindow<BlendShapeEditorWindow>();
             window.titleContent = new GUIContent("BS Editor");
             window.Show();
-            window.OnSelectionChange();
         }
 
 
@@ -66,11 +65,6 @@ namespace UTJ.BlendShapeEditor
         {
             Repaint();
         }
-
-        private void OnSelectionChange()
-        {
-        }
-
         #endregion
 
 
@@ -186,9 +180,15 @@ namespace UTJ.BlendShapeEditor
                             Undo.RecordObject(m_data, "BlendShapeEditor");
                             data.NormalizeWeights();
                         }
+                        if (GUILayout.Button("Sort By Weights", GUILayout.Width(120)))
+                        {
+                            Undo.RecordObject(m_data, "BlendShapeEditor");
+                            data.SortByWeights();
+                        }
                         GUILayout.EndHorizontal();
 
                         EditorGUI.indentLevel--;
+                        EditorGUILayout.Space();
                     }
                 }
                 EditorGUI.indentLevel--;
@@ -232,6 +232,7 @@ namespace UTJ.BlendShapeEditor
             }
 
             var ret = Instantiate(baseMesh);
+            ret.name = baseMesh.name;
 
             var baseVertices = baseMesh.vertices;
             var baseNormals = baseMesh.normals;

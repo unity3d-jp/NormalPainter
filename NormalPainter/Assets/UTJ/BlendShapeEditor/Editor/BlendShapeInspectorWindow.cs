@@ -40,14 +40,16 @@ namespace UTJ.BlendShapeEditor
             isOpen = false;
         }
 
+        private void OnFocus()
+        {
+            OnSelectionChange();
+        }
+
         private void OnGUI()
         {
             m_scrollPos = EditorGUILayout.BeginScrollView(m_scrollPos);
             EditorGUILayout.BeginVertical();
-            if (m_active)
-            {
-                DrawBlendShapeInspector(m_active);
-            }
+            DrawBlendShapeInspector();
             EditorGUILayout.EndVertical();
             EditorGUILayout.EndScrollView();
         }
@@ -69,12 +71,22 @@ namespace UTJ.BlendShapeEditor
 
         #region impl
 
-        public static void DrawBlendShapeInspector(Mesh target)
+        public void DrawBlendShapeInspector()
         {
+            var target = m_active;
+            if (target == null) { return; }
+
+            EditorGUILayout.ObjectField(target, typeof(Mesh), true);
+
             int numShapes = target.blendShapeCount;
-            if(numShapes > 0)
+            if (numShapes == 0)
             {
-                EditorGUILayout.LabelField(numShapes + " blendshapes");
+                EditorGUILayout.LabelField("Has no BlendShape");
+            }
+            else
+            {
+                EditorGUILayout.LabelField("Has " + numShapes + " Slendshapes");
+
                 EditorGUILayout.BeginHorizontal();
                 GUILayout.Space(indentSize);
                 EditorGUILayout.BeginVertical();
@@ -150,7 +162,7 @@ namespace UTJ.BlendShapeEditor
 
                     var mesh = Instantiate(stripped);
                     mesh.name = name + " [" + f + "]";
-                    var pos = new Vector3(width + (f + 1), 0.0f, 0.0f);
+                    var pos = new Vector3(width * (f + 1), 0.0f, 0.0f);
                     ret[f] = Utils.MeshToGameObject(mesh.name, mesh, pos);
                 }
                 return ret;
@@ -168,7 +180,7 @@ namespace UTJ.BlendShapeEditor
 
                 var mesh = Instantiate(stripped);
                 mesh.name = name + " [" + frameIndex + "]";
-                var pos = new Vector3(width + (frameIndex + 1), 0.0f, 0.0f);
+                var pos = new Vector3(width * (frameIndex + 1), 0.0f, 0.0f);
                 return new GameObject[1] { Utils.MeshToGameObject(mesh.name, mesh, pos) };
             }
             else
@@ -207,6 +219,11 @@ namespace UTJ.BlendShapeEditor
                 return;
             }
 
+            var baseMesh = Instantiate(target);
+            baseMesh.name = target.name;
+            baseMesh.ClearBlendShapes();
+            var baseGO = Utils.MeshToGameObject(baseMesh.name, baseMesh, Vector3.zero);
+
             var data = new List<BlendShapeData>();
             for (int si = 0; si < numShapes; ++si)
             {
@@ -232,7 +249,7 @@ namespace UTJ.BlendShapeEditor
             BlendShapeEditorWindow.Open();
             var window = EditorWindow.GetWindow<BlendShapeEditorWindow>();
             window.ModifyBlendShapeData(d => {
-                d.baseMesh = target;
+                d.baseMesh = baseGO;
                 d.blendShapeData = data;
             });
         }

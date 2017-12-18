@@ -33,6 +33,11 @@ namespace UTJ.BlendShapeEditor
                 frames[i].weight = step * (i + 1);
             }
         }
+
+        public void SortByWeights()
+        {
+            frames.Sort((x, y) => x.weight.CompareTo(y.weight));
+        }
     }
 
     [Serializable]
