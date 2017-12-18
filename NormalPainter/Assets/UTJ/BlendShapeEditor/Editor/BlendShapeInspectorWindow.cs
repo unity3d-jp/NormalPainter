@@ -14,8 +14,6 @@ namespace UTJ.BlendShapeEditor
         Mesh m_active;
 
         static readonly int indentSize = 18;
-        static readonly int spaceSize = 5;
-        static readonly int c1Width = 100;
         #endregion
 
 
@@ -44,17 +42,12 @@ namespace UTJ.BlendShapeEditor
 
         private void OnGUI()
         {
-            var tooltipHeight = 24;
-            var windowHeight = position.height;
-
-            EditorGUILayout.BeginVertical(GUILayout.Height(windowHeight - tooltipHeight));
             m_scrollPos = EditorGUILayout.BeginScrollView(m_scrollPos);
-
+            EditorGUILayout.BeginVertical(GUILayout.Height(position.height), GUILayout.Width(position.width));
             if (m_active)
             {
                 DrawBlendShapeInspector(m_active);
             }
-
             EditorGUILayout.EndScrollView();
         }
 
@@ -80,36 +73,45 @@ namespace UTJ.BlendShapeEditor
             int numShapes = target.blendShapeCount;
             if(numShapes > 0)
             {
-                GUILayout.Label(numShapes + " blendshapes");
-                GUILayout.BeginHorizontal();
-
+                EditorGUILayout.LabelField(numShapes + " blendshapes");
+                EditorGUILayout.BeginHorizontal();
                 GUILayout.Space(indentSize);
+                EditorGUILayout.BeginVertical();
 
-                GUILayout.BeginVertical();
                 for (int si = 0; si < numShapes; ++si)
                 {
                     var name = target.GetBlendShapeName(si);
                     int numFrames = target.GetBlendShapeFrameCount(si);
 
-                    GUILayout.BeginHorizontal();
+                    EditorGUILayout.Space();
+                    EditorGUILayout.BeginHorizontal();
                     GUILayout.Label(name + " (" + numFrames + " frames)");
-                    if (GUILayout.Button("Extract"))
-                    {
+                    if (GUILayout.Button("Extract All"))
                         ExtractShapes(target, si);
-                    }
-                    GUILayout.EndHorizontal();
+                    EditorGUILayout.EndHorizontal();
 
+                    EditorGUILayout.BeginHorizontal();
+                    GUILayout.Space(indentSize);
+                    EditorGUILayout.BeginVertical();
                     for (int fi = 0; fi < numFrames; ++fi)
                     {
                         float weight = target.GetBlendShapeFrameWeight(si, fi);
+                        EditorGUILayout.BeginHorizontal();
+                        GUILayout.Label(weight.ToString());
+                        if (GUILayout.Button("Extract"))
+                            ExtractShapes(target, si, fi);
+                        EditorGUILayout.EndHorizontal();
                     }
+                    EditorGUILayout.EndVertical();
+                    EditorGUILayout.EndHorizontal();
                 }
-                GUILayout.EndVertical();
-                GUILayout.EndHorizontal();
+                EditorGUILayout.EndVertical();
+                EditorGUILayout.EndHorizontal();
             }
         }
 
-        public static void ExtractShapes(Mesh target, int shapeIndex)
+        // frameIndex = -1: extract all frames
+        public static GameObject[] ExtractShapes(Mesh target, int shapeIndex, int frameIndex = -1)
         {
             var name = target.GetBlendShapeName(shapeIndex);
             var numFrames = target.GetBlendShapeFrameCount(shapeIndex);
@@ -126,32 +128,49 @@ namespace UTJ.BlendShapeEditor
             stripped.ClearBlendShapes();
 
             var width = target.bounds.extents.x * 2.0f;
-            var mat = AssetDatabase.GetBuiltinExtraResource<Material>("Default-Diffuse.mat");
-            var outputs = new GameObject[numFrames];
 
-            for (int f = 0; f < numFrames; ++f)
+            if (frameIndex < 0)
             {
-                target.GetBlendShapeFrameVertices(shapeIndex, f, deltaVertices, deltaNormals, deltaTangents);
-                ApplyDelta(stripped.vertices, deltaVertices, tmpVertices);
-                ApplyDelta(stripped.normals, deltaNormals, tmpNormals);
-                ApplyDelta(stripped.tangents, deltaTangents, tmpTangents);
+                var ret = new GameObject[numFrames];
+                for (int f = 0; f < numFrames; ++f)
+                {
+                    target.GetBlendShapeFrameVertices(shapeIndex, f, deltaVertices, deltaNormals, deltaTangents);
+                    ApplyDelta(target.vertices, deltaVertices, tmpVertices);
+                    ApplyDelta(target.normals, deltaNormals, tmpNormals);
+                    ApplyDelta(target.tangents, deltaTangents, tmpTangents);
+
+                    stripped.vertices = tmpVertices;
+                    stripped.normals = tmpNormals;
+                    stripped.tangents = tmpTangents;
+
+                    var mesh = Instantiate(stripped);
+                    mesh.name = name + " [" + f + "]";
+                    var pos = new Vector3(width + (f + 1), 0.0f, 0.0f);
+                    ret[f] = Utils.MeshToGameObject(mesh.name, mesh, pos);
+                }
+                return ret;
+            }
+            else if(frameIndex < numFrames)
+            {
+                target.GetBlendShapeFrameVertices(shapeIndex, frameIndex, deltaVertices, deltaNormals, deltaTangents);
+                ApplyDelta(target.vertices, deltaVertices, tmpVertices);
+                ApplyDelta(target.normals, deltaNormals, tmpNormals);
+                ApplyDelta(target.tangents, deltaTangents, tmpTangents);
 
                 stripped.vertices = tmpVertices;
                 stripped.normals = tmpNormals;
                 stripped.tangents = tmpTangents;
 
                 var mesh = Instantiate(stripped);
-
-                var go = new GameObject(name + " [" + f + "]");
-                outputs[f] = go;
-                var mf = go.AddComponent<MeshFilter>();
-                mf.sharedMesh = mesh;
-                var mr = go.AddComponent<MeshRenderer>();
-                mr.sharedMaterial = mat;
-                go.GetComponent<Transform>().position = new Vector3(width + (f + 1), 0.0f, 0.0f);
+                mesh.name = name + " [" + frameIndex + "]";
+                var pos = new Vector3(width + (frameIndex + 1), 0.0f, 0.0f);
+                return new GameObject[1] { Utils.MeshToGameObject(mesh.name, mesh, pos) };
             }
-
-            //Selection.objects = outputs;
+            else
+            {
+                Debug.LogError("Invalid frame index");
+                return null;
+            }
         }
 
         private static void ApplyDelta(Vector3[] from, Vector3[] delta, Vector3[] dst)
