@@ -80,9 +80,9 @@ namespace UTJ.BlendShapeEditor
         public void DrawBlendShapeEditor()
         {
             EditorGUI.BeginChangeCheck();
-            var baseMesh = EditorGUILayout.ObjectField("Base Mesh", m_data.baseMesh, typeof(UnityEngine.Object), true);
+            var baseObject = EditorGUILayout.ObjectField("Base Mesh", m_data.baseMesh, typeof(UnityEngine.Object), true);
             if (EditorGUI.EndChangeCheck())
-                m_data.baseMesh = baseMesh;
+                m_data.baseMesh = baseObject;
 
             m_foldBlendShapes = EditorGUILayout.Foldout(m_foldBlendShapes, "BlendShapes");
             if (m_foldBlendShapes)
@@ -259,40 +259,39 @@ namespace UTJ.BlendShapeEditor
                 GUILayout.EndHorizontal();
             }
 
-            GUILayout.Space(12);
+            GUILayout.Space(18);
 
             GUILayout.BeginHorizontal();
-            if (GUILayout.Button("Generate", GUILayout.Width(100)))
+            if (GUILayout.Button("Generate New Mesh", GUILayout.Width(140)))
             {
-                var result = Generate();
+                var result = Compose();
                 if (result != null)
                 {
                     var go = Utils.MeshToGameObject(result, Vector3.zero, Utils.ExtractMaterials(m_data.baseMesh));
                     Selection.activeGameObject = go;
                 }
             }
-            if (GUILayout.Button("Generate And Export .asset", GUILayout.Width(200)))
+            if (GUILayout.Button("Update Existing Mesh", GUILayout.Width(140)))
             {
-                var result = Generate();
-                if (result != null)
+                Compose(true);
+                EditorUtility.SetDirty(m_data.baseMesh);
+            }
+            if (GUILayout.Button("Export BaseMesh To .asset", GUILayout.Width(180)))
+            {
+                var baseMesh = Utils.ExtractMesh(m_data.baseMesh);
+                string path = EditorUtility.SaveFilePanel("Export .asset file", "Assets", baseMesh.name, "asset");
+                if (path.Length > 0)
                 {
-                    var go = Utils.MeshToGameObject(result, Vector3.zero, Utils.ExtractMaterials(m_data.baseMesh));
-                    Selection.activeGameObject = go;
-
-                    string path = EditorUtility.SaveFilePanel("Export .asset file", "Assets", result.name, "asset");
-                    if (path.Length > 0)
+                    var dataPath = Application.dataPath;
+                    if (!path.StartsWith(dataPath))
                     {
-                        var dataPath = Application.dataPath;
-                        if (!path.StartsWith(dataPath))
-                        {
-                            Debug.LogError("Invalid path: Path must be under " + dataPath);
-                        }
-                        else
-                        {
-                            path = path.Replace(dataPath, "Assets");
-                            AssetDatabase.CreateAsset(result, path);
-                            Debug.Log("Asset exported: " + path);
-                        }
+                        Debug.LogError("Invalid path: Path must be under " + dataPath);
+                    }
+                    else
+                    {
+                        path = path.Replace(dataPath, "Assets");
+                        AssetDatabase.CreateAsset(Instantiate(baseMesh), path);
+                        Debug.Log("Asset exported: " + path);
                     }
                 }
             }
@@ -300,7 +299,7 @@ namespace UTJ.BlendShapeEditor
         }
 
 
-        public Mesh Generate()
+        public Mesh Compose(bool modifyDixistingMesh = false)
         {
             var baseMesh = Utils.ExtractMesh(m_data.baseMesh);
             if(baseMesh == null)
@@ -309,8 +308,18 @@ namespace UTJ.BlendShapeEditor
                 return null;
             }
 
-            var ret = Instantiate(baseMesh);
-            ret.name = baseMesh.name;
+            Mesh ret = null;
+            if (modifyDixistingMesh)
+            {
+                ret = baseMesh;
+                ret.ClearBlendShapes();
+            }
+            else
+            {
+                ret = Instantiate(baseMesh);
+                ret.ClearBlendShapes();
+                ret.name = baseMesh.name;
+            }
 
             var baseVertices = baseMesh.vertices;
             var baseNormals = baseMesh.normals;
@@ -319,44 +328,6 @@ namespace UTJ.BlendShapeEditor
             var deltaVertices = new Vector3[baseMesh.vertexCount];
             var deltaNormals = new Vector3[baseMesh.vertexCount];
             var deltaTangents = new Vector3[baseMesh.vertexCount];
-
-            // delete existing blend shapes if needed
-            {
-                var del = new List<string>();
-                int numBS = baseMesh.blendShapeCount;
-                for(int si = 0; si < numBS; ++si)
-                {
-                    var name = baseMesh.GetBlendShapeName(si);
-                    foreach (var shape in m_data.blendShapeData)
-                    {
-                        if (shape.name == name)
-                        {
-                            del.Add(name);
-                            break;
-                        }
-                    }
-                }
-
-                if (del.Count > 0)
-                {
-                    ret.ClearBlendShapes();
-                    for (int si = 0; si < numBS; ++si)
-                    {
-                        var name = baseMesh.GetBlendShapeName(si);
-                        if (!del.Contains(name))
-                        {
-                            int numFrames = baseMesh.GetBlendShapeFrameCount(si);
-                            for (int fi = 0; fi < numFrames; ++fi)
-                            {
-                                float weight = baseMesh.GetBlendShapeFrameWeight(si, fi);
-                                baseMesh.GetBlendShapeFrameVertices(si, fi, deltaVertices, deltaNormals, deltaTangents);
-                                ret.AddBlendShapeFrame(name, weight, deltaVertices, deltaNormals, deltaTangents);
-                            }
-                        }
-                    }
-                }
-            }
-
 
             // add blend shape data
             foreach (var shape in m_data.blendShapeData)
