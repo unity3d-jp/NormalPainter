@@ -27,16 +27,16 @@ namespace UTJ.BlendShapeEditor
             var go = obj as GameObject;
             if (go != null)
             {
-                var mf = go.GetComponent<MeshFilter>();
-                if (mf != null)
-                {
-                    ret = mf.sharedMesh;
-                }
-                else
                 {
                     var smr = go.GetComponent<SkinnedMeshRenderer>();
                     if (smr != null)
                         ret = smr.sharedMesh;
+                }
+                if (ret == null)
+                {
+                    var mf = go.GetComponent<MeshFilter>();
+                    if (mf != null)
+                        ret = mf.sharedMesh;
                 }
             }
             else
@@ -52,16 +52,16 @@ namespace UTJ.BlendShapeEditor
             var go = obj as GameObject;
             if (go != null)
             {
-                var mf = go.GetComponent<MeshRenderer>();
-                if (mf != null)
-                {
-                    ret = mf.sharedMaterials;
-                }
-                else
                 {
                     var smr = go.GetComponent<SkinnedMeshRenderer>();
                     if (smr != null)
                         ret = smr.sharedMaterials;
+                }
+                if (ret == null)
+                {
+                    var mf = go.GetComponent<MeshRenderer>();
+                    if (mf != null)
+                        ret = mf.sharedMaterials;
                 }
             }
             else

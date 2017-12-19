@@ -87,7 +87,7 @@ namespace UTJ.BlendShapeEditor
             }
             else
             {
-                EditorGUILayout.LabelField("Has " + numShapes + " Slendshapes");
+                EditorGUILayout.LabelField("Has " + numShapes + " Blendshapes");
 
                 EditorGUILayout.BeginHorizontal();
                 GUILayout.Space(indentSize);
@@ -124,7 +124,7 @@ namespace UTJ.BlendShapeEditor
                 EditorGUILayout.EndHorizontal();
 
                 GUILayout.Space(6);
-                if (GUILayout.Button("Convert To Compose Data"))
+                if (GUILayout.Button("Convert To Compose Data", GUILayout.Width(200)))
                     ConvertToComposeData(targetObject);
             }
         }

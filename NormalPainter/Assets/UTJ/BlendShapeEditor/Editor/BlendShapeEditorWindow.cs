@@ -88,6 +88,37 @@ namespace UTJ.BlendShapeEditor
             if (m_foldBlendShapes)
             {
                 var bsData = m_data.blendShapeData;
+                var evt = Event.current;
+
+                // handle drag & drop
+                if (evt.type == EventType.DragUpdated || evt.type == EventType.DragPerform)
+                {
+                    var dropArea = GUILayoutUtility.GetLastRect();
+                    if (dropArea.Contains(evt.mousePosition))
+                    {
+                        DragAndDrop.visualMode = DragAndDropVisualMode.Copy;
+
+                        if (evt.type == EventType.DragPerform)
+                        {
+                            DragAndDrop.AcceptDrag();
+                            Undo.RecordObject(m_data, "BlendShapeEditor");
+                            foreach (var obj in DragAndDrop.objectReferences)
+                            {
+                                var mesh = Utils.ExtractMesh(obj);
+                                if (mesh != null)
+                                {
+                                    var bsd = new BlendShapeData();
+                                    bsd.name = mesh.name;
+                                    bsd.frames.Add(new BlendShapeFrameData { mesh = obj });
+                                    m_data.blendShapeData.Add(bsd);
+                                }
+                            }
+                        }
+                        evt.Use();
+                    }
+                }
+
+
                 BlendShapeData delBS = null;
 
                 EditorGUI.indentLevel++;
@@ -97,7 +128,6 @@ namespace UTJ.BlendShapeEditor
                     if (data.fold)
                     {
                         // handle drag & drop
-                        Event evt = Event.current;
                         if (evt.type == EventType.DragUpdated || evt.type == EventType.DragPerform)
                         {
                             var dropArea = GUILayoutUtility.GetLastRect();
@@ -114,7 +144,7 @@ namespace UTJ.BlendShapeEditor
                                     {
                                         var mesh = Utils.ExtractMesh(obj);
                                         if(mesh != null)
-                                            data.frames.Add(new BlendShapeFrameData { mesh = mesh });
+                                            data.frames.Add(new BlendShapeFrameData { mesh = obj });
                                     }
                                     data.NormalizeWeights();
                                 }
@@ -126,7 +156,10 @@ namespace UTJ.BlendShapeEditor
                         EditorGUI.BeginChangeCheck();
                         var name = EditorGUILayout.TextField("Name", data.name);
                         if (EditorGUI.EndChangeCheck())
+                        {
+                            Undo.RecordObject(m_data, "BlendShapeEditor");
                             data.name = name;
+                        }
 
                         EditorGUILayout.LabelField("Frames (Weight : Mesh)");
                         EditorGUI.indentLevel++;
@@ -139,12 +172,18 @@ namespace UTJ.BlendShapeEditor
                             EditorGUI.BeginChangeCheck();
                             var w = EditorGUILayout.FloatField(frame.weight, GUILayout.Width(100));
                             if (EditorGUI.EndChangeCheck())
+                            {
+                                Undo.RecordObject(m_data, "BlendShapeEditor");
                                 frame.weight = w;
+                            }
 
                             EditorGUI.BeginChangeCheck();
                             var m = EditorGUILayout.ObjectField(frame.mesh, typeof(UnityEngine.Object), true);
                             if (EditorGUI.EndChangeCheck())
+                            {
+                                Undo.RecordObject(m_data, "BlendShapeEditor");
                                 frame.mesh = m;
+                            }
 
                             if (GUILayout.Button("-", GUILayout.Width(20)))
                                 delFrame = frame;
@@ -170,20 +209,25 @@ namespace UTJ.BlendShapeEditor
 
                         GUILayout.BeginHorizontal();
                         GUILayout.Space(indentSize * 2);
-                        if (GUILayout.Button("Delete", GUILayout.Width(80)))
-                        {
-                            Undo.RecordObject(m_data, "BlendShapeEditor");
-                            delBS = data;
-                        }
                         if (GUILayout.Button("Normalize Weights", GUILayout.Width(120)))
                         {
                             Undo.RecordObject(m_data, "BlendShapeEditor");
                             data.NormalizeWeights();
                         }
-                        if (GUILayout.Button("Sort By Weights", GUILayout.Width(120)))
+                        if (GUILayout.Button("Sort By Weights", GUILayout.Width(110)))
                         {
                             Undo.RecordObject(m_data, "BlendShapeEditor");
                             data.SortByWeights();
+                        }
+                        if (GUILayout.Button("Clear", GUILayout.Width(60)))
+                        {
+                            Undo.RecordObject(m_data, "BlendShapeEditor");
+                            data.frames.Clear();
+                        }
+                        if (GUILayout.Button("Delete", GUILayout.Width(60)))
+                        {
+                            Undo.RecordObject(m_data, "BlendShapeEditor");
+                            delBS = data;
                         }
                         GUILayout.EndHorizontal();
 
@@ -199,26 +243,60 @@ namespace UTJ.BlendShapeEditor
                 GUILayout.Space(6);
                 GUILayout.BeginHorizontal();
                 GUILayout.Space(indentSize * 1);
-                if (GUILayout.Button("Add Blend Shape"))
+                if (GUILayout.Button("Add BlendShape", GUILayout.Width(120)))
                 {
+                    Undo.RecordObject(m_data, "BlendShapeEditor");
                     var tmp = new BlendShapeData();
                     tmp.name = "NewBlendShape" + bsData.Count;
                     tmp.frames.Add(new BlendShapeFrameData());
                     bsData.Add(tmp);
+                }
+                if (GUILayout.Button("Clear BlendShapes", GUILayout.Width(120)))
+                {
+                    Undo.RecordObject(m_data, "BlendShapeEditor");
+                    bsData.Clear();
                 }
                 GUILayout.EndHorizontal();
             }
 
             GUILayout.Space(12);
 
-            if (GUILayout.Button("Export"))
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button("Generate", GUILayout.Width(100)))
             {
                 var result = Generate();
                 if (result != null)
                 {
-                    Utils.MeshToGameObject(result, Vector3.zero, Utils.ExtractMaterials(m_data.baseMesh));
+                    var go = Utils.MeshToGameObject(result, Vector3.zero, Utils.ExtractMaterials(m_data.baseMesh));
+                    Selection.activeGameObject = go;
                 }
             }
+            if (GUILayout.Button("Generate And Export .asset", GUILayout.Width(200)))
+            {
+                var result = Generate();
+                if (result != null)
+                {
+                    var go = Utils.MeshToGameObject(result, Vector3.zero, Utils.ExtractMaterials(m_data.baseMesh));
+                    Selection.activeGameObject = go;
+
+                    string path = EditorUtility.SaveFilePanel("Export .asset file", "Assets", result.name, "asset");
+                    if (path.Length > 0)
+                    {
+                        var dataPath = Application.dataPath;
+                        if (!path.StartsWith(dataPath))
+                        {
+                            Debug.LogError("Invalid path: Path must be under " + dataPath);
+                        }
+                        else
+                        {
+                            path = path.Replace(dataPath, "Assets");
+                            AssetDatabase.CreateAsset(result, path);
+                            Debug.Log("Asset exported: " + path);
+                        }
+                    }
+                }
+            }
+            GUILayout.EndHorizontal();
         }
 
 
