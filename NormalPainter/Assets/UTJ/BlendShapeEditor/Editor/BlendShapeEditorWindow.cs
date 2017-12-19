@@ -296,6 +296,51 @@ namespace UTJ.BlendShapeEditor
                 }
             }
             GUILayout.EndHorizontal();
+
+            GUILayout.Space(6);
+
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button("Save Settings", GUILayout.Width(100)))
+            {
+                string path = EditorUtility.SaveFilePanel("Save settings", "Assets/UTJ/BlendShapeEditor/Data", m_data.baseMesh.name, "asset");
+                if (path.Length > 0)
+                {
+                    var dataPath = Application.dataPath;
+                    if (!path.StartsWith(dataPath))
+                    {
+                        Debug.LogError("Invalid path: Path must be under " + dataPath);
+                    }
+                    else
+                    {
+                        path = path.Replace(dataPath, "Assets");
+                        AssetDatabase.DeleteAsset(path);
+                        AssetDatabase.CreateAsset(Instantiate(m_data), path);
+                    }
+                }
+            }
+            if (GUILayout.Button("Load Settings", GUILayout.Width(100)))
+            {
+                string path = EditorUtility.OpenFilePanel("Load settings", "Assets/UTJ/BlendShapeEditor/Data", "asset");
+                if (path.Length > 0)
+                {
+                    var dataPath = Application.dataPath;
+                    if (!path.StartsWith(dataPath))
+                    {
+                        Debug.LogError("Invalid path: Path must be under " + dataPath);
+                    }
+                    else
+                    {
+                        path = path.Replace(dataPath, "Assets");
+                        var ds = AssetDatabase.LoadAssetAtPath<BlendShapeEditorData>(path);
+                        if (ds != null)
+                            m_data = Instantiate(ds);
+                        else
+                            Debug.LogError("failed.");
+                    }
+                }
+
+            }
+            GUILayout.EndHorizontal();
         }
 
 
