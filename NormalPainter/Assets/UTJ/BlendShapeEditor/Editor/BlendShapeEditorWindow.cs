@@ -48,12 +48,17 @@ namespace UTJ.BlendShapeEditor
             isOpen = false;
 
             Undo.undoRedoPerformed -= OnUndoRedo;
-            AssetDatabase.DeleteAsset(dataPath);
-            AssetDatabase.CreateAsset(Instantiate(m_data), dataPath);
+            if (m_data != null)
+            {
+                AssetDatabase.DeleteAsset(dataPath);
+                AssetDatabase.CreateAsset(Instantiate(m_data), dataPath);
+            }
         }
 
         private void OnGUI()
         {
+            if (m_data == null) return;
+
             m_scrollPos = EditorGUILayout.BeginScrollView(m_scrollPos);
             EditorGUILayout.BeginVertical();
             DrawBlendShapeEditor();
@@ -72,8 +77,11 @@ namespace UTJ.BlendShapeEditor
 
         public void ModifyBlendShapeData(Action<BlendShapeEditorData> op)
         {
-            Undo.RecordObject(m_data, "BlendShapeEditor");
-            op(m_data);
+            if (m_data != null)
+            {
+                Undo.RecordObject(m_data, "BlendShapeEditor");
+                op(m_data);
+            }
         }
 
 
@@ -292,7 +300,7 @@ namespace UTJ.BlendShapeEditor
             GUILayout.Space(18);
 
             GUILayout.BeginHorizontal();
-            if (GUILayout.Button("Generate New Mesh", GUILayout.Width(140)))
+            if (GUILayout.Button("Generate New Mesh", GUILayout.Width(130)))
             {
                 var result = Compose();
                 if (result != null)
@@ -306,7 +314,7 @@ namespace UTJ.BlendShapeEditor
                 Compose(true);
                 EditorUtility.SetDirty(m_data.baseMesh);
             }
-            if (GUILayout.Button("Export BaseMesh To .asset", GUILayout.Width(180)))
+            if (GUILayout.Button("Export BaseMesh To .asset", GUILayout.Width(170)))
             {
                 var baseMesh = Utils.ExtractMesh(m_data.baseMesh);
                 string path = EditorUtility.SaveFilePanel("Export .asset file", "Assets", baseMesh.name, "asset");
