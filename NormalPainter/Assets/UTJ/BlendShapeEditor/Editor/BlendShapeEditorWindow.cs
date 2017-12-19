@@ -161,7 +161,7 @@ namespace UTJ.BlendShapeEditor
                             data.name = name;
                         }
 
-                        EditorGUILayout.LabelField("Frames (Weight : Mesh)");
+                        EditorGUILayout.LabelField("Frames (Weight Mesh - Vertex Normal Tangent)");
                         EditorGUI.indentLevel++;
 
                         BlendShapeFrameData delFrame = null;
@@ -169,20 +169,50 @@ namespace UTJ.BlendShapeEditor
                         {
                             EditorGUILayout.BeginHorizontal();
 
+                            var rect = EditorGUILayout.GetControlRect();
+                            var width = rect.width;
+                            var pos = rect.position;
+
                             EditorGUI.BeginChangeCheck();
-                            var w = EditorGUILayout.FloatField(frame.weight, GUILayout.Width(100));
+                            var w = EditorGUI.FloatField(new Rect(pos, new Vector2(100, 16)), frame.weight);
                             if (EditorGUI.EndChangeCheck())
                             {
                                 Undo.RecordObject(m_data, "BlendShapeEditor");
                                 frame.weight = w;
                             }
 
+                            pos.x += 60;
+
                             EditorGUI.BeginChangeCheck();
-                            var m = EditorGUILayout.ObjectField(frame.mesh, typeof(UnityEngine.Object), true);
+                            var m = EditorGUI.ObjectField(new Rect(pos, new Vector2(width - 65, 16)), frame.mesh, typeof(UnityEngine.Object), true);
                             if (EditorGUI.EndChangeCheck())
                             {
                                 Undo.RecordObject(m_data, "BlendShapeEditor");
                                 frame.mesh = m;
+                            }
+
+                            EditorGUI.BeginChangeCheck();
+                            var v = GUILayout.Toggle(frame.vertex, "V", GUILayout.Width(25));
+                            if (EditorGUI.EndChangeCheck())
+                            {
+                                Undo.RecordObject(m_data, "BlendShapeEditor");
+                                frame.vertex = v;
+                            }
+
+                            EditorGUI.BeginChangeCheck();
+                            var n = GUILayout.Toggle(frame.normal, "N", GUILayout.Width(25));
+                            if (EditorGUI.EndChangeCheck())
+                            {
+                                Undo.RecordObject(m_data, "BlendShapeEditor");
+                                frame.normal = n;
+                            }
+
+                            EditorGUI.BeginChangeCheck();
+                            var t = GUILayout.Toggle(frame.tangent, "T", GUILayout.Width(25));
+                            if (EditorGUI.EndChangeCheck())
+                            {
+                                Undo.RecordObject(m_data, "BlendShapeEditor");
+                                frame.tangent = t;
                             }
 
                             if (GUILayout.Button("-", GUILayout.Width(20)))
@@ -392,14 +422,34 @@ namespace UTJ.BlendShapeEditor
                     }
                     else
                     {
-                        GenerateDelta(baseVertices, mesh.vertices, deltaVertices);
-                        GenerateDelta(baseNormals, mesh.normals, deltaNormals);
-                        GenerateDelta(baseTangents, mesh.tangents, deltaTangents);
+                        if (frame.vertex)
+                            GenerateDelta(baseVertices, mesh.vertices, deltaVertices);
+                        else
+                            ZeroClear(deltaVertices);
+
+                        if (frame.normal)
+                            GenerateDelta(baseNormals, mesh.normals, deltaNormals);
+                        else
+                            ZeroClear(deltaNormals);
+
+                        if (frame.tangent)
+                            GenerateDelta(baseTangents, mesh.tangents, deltaTangents);
+                        else
+                            ZeroClear(deltaTangents);
+
                         ret.AddBlendShapeFrame(name, frame.weight, deltaVertices, deltaNormals, deltaTangents);
                     }
                 }
             }
             return ret;
+        }
+
+        private static void ZeroClear(Vector3[] dst)
+        {
+            int len = dst.Length;
+            var zero = Vector3.zero;
+            for (int i = 0; i < len; ++i)
+                dst[i] = zero;
         }
 
         private static void GenerateDelta(Vector3[] from, Vector3[] to, Vector3[] dst)

@@ -10,6 +10,9 @@ namespace UTJ.BlendShapeEditor
     {
         public float weight = 100.0f;
         public UnityEngine.Object mesh;
+        public bool vertex = true;
+        public bool normal = true;
+        public bool tangent = true;
     }
 
     [Serializable]
