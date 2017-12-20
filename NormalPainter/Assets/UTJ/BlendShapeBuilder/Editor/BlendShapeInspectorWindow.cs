@@ -3,7 +3,7 @@ using UnityEditor;
 using System;
 using System.Collections.Generic;
 
-namespace UTJ.BlendShapeEditor
+namespace UTJ.BlendShapeBuilder
 {
     public class BlendShapeInspectorWindow : EditorWindow
     {
@@ -241,8 +241,8 @@ namespace UTJ.BlendShapeEditor
                 }
             }
 
-            BlendShapeEditorWindow.Open();
-            var window = EditorWindow.GetWindow<BlendShapeEditorWindow>();
+            BlendShapeBuilderWindow.Open();
+            var window = EditorWindow.GetWindow<BlendShapeBuilderWindow>();
             window.ModifyBlendShapeData(d => {
                 d.baseMesh = baseGO;
                 d.blendShapeData = data;

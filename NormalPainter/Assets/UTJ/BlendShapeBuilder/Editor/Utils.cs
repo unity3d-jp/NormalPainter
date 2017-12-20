@@ -3,7 +3,7 @@ using UnityEditor;
 using System;
 using System.Collections.Generic;
 
-namespace UTJ.BlendShapeEditor
+namespace UTJ.BlendShapeBuilder
 {
     static class Utils
     {

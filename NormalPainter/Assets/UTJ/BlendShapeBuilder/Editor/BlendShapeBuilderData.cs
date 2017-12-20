@@ -3,7 +3,7 @@ using UnityEditor;
 using System;
 using System.Collections.Generic;
 
-namespace UTJ.BlendShapeEditor
+namespace UTJ.BlendShapeBuilder
 {
     [Serializable]
     public class BlendShapeFrameData
@@ -44,7 +44,7 @@ namespace UTJ.BlendShapeEditor
     }
 
     [Serializable]
-    public class BlendShapeEditorData : ScriptableObject
+    public class BlendShapeBuilderData : ScriptableObject
     {
         public UnityEngine.Object baseMesh;
         public bool preserveExistingBlendShapes = true;
