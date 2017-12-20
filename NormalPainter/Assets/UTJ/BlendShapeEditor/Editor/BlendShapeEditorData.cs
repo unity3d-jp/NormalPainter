@@ -47,6 +47,7 @@ namespace UTJ.BlendShapeEditor
     public class BlendShapeEditorData : ScriptableObject
     {
         public UnityEngine.Object baseMesh;
+        public bool preserveExistingBlendShapes = true;
         public List<BlendShapeData> blendShapeData = new List<BlendShapeData>();
     }
 }
