@@ -379,7 +379,6 @@ namespace UTJ.BlendShapeBuilder
             if (GUILayout.Button("Update Mesh", GUILayout.Width(100)))
             {
                 Build(true);
-                EditorUtility.SetDirty(m_data.baseMesh);
             }
             {
                 EditorGUI.BeginChangeCheck();
@@ -463,7 +462,7 @@ namespace UTJ.BlendShapeBuilder
                         if (ds != null)
                             m_data = Instantiate(ds);
                         else
-                            Debug.LogError("Invalid path or asset.");
+                            Debug.LogError("Invalid path or asset");
                     }
                 }
 
@@ -475,14 +474,14 @@ namespace UTJ.BlendShapeBuilder
         {
             if (m_data.baseMesh == null)
             {
-                Debug.LogWarning("Base mesh is not set.");
+                Debug.LogWarning("Base mesh is not set");
                 return;
             }
 
             var baseMesh = Utils.ExtractMesh(m_data.baseMesh);
             if (baseMesh == null)
             {
-                Debug.LogWarning("Base mesh has no valid mesh.");
+                Debug.LogWarning("Base mesh has no valid mesh");
                 return;
             }
 
@@ -504,24 +503,30 @@ namespace UTJ.BlendShapeBuilder
 
             if (set.Count == 0)
             {
-                Debug.Log("No valid targets in this scene.");
+                Debug.Log("No valid targets in this scene");
             }
             else
             {
                 var sel = new List<UnityEngine.Object>(set);
                 sel.Sort((a, b) => { return a.name.CompareTo(b.name); });
                 Selection.objects = sel.ToArray();
-                Debug.Log(sel.Count + " targets found.");
+                Debug.Log(sel.Count + " targets found");
             }
         }
 
 
         public Mesh Build(bool updateExistingMesh = false)
         {
+            if (m_data.baseMesh == null)
+            {
+                Debug.LogError("Base mesh is not set");
+                return null;
+            }
+
             var baseMesh = Utils.ExtractMesh(m_data.baseMesh);
             if(baseMesh == null)
             {
-                Debug.LogError("Base mesh is not set");
+                Debug.LogError("Base mesh has no valid mesh");
                 return null;
             }
 
@@ -529,6 +534,7 @@ namespace UTJ.BlendShapeBuilder
             if (updateExistingMesh)
             {
                 ret = baseMesh;
+                EditorUtility.SetDirty(m_data.baseMesh);
             }
             else
             {
@@ -627,7 +633,8 @@ namespace UTJ.BlendShapeBuilder
                     }
                 }
             }
-            Debug.Log("Done: added " + numAdded + " frames.");
+
+            Debug.Log("Done: added " + numAdded + " frames");
             return ret;
         }
 

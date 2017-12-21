@@ -48,9 +48,9 @@ namespace UTJ.BlendShapeBuilder
         private void OnGUI()
         {
             m_scrollPos = EditorGUILayout.BeginScrollView(m_scrollPos);
-            EditorGUILayout.BeginVertical();
+            GUILayout.BeginVertical();
             DrawBlendShapeInspector();
-            EditorGUILayout.EndVertical();
+            GUILayout.EndVertical();
             EditorGUILayout.EndScrollView();
         }
 
@@ -89,39 +89,42 @@ namespace UTJ.BlendShapeBuilder
             {
                 EditorGUILayout.LabelField("Has " + numShapes + " Blendshapes");
 
-                EditorGUILayout.BeginHorizontal();
+                GUILayout.BeginHorizontal();
                 GUILayout.Space(indentSize);
-                EditorGUILayout.BeginVertical();
+                GUILayout.BeginVertical();
 
                 for (int si = 0; si < numShapes; ++si)
                 {
                     var name = targetMesh.GetBlendShapeName(si);
                     int numFrames = targetMesh.GetBlendShapeFrameCount(si);
 
-                    EditorGUILayout.Space();
-                    EditorGUILayout.BeginHorizontal();
+                    GUILayout.BeginVertical("Box");
+
+                    GUILayout.BeginHorizontal();
                     GUILayout.Label(name + " (" + numFrames + " frames)");
                     if (GUILayout.Button("Extract All", GUILayout.Width(90)))
                         ExtractBlendShapeFrames(targetMesh, si, -1, materials);
-                    EditorGUILayout.EndHorizontal();
+                    GUILayout.EndHorizontal();
 
-                    EditorGUILayout.BeginHorizontal();
+                    GUILayout.BeginHorizontal();
                     GUILayout.Space(indentSize);
-                    EditorGUILayout.BeginVertical();
+                    GUILayout.BeginVertical();
                     for (int fi = 0; fi < numFrames; ++fi)
                     {
                         float weight = targetMesh.GetBlendShapeFrameWeight(si, fi);
-                        EditorGUILayout.BeginHorizontal();
+                        GUILayout.BeginHorizontal();
                         GUILayout.Label(weight.ToString(), GUILayout.Width(30));
                         if (GUILayout.Button("Extract", GUILayout.Width(60)))
                             ExtractBlendShapeFrames(targetMesh, si, fi, materials);
-                        EditorGUILayout.EndHorizontal();
+                        GUILayout.EndHorizontal();
                     }
-                    EditorGUILayout.EndVertical();
-                    EditorGUILayout.EndHorizontal();
+                    GUILayout.EndVertical();
+                    GUILayout.EndHorizontal();
+
+                    GUILayout.EndVertical();
                 }
-                EditorGUILayout.EndVertical();
-                EditorGUILayout.EndHorizontal();
+                GUILayout.EndVertical();
+                GUILayout.EndHorizontal();
 
                 GUILayout.Space(6);
                 if (GUILayout.Button("Convert To Compose Data", GUILayout.Width(200)))
