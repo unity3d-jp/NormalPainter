@@ -186,6 +186,7 @@ namespace UTJ.NormalPainter
         [NonSerialized] public ImageFormat bakeFormat = ImageFormat.PNG;
         [NonSerialized] public int bakeWidth = 1024;
         [NonSerialized] public int bakeHeight = 1024;
+        [NonSerialized] public bool bakeSeparateSubmeshes = true;
         [NonSerialized] public bool bakeVertexColor01 = true;
 
         [NonSerialized] public Texture bakeSource;

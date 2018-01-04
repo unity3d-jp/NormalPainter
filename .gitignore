@@ -23,6 +23,8 @@ _build_*/
 external/
 Library/
 Temp/
+TestLocal/
+TestLocal.meta
 
 NormalPainter/*.csproj
 NormalPainter/*.sln

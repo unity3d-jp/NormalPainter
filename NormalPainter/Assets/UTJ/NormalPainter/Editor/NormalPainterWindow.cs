@@ -689,13 +689,14 @@ namespace UTJ.NormalPainter
                 settings.bakeFormat = (ImageFormat)EditorGUILayout.EnumPopup("Format", settings.bakeFormat);
                 settings.bakeWidth = EditorGUILayout.IntField("Width", settings.bakeWidth);
                 settings.bakeHeight = EditorGUILayout.IntField("Height", settings.bakeHeight);
+                settings.bakeSeparateSubmeshes = EditorGUILayout.Toggle("Separate Submeshes", settings.bakeSeparateSubmeshes);
 
                 if (GUILayout.Button("Bake"))
                 {
                     string path = settings.bakeFormat == ImageFormat.PNG ?
                         EditorUtility.SaveFilePanel("Export .png file", "", m_target.name + "_normal", "png") :
                         EditorUtility.SaveFilePanel("Export .exr file", "", m_target.name + "_normal", "exr");
-                    m_target.BakeToTexture(settings.bakeWidth, settings.bakeHeight, path);
+                    m_target.BakeToTexture(settings.bakeWidth, settings.bakeHeight, path, settings.bakeFormat, settings.bakeSeparateSubmeshes);
                 }
             }
             else if (settings.inexportIndex == 2)

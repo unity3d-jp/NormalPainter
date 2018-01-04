@@ -1,4 +1,5 @@
 using System;
+using System.Text.RegularExpressions;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Reflection;
@@ -884,38 +885,84 @@ namespace UTJ.NormalPainter
             return r;
         }
 
-        public bool BakeToTexture(int width, int height, string path)
+        public bool BakeToTexture(int width, int height, string pathBase, ImageFormat format, bool separateSubmesh)
         {
-            if (path == null || path.Length == 0)
+            if (pathBase == null || pathBase.Length == 0)
                 return false;
 
             m_matBake.SetBuffer("_BaseNormals", m_cbBaseNormals);
             m_matBake.SetBuffer("_BaseTangents", m_cbBaseTangents);
 
-            var rt = new RenderTexture(width, height, 0, RenderTextureFormat.ARGBHalf);
-            var tex = new Texture2D(rt.width, rt.height, TextureFormat.RGBAHalf, false);
-            rt.Create();
+            int numSubmeshes = m_meshTarget.subMeshCount;
 
-            m_cmdDraw.Clear();
-            m_cmdDraw.SetRenderTarget(rt);
-            for (int si = 0; si < m_meshTarget.subMeshCount; ++si)
-                m_cmdDraw.DrawMesh(m_meshTarget, Matrix4x4.identity, m_matBake, si, 0);
-            Graphics.ExecuteCommandBuffer(m_cmdDraw);
+            if(separateSubmesh)
+            {
+                for (int si = 0; si < numSubmeshes; ++si)
+                {
+                    var rt = new RenderTexture(width, height, 0, RenderTextureFormat.ARGBHalf);
+                    var tex = new Texture2D(rt.width, rt.height, TextureFormat.RGBAHalf, false);
+                    rt.Create();
 
-            RenderTexture.active = rt;
-            tex.ReadPixels(new Rect(0, 0, tex.width, tex.height), 0, 0, false);
-            tex.Apply();
-            RenderTexture.active = null;
+                    m_cmdDraw.Clear();
+                    m_cmdDraw.SetRenderTarget(rt);
+                    m_cmdDraw.DrawMesh(m_meshTarget, Matrix4x4.identity, m_matBake, si, 0);
+                    Graphics.ExecuteCommandBuffer(m_cmdDraw);
 
-            if (path.EndsWith(".png"))
-                System.IO.File.WriteAllBytes(path, tex.EncodeToPNG());
+                    RenderTexture.active = rt;
+                    tex.ReadPixels(new Rect(0, 0, tex.width, tex.height), 0, 0, false);
+                    tex.Apply();
+                    RenderTexture.active = null;
+
+                    string path = pathBase;
+                    if (numSubmeshes > 1)
+                    {
+                        var regex = new Regex("\\.*$");
+                        path = regex.Replace(pathBase, "");
+                        path += string.Format("_submesh{0}", si);
+                        switch (format)
+                        {
+                            case ImageFormat.PNG: path += ".png"; break;
+                            case ImageFormat.EXR: path += ".exr"; break;
+                        }
+                    }
+                    switch (format)
+                    {
+                        case ImageFormat.PNG: System.IO.File.WriteAllBytes(path, tex.EncodeToPNG()); break;
+                        case ImageFormat.EXR: System.IO.File.WriteAllBytes(path, tex.EncodeToEXR()); break;
+                        default: Debug.LogError("Unknown format"); break;
+                    }
+
+                    DestroyImmediate(tex);
+                    DestroyImmediate(rt);
+                }
+            }
             else
-                System.IO.File.WriteAllBytes(path, tex.EncodeToEXR());
+            {
+                var rt = new RenderTexture(width, height, 0, RenderTextureFormat.ARGBHalf);
+                var tex = new Texture2D(rt.width, rt.height, TextureFormat.RGBAHalf, false);
+                rt.Create();
 
+                m_cmdDraw.Clear();
+                m_cmdDraw.SetRenderTarget(rt);
+                for (int si = 0; si < numSubmeshes; ++si)
+                    m_cmdDraw.DrawMesh(m_meshTarget, Matrix4x4.identity, m_matBake, si, 0);
+                Graphics.ExecuteCommandBuffer(m_cmdDraw);
 
-            DestroyImmediate(tex);
-            DestroyImmediate(rt);
+                RenderTexture.active = rt;
+                tex.ReadPixels(new Rect(0, 0, tex.width, tex.height), 0, 0, false);
+                tex.Apply();
+                RenderTexture.active = null;
 
+                switch (format)
+                {
+                    case ImageFormat.PNG: System.IO.File.WriteAllBytes(pathBase, tex.EncodeToPNG()); break;
+                    case ImageFormat.EXR: System.IO.File.WriteAllBytes(pathBase, tex.EncodeToEXR()); break;
+                    default: Debug.LogError("Unknown format"); break;
+                }
+
+                DestroyImmediate(tex);
+                DestroyImmediate(rt);
+            }
             return true;
         }
 
@@ -968,7 +1015,6 @@ namespace UTJ.NormalPainter
             m_csBakeFromMap.SetBuffer(0, "_Tangents", m_cbBaseTangents);
             m_csBakeFromMap.SetBuffer(0, "_Dst", m_cbNormals);
             m_csBakeFromMap.Dispatch(0, m_normals.Count, 1, 1);
-
             m_cbNormals.GetData(m_normals);
             cbUV.Dispose();
 
