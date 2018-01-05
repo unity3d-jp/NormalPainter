@@ -27,6 +27,7 @@ namespace UTJ.NormalPainter
             }
 
             public int index;
+            public Mesh mesh;
             public Vector3[] normals;
             public Record[] records;
         }
@@ -215,7 +216,7 @@ namespace UTJ.NormalPainter
                 m_csBakeFromMap = AssetDatabase.LoadAssetAtPath<ComputeShader>(AssetDatabase.GUIDToAssetPath("f6687b99e1b6bfc4f854f46669e84e31"));
 
             if (m_meshTarget == null ||
-                m_meshTarget.vertexCount != tmesh.vertexCount ||
+                m_meshTarget != tmesh ||
                 (m_points != null && m_meshTarget.vertexCount != m_points.Count))
             {
                 m_meshTarget = tmesh;
@@ -417,6 +418,12 @@ namespace UTJ.NormalPainter
 
         public int HandleEditTools()
         {
+            // check if model has been changed
+            if(m_meshTarget != GetTargetMesh())
+            {
+                BeginEdit();
+            }
+
             var editMode = m_settings.editMode;
             Event e = Event.current;
             var et = e.type;

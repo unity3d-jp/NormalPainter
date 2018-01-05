@@ -473,7 +473,7 @@ namespace UTJ.NormalPainter
                 if (m_settings.tangentsMode == TangentsUpdateMode.Auto)
                     RecalculateTangents();
             }
-
+            m_history.mesh = m_meshTarget;
             m_history.records = records != null ? (History.Record[])records.Clone() : null;
 
             Undo.FlushUndoRecordObjects();
@@ -485,6 +485,11 @@ namespace UTJ.NormalPainter
             {
                 m_historyIndex = m_history.index;
 
+                if (m_history.mesh != m_meshTarget)
+                {
+                    m_meshTarget = m_history.mesh;
+                    BeginEdit();
+                }
                 UpdateTransform();
                 if (m_history.normals != null && m_normals != null && m_history.normals.Length == m_normals.Count)
                 {
@@ -1230,17 +1235,17 @@ namespace UTJ.NormalPainter
             return ret;
         }
 
-        public void ApplyProjection(GameObject go, PinnedList<Vector3> raiDirs, bool pushUndo)
+        public void ApplyProjection(GameObject go, PinnedList<Vector3> rayDirs, bool pushUndo)
         {
             var mdata = new MeshData();
             if (mdata.Extract(go))
-                ApplyProjection(mdata, raiDirs, pushUndo);
+                ApplyProjection(mdata, rayDirs, pushUndo);
         }
-        public void ApplyProjection(MeshData normalSource, PinnedList<Vector3> raiDirs, bool pushUndo)
+        public void ApplyProjection(MeshData normalSource, PinnedList<Vector3> rayDirs, bool pushUndo)
         {
             bool mask = m_numSelected > 0;
             var np = (npMeshData)normalSource;
-            npProjectNormals(ref m_npModelData, ref np, raiDirs, mask);
+            npProjectNormals(ref m_npModelData, ref np, rayDirs, mask);
 
             UpdateNormals();
             if (pushUndo) PushUndo();
