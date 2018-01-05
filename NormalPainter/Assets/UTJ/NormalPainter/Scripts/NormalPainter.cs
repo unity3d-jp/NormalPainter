@@ -415,6 +415,7 @@ namespace UTJ.NormalPainter
         Vector3 m_prevMove;
         Quaternion m_prevRot;
         Vector3 m_prevScale;
+        bool m_toolHanding = false;
 
         public int HandleEditTools()
         {
@@ -541,10 +542,16 @@ namespace UTJ.NormalPainter
 
             if (handled)
             {
+                m_toolHanding = true;
                 ret |= (int)SceneGUIState.Repaint;
-                if (et == EventType.MouseUp || et == EventType.MouseMove)
-                    PushUndo();
             }
+            else if (m_toolHanding && et == EventType.MouseUp)
+            {
+                m_toolHanding = false;
+                ret |= (int)SceneGUIState.Repaint;
+                PushUndo();
+            }
+
             return ret;
         }
 
