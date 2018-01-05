@@ -900,7 +900,7 @@ namespace UTJ.NormalPainter
 
             int numSubmeshes = m_meshTarget.subMeshCount;
 
-            if(separateSubmesh)
+            if(separateSubmesh && numSubmeshes > 1)
             {
                 for (int si = 0; si < numSubmeshes; ++si)
                 {
@@ -918,18 +918,15 @@ namespace UTJ.NormalPainter
                     tex.Apply();
                     RenderTexture.active = null;
 
-                    string path = pathBase;
-                    if (numSubmeshes > 1)
+                    var regex = new Regex("\\..+$");
+                    var path = regex.Replace(pathBase, "");
+                    path += string.Format("_submesh{0}", si);
+                    switch (format)
                     {
-                        var regex = new Regex("\\.*$");
-                        path = regex.Replace(pathBase, "");
-                        path += string.Format("_submesh{0}", si);
-                        switch (format)
-                        {
-                            case ImageFormat.PNG: path += ".png"; break;
-                            case ImageFormat.EXR: path += ".exr"; break;
-                        }
+                        case ImageFormat.PNG: path += ".png"; break;
+                        case ImageFormat.EXR: path += ".exr"; break;
                     }
+
                     switch (format)
                     {
                         case ImageFormat.PNG: System.IO.File.WriteAllBytes(path, tex.EncodeToPNG()); break;
