@@ -1,3 +1,3 @@
-call "%VS140COMNTOOLS%..\..\VC\vcvarsall.bat"
+call buildtools.bat
 
-msbuild NormalPainter.vcxproj /t:Build /p:Configuration=Master /p:Platform=x64 /m /nologo
+msbuild NormalPainterCore.vcxproj /t:Build /p:Configuration=Master /p:Platform=x64 /m /nologo
