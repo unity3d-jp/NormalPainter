@@ -431,6 +431,11 @@ namespace UTJ.NormalPainter
                 EditorGUILayout.LabelField("Coordinate", GUILayout.Width(EditorGUIUtility.labelWidth));
                 settings.coordinate = (Coordinate)GUILayout.SelectionGrid((int)settings.coordinate, strCoodinate, strCoodinate.Length);
                 GUILayout.EndHorizontal();
+                if (settings.coordinate == Coordinate.Pivot)
+                {
+                    EditorGUILayout.Space();
+                    settings.pivotRot = Quaternion.Euler(EditorGUILayout.Vector3Field("Pivot Rotation", settings.pivotRot.eulerAngles));
+                }
 
                 if (GUILayout.Button("Assign [Shift+V]"))
                 {
@@ -444,12 +449,13 @@ namespace UTJ.NormalPainter
                 EditorGUILayout.LabelField("Coordinate", GUILayout.Width(EditorGUIUtility.labelWidth));
                 settings.coordinate = (Coordinate)GUILayout.SelectionGrid((int)settings.coordinate, strCoodinate, strCoodinate.Length);
                 GUILayout.EndHorizontal();
-
+                if (settings.coordinate == Coordinate.Pivot)
+                {
+                    EditorGUILayout.Space();
+                    settings.pivotPos = EditorGUILayout.Vector3Field("Pivot Position", settings.pivotPos);
+                    settings.pivotRot = Quaternion.Euler(EditorGUILayout.Vector3Field("Pivot Rotation", settings.pivotRot.eulerAngles));
+                }
                 EditorGUILayout.Space();
-                settings.pivotPos = EditorGUILayout.Vector3Field("Pivot Position", settings.pivotPos);
-                settings.pivotRot = Quaternion.Euler(EditorGUILayout.Vector3Field("Pivot Rotation", settings.pivotRot.eulerAngles));
-                EditorGUILayout.Space();
-
                 if (GUILayout.Button("Apply Move"))
                 {
                     m_target.ApplyMove(settings.moveAmount, settings.coordinate, true);
@@ -465,10 +471,12 @@ namespace UTJ.NormalPainter
 
                 EditorGUILayout.Space();
                 settings.rotatePivot = EditorGUILayout.Toggle("Rotate Around Pivot", settings.rotatePivot);
-                settings.pivotPos = EditorGUILayout.Vector3Field("Pivot Position", settings.pivotPos);
-                settings.pivotRot = Quaternion.Euler(EditorGUILayout.Vector3Field("Pivot Rotation", settings.pivotRot.eulerAngles));
+                if (settings.coordinate == Coordinate.Pivot || settings.rotatePivot)
+                {
+                    settings.pivotPos = EditorGUILayout.Vector3Field("Pivot Position", settings.pivotPos);
+                    settings.pivotRot = Quaternion.Euler(EditorGUILayout.Vector3Field("Pivot Rotation", settings.pivotRot.eulerAngles));
+                }
                 EditorGUILayout.Space();
-
                 if (GUILayout.Button("Apply Rotate"))
                 {
                     if (settings.rotatePivot)
@@ -485,10 +493,12 @@ namespace UTJ.NormalPainter
                 EditorGUILayout.LabelField("Coordinate", GUILayout.Width(EditorGUIUtility.labelWidth));
                 settings.coordinate = (Coordinate)GUILayout.SelectionGrid((int)settings.coordinate, strCoodinate, strCoodinate.Length);
                 GUILayout.EndHorizontal();
-
-                EditorGUILayout.Space();
-                settings.pivotPos = EditorGUILayout.Vector3Field("Pivot Position", settings.pivotPos);
-                settings.pivotRot = Quaternion.Euler(EditorGUILayout.Vector3Field("Pivot Rotation", settings.pivotRot.eulerAngles));
+                if (settings.coordinate == Coordinate.Pivot)
+                {
+                    EditorGUILayout.Space();
+                    settings.pivotPos = EditorGUILayout.Vector3Field("Pivot Position", settings.pivotPos);
+                    settings.pivotRot = Quaternion.Euler(EditorGUILayout.Vector3Field("Pivot Rotation", settings.pivotRot.eulerAngles));
+                }
                 EditorGUILayout.Space();
                 if (GUILayout.Button("Apply Scale"))
                 {
