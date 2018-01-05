@@ -12,7 +12,6 @@ void MeshRefiner::prepare(
     normals.reset(nullptr, 0);
     uv.reset(nullptr, 0);
     colors.reset(nullptr, 0);
-    weights4.reset(nullptr, 0);
 
     submeshes.clear();
     splits.clear();
@@ -29,11 +28,12 @@ void MeshRefiner::prepare(
     new_normals.clear();
     new_uv.clear();
     new_colors.clear();
-    new_weights4.clear();
     new_indices.clear();
     new_indices_triangulated.clear();
     new_indices_submeshes.clear();
-    old2new.clear();
+
+    old2new_indices.clear();
+    new2old_vertices.clear();
 
     num_indices_tri = 0;
 
@@ -143,12 +143,15 @@ bool MeshRefiner::refine(bool optimize)
 
 
 
-
-bool MeshRefiner::genSubmesh(const IArray<int>& materialIDs)
+bool MeshRefiner::genSubmesh(IArray<int> materialIDs)
 {
     submeshes.clear();
 
-    if (materialIDs.size() != counts.size()) {
+    if (materialIDs.empty()) {
+        dummy_materialIDs.resize_zeroclear(counts.size());
+        materialIDs = IArray<int>(dummy_materialIDs);
+    }
+    else if (materialIDs.size() != counts.size()) {
         return false;
     }
 
@@ -233,11 +236,6 @@ bool MeshRefiner::refineDumb()
             mu::CopyWithIndices(new_colors.data(), colors.data(), indices);
             colors = colors;
         }
-        if (!weights4.empty() && (int)weights4.size() != num_indices) {
-            new_weights4.resize(num_indices);
-            mu::CopyWithIndices(new_weights4.data(), weights4.data(), indices);
-            weights4 = new_weights4;
-        }
         flattened = true;
     }
 
@@ -248,14 +246,19 @@ bool MeshRefiner::refineDumb()
     if ((int)points.size() > split_unit) {
         int *sub_indices = new_indices_triangulated.data();
         int offset_faces = 0;
+        int offset_indices = 0;
         int offset_vertices = 0;
         mu::Split(counts, split_unit, [&](int num_faces, int num_vertices, int num_indices_triangulated) {
             mu::Triangulate(sub_indices, IntrusiveArray<int>(&counts[offset_faces], num_faces), swap_faces);
             sub_indices += num_indices_triangulated;
             offset_faces += num_faces;
+            offset_indices += num_indices_triangulated;
             offset_vertices += num_vertices;
 
             auto split = Split{};
+            split.offset_faces = offset_faces;
+            split.offset_indices = offset_indices;
+            split.offset_vertices = offset_vertices;
             split.num_faces = num_faces;
             split.num_vertices = num_vertices;
             split.num_indices = num_vertices; // in this case num_vertex == num_indices
@@ -290,27 +293,31 @@ void MeshRefiner::doRefine(const Body& body)
     new_points.reserve(num_indices);
     new_normals.reserve(num_indices);
     if (!uv.empty()) { new_uv.reserve(num_indices); }
-    if (!weights4.empty()) { new_weights4.reserve(num_indices); }
     new_indices.reserve(num_indices);
 
-    old2new.resize(num_indices, -1);
+    old2new_indices.resize(num_indices, -1);
 
     int num_faces_total = (int)counts.size();
-    int offset_vertices = 0;
+    int offset_faces = 0;
     int offset_indices = 0;
+    int offset_vertices = 0;
     int num_faces = 0;
     int num_indices_triangulated = 0;
 
     auto add_new_split = [&]() {
         auto split = Split{};
+        split.offset_faces = offset_faces;
+        split.offset_indices = offset_indices;
+        split.offset_vertices = offset_vertices;
         split.num_faces = num_faces;
         split.num_indices_triangulated = num_indices_triangulated;
         split.num_vertices = (int)new_points.size() - offset_vertices;
         split.num_indices = (int)new_indices.size() - offset_indices;
         splits.push_back(split);
 
-        offset_vertices += split.num_vertices;
+        offset_faces += split.num_faces;
         offset_indices += split.num_indices;
+        offset_vertices += split.num_vertices;
         num_faces = 0;
         num_indices_triangulated = 0;
     };
@@ -323,7 +330,7 @@ void MeshRefiner::doRefine(const Body& body)
             add_new_split();
 
             // clear vertex cache
-            std::fill(old2new.begin(), old2new.end(), -1);
+            std::fill(old2new_indices.begin(), old2new_indices.end(), -1);
         }
 
         for (int ci = 0; ci < count; ++ci) {
@@ -496,7 +503,6 @@ void MeshRefiner::swapNewData(
     RawVector<float4>& t,
     RawVector<float2>& u,
     RawVector<float4>& c,
-    RawVector<Weights4>& w,
     RawVector<int>& idx)
 {
     if (!new_points.empty()) { p.swap(new_points); }
@@ -509,7 +515,6 @@ void MeshRefiner::swapNewData(
 
     if (!new_uv.empty()) { u.swap(new_uv); }
     if (!new_colors.empty()) { c.swap(new_colors); }
-    if (!new_weights4.empty()) { w.swap(new_weights4); }
 
     if (!new_indices_submeshes.empty()) { idx.swap(new_indices_submeshes); }
     else if (!new_indices_triangulated.empty()) { idx.swap(new_indices_triangulated); }
@@ -528,19 +533,19 @@ int MeshRefiner::findOrAddVertexPNTUC(int vi, const float3& p, const float3& n, 
     int offset = connection.v2f_offsets[vi];
     int count = connection.v2f_counts[vi];
     for (int ci = 0; ci < count; ++ci) {
-        int& ni = old2new[connection.v2f_indices[offset + ci]];
+        int& ni = old2new_indices[connection.v2f_indices[offset + ci]];
         // tangent can be omitted as it is generated by point, normal and uv
         if (ni != -1 && near_equal(new_points[ni], p) && near_equal(new_normals[ni], n) && near_equal(new_uv[ni], u) && near_equal(new_colors[ni], c)) {
             return ni;
         }
         else if (ni == -1) {
+            new2old_vertices.push_back(vi);
             ni = (int)new_points.size();
             new_points.push_back(p);
             new_normals.push_back(n);
             new_tangents.push_back(t);
             new_uv.push_back(u);
             new_colors.push_back(c);
-            if (!weights4.empty()) { new_weights4.push_back(weights4[vi]); }
             return ni;
         }
     }
@@ -552,17 +557,17 @@ int MeshRefiner::findOrAddVertexPNTU(int vi, const float3& p, const float3& n, c
     int offset = connection.v2f_offsets[vi];
     int count = connection.v2f_counts[vi];
     for (int ci = 0; ci < count; ++ci) {
-        int& ni = old2new[connection.v2f_indices[offset + ci]];
+        int& ni = old2new_indices[connection.v2f_indices[offset + ci]];
         if (ni != -1 && near_equal(new_points[ni], p) && near_equal(new_normals[ni], n) && near_equal(new_uv[ni], u)) {
             return ni;
         }
         else if (ni == -1) {
+            new2old_vertices.push_back(vi);
             ni = (int)new_points.size();
             new_points.push_back(p);
             new_normals.push_back(n);
             new_tangents.push_back(t);
             new_uv.push_back(u);
-            if (!weights4.empty()) { new_weights4.push_back(weights4[vi]); }
             return ni;
         }
     }
@@ -574,16 +579,16 @@ int MeshRefiner::findOrAddVertexPNU(int vi, const float3& p, const float3& n, co
     int offset = connection.v2f_offsets[vi];
     int count = connection.v2f_counts[vi];
     for (int ci = 0; ci < count; ++ci) {
-        int& ni = old2new[connection.v2f_indices[offset + ci]];
+        int& ni = old2new_indices[connection.v2f_indices[offset + ci]];
         if (ni != -1 && near_equal(new_points[ni], p) && near_equal(new_normals[ni], n) && near_equal(new_uv[ni], u)) {
             return ni;
         }
         else if (ni == -1) {
+            new2old_vertices.push_back(vi);
             ni = (int)new_points.size();
             new_points.push_back(p);
             new_normals.push_back(n);
             new_uv.push_back(u);
-            if (!weights4.empty()) { new_weights4.push_back(weights4[vi]); }
             return ni;
         }
     }
@@ -595,15 +600,15 @@ int MeshRefiner::findOrAddVertexPN(int vi, const float3& p, const float3& n)
     int offset = connection.v2f_offsets[vi];
     int count = connection.v2f_counts[vi];
     for (int ci = 0; ci < count; ++ci) {
-        int& ni = old2new[connection.v2f_indices[offset + ci]];
+        int& ni = old2new_indices[connection.v2f_indices[offset + ci]];
         if (ni != -1 && near_equal(new_points[ni], p) && near_equal(new_normals[ni], n)) {
             return ni;
         }
         else if (ni == -1) {
+            new2old_vertices.push_back(vi);
             ni = (int)new_points.size();
             new_points.push_back(p);
             new_normals.push_back(n);
-            if (!weights4.empty()) { new_weights4.push_back(weights4[vi]); }
             return ni;
         }
     }
@@ -615,15 +620,15 @@ int MeshRefiner::findOrAddVertexPU(int vi, const float3& p, const float2& u)
     int offset = connection.v2f_offsets[vi];
     int count = connection.v2f_counts[vi];
     for (int ci = 0; ci < count; ++ci) {
-        int& ni = old2new[connection.v2f_indices[offset + ci]];
+        int& ni = old2new_indices[connection.v2f_indices[offset + ci]];
         if (ni != -1 && near_equal(new_points[ni], p) && near_equal(new_uv[ni], u)) {
             return ni;
         }
         else if (ni == -1) {
+            new2old_vertices.push_back(vi);
             ni = (int)new_points.size();
             new_points.push_back(p);
             new_uv.push_back(u);
-            if (!weights4.empty()) { new_weights4.push_back(weights4[vi]); }
             return ni;
         }
     }

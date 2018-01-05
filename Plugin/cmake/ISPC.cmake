@@ -9,7 +9,7 @@ function(setup_ispc)
         return()
     endif()
     
-    set(ISPC_VERSION 1.9.1)
+    set(ISPC_VERSION 1.9.2)
     if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
         set(ISPC_DIR "ispc-v${ISPC_VERSION}-linux")
     elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")

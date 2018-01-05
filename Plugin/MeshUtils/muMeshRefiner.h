@@ -13,13 +13,15 @@ struct MeshRefiner
 
     struct Split
     {
+        int offset_faces = 0;
+        int offset_indices = 0;
+        int offset_vertices = 0;
         int num_faces = 0;
         int num_vertices = 0;
         int num_indices = 0;
         int num_indices_triangulated = 0;
         int num_submeshes = 0;
     };
-
 
     int split_unit = 0; // 0 == no split
     bool triangulate = true;
@@ -31,10 +33,11 @@ struct MeshRefiner
     IArray<float3> normals;
     IArray<float2> uv;
     IArray<float4> colors;
-    IArray<Weights4> weights4;
-
     RawVector<Submesh> submeshes;
     RawVector<Split> splits;
+
+    RawVector<int> old2new_indices; // indices to new indices
+    RawVector<int> new2old_vertices; // indices to old vertices
 
 private:
     RawVector<int> counts_tmp;
@@ -49,12 +52,10 @@ private:
     RawVector<float4> new_tangents;
     RawVector<float2> new_uv;
     RawVector<float4> new_colors;
-    RawVector<Weights4> new_weights4;
     RawVector<int>    new_indices;
     RawVector<int>    new_indices_triangulated;
     RawVector<int>    new_indices_submeshes;
-    RawVector<int>    old2new;
-
+    RawVector<int>    dummy_materialIDs;
     int num_indices_tri = 0;
 
 public:
@@ -66,7 +67,7 @@ public:
     bool refine(bool optimize);
 
     // should be called after refine(), and only valid for triangulated meshes
-    bool genSubmesh(const IArray<int>& materialIDs);
+    bool genSubmesh(IArray<int> materialIDs);
 
     void swapNewData(
         RawVector<float3>& p,
@@ -74,7 +75,6 @@ public:
         RawVector<float4>& t,
         RawVector<float2>& u,
         RawVector<float4>& c,
-        RawVector<Weights4>& w,
         RawVector<int>& idx);
 
 private:
