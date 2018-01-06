@@ -425,8 +425,10 @@ namespace UTJ.NormalPainter
                 BeginEdit();
             }
 
-            var editMode = m_settings.editMode;
             Event e = Event.current;
+            if (e.alt) return 0;
+
+            var editMode = m_settings.editMode;
             var et = e.type;
             int ret = 0;
             bool handled = false;
@@ -566,6 +568,8 @@ namespace UTJ.NormalPainter
 
         int HandleMouseEvent(Event e, EventType et, int id)
         {
+            if (e.alt) return 0;
+
             int ret = 0;
             var editMode = m_settings.editMode;
             bool handled = false;
