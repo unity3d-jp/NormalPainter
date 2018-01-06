@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEditor;
 
@@ -704,8 +705,8 @@ namespace UTJ.NormalPainter
                 if (GUILayout.Button("Bake"))
                 {
                     string path = settings.bakeFormat == ImageFormat.PNG ?
-                        EditorUtility.SaveFilePanel("Export .png file", "", m_target.name + "_normal", "png") :
-                        EditorUtility.SaveFilePanel("Export .exr file", "", m_target.name + "_normal", "exr");
+                        EditorUtility.SaveFilePanel("Export .png file", "", SanitizeForFileName(m_target.name) + "_normal", "png") :
+                        EditorUtility.SaveFilePanel("Export .exr file", "", SanitizeForFileName(m_target.name) + "_normal", "exr");
                     m_target.BakeToTexture(settings.bakeWidth, settings.bakeHeight, path, settings.bakeFormat, settings.bakeSeparateSubmeshes);
                 }
             }
@@ -720,7 +721,7 @@ namespace UTJ.NormalPainter
             {
                 if (GUILayout.Button("Export .asset file"))
                 {
-                    string path = EditorUtility.SaveFilePanel("Export .asset file", "Assets", m_target.name, "asset");
+                    string path = EditorUtility.SaveFilePanel("Export .asset file", "Assets", SanitizeForFileName(m_target.name), "asset");
                     if (path.Length > 0)
                     {
                         var dataPath = Application.dataPath;
@@ -747,7 +748,7 @@ namespace UTJ.NormalPainter
 
                 if (GUILayout.Button("Export .obj file"))
                 {
-                    string path = EditorUtility.SaveFilePanel("Export .obj file", "", m_target.name, "obj");
+                    string path = EditorUtility.SaveFilePanel("Export .obj file", "", SanitizeForFileName(m_target.name), "obj");
                     ObjExporter.Export(m_target.gameObject, path, new ObjExporter.Settings
                     {
                         flipFaces = settings.objFlipFaces,
@@ -1039,6 +1040,12 @@ namespace UTJ.NormalPainter
             }
 
             return handled;
+        }
+
+        public static string SanitizeForFileName(string name)
+        {
+            var reg = new Regex("[\\/:\\*\\?<>\\|\\\"]");
+            return reg.Replace(name, "_");
         }
     }
 }
