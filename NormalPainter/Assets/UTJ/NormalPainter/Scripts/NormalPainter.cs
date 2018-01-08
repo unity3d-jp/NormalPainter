@@ -281,7 +281,7 @@ namespace UTJ.NormalPainter
                 m_npModelData.selection = m_selection;
 
                 var smr = GetComponent<SkinnedMeshRenderer>();
-                if (smr != null)
+                if (smr != null && smr.bones.Length > 0)
                 {
                     m_skinned = true;
 

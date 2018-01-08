@@ -620,11 +620,11 @@ namespace UTJ.NormalPainter
             }
         }
 
-        public void RecalculateTangents()
+        public void RecalculateTangents(bool updateMesh = true)
         {
-            RecalculateTangents(m_settings.tangentsPrecision);
+            RecalculateTangents(m_settings.tangentsPrecision, updateMesh);
         }
-        public void RecalculateTangents(TangentsPrecision precision)
+        public void RecalculateTangents(TangentsPrecision precision, bool updateMesh = true)
         {
             if (precision == TangentsPrecision.Precise)
             {
@@ -654,8 +654,10 @@ namespace UTJ.NormalPainter
                 {
                     npGenerateTangents(ref m_npModelData, m_tangents);
                 }
-                m_meshTarget.SetTangents(m_tangentsPredeformed);
             }
+
+            if (updateMesh)
+                m_meshTarget.SetTangents(m_tangentsPredeformed);
 
             if (m_cbTangents != null)
                 m_cbTangents.SetData(m_tangents);
