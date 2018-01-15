@@ -37,14 +37,15 @@ namespace UTJ.NormalPainter
 
         // internal resources
         [SerializeField] Mesh m_meshTarget;
-        [SerializeField] Mesh m_meshCube;
-        [SerializeField] Mesh m_meshLine;
+        [SerializeField] Mesh m_meshPoint;
+        [SerializeField] Mesh m_meshVector;
         [SerializeField] Mesh m_meshLasso;
         [SerializeField] Material m_matVisualize;
         [SerializeField] Material m_matBake;
         [SerializeField] ComputeShader m_csBakeFromMap;
 
-        ComputeBuffer m_cbArg;
+        ComputeBuffer m_cbArgPoints;
+        ComputeBuffer m_cbArgVectors;
         ComputeBuffer m_cbPoints;
         ComputeBuffer m_cbNormals;
         ComputeBuffer m_cbTangents;
@@ -161,7 +162,7 @@ namespace UTJ.NormalPainter
                 }
             }
 
-            if (m_meshCube == null)
+            if (m_meshPoint == null)
             {
                 float l = 0.5f;
                 var p = new Vector3[] {
@@ -176,8 +177,8 @@ namespace UTJ.NormalPainter
                     new Vector3(-l, l,-l),
                 };
 
-                m_meshCube = new Mesh();
-                m_meshCube.vertices = new Vector3[] {
+                m_meshPoint = new Mesh();
+                m_meshPoint.vertices = new Vector3[] {
                     p[0], p[1], p[2], p[3],
                     p[7], p[4], p[0], p[3],
                     p[4], p[5], p[1], p[0],
@@ -185,7 +186,7 @@ namespace UTJ.NormalPainter
                     p[5], p[6], p[2], p[1],
                     p[7], p[6], p[5], p[4],
                 };
-                m_meshCube.SetIndices(new int[] {
+                m_meshPoint.SetIndices(new int[] {
                     3, 1, 0, 3, 2, 1,
                     7, 5, 4, 7, 6, 5,
                     11, 9, 8, 11, 10, 9,
@@ -193,14 +194,16 @@ namespace UTJ.NormalPainter
                     19, 17, 16, 19, 18, 17,
                     23, 21, 20, 23, 22, 21,
                 }, MeshTopology.Triangles, 0);
+                m_meshPoint.UploadMeshData(false);
             }
 
-            if (m_meshLine == null)
+            if (m_meshVector == null)
             {
-                m_meshLine = new Mesh();
-                m_meshLine.vertices = new Vector3[2] { Vector3.zero, Vector3.zero };
-                m_meshLine.uv = new Vector2[2] { Vector2.zero, Vector2.one };
-                m_meshLine.SetIndices(new int[2] { 0, 1 }, MeshTopology.Lines, 0);
+                m_meshVector = new Mesh();
+                m_meshVector.vertices = new Vector3[2] { Vector3.zero, Vector3.zero };
+                m_meshVector.uv = new Vector2[2] { Vector2.zero, Vector2.one };
+                m_meshVector.SetIndices(new int[2] { 0, 1 }, MeshTopology.Lines, 0);
+                m_meshVector.UploadMeshData(false);
             }
 
             if (m_meshLasso == null)
@@ -329,10 +332,13 @@ namespace UTJ.NormalPainter
                 m_cbSelection.SetData(m_selection);
             }
 
-            if (m_cbArg == null && m_points != null && m_points.Count > 0)
+            if (m_cbArgPoints == null && m_points != null && m_points.Count > 0)
             {
-                m_cbArg = new ComputeBuffer(1, 5 * sizeof(uint), ComputeBufferType.IndirectArguments);
-                m_cbArg.SetData(new uint[5] { m_meshCube.GetIndexCount(0), (uint)m_points.Count, 0, 0, 0 });
+                m_cbArgPoints = new ComputeBuffer(1, 5 * sizeof(uint), ComputeBufferType.IndirectArguments);
+                m_cbArgPoints.SetData(new uint[5] { m_meshPoint.GetIndexCount(0), (uint)m_points.Count, 0, 0, 0 });
+
+                m_cbArgVectors = new ComputeBuffer(1, 5 * sizeof(uint), ComputeBufferType.IndirectArguments);
+                m_cbArgVectors.SetData(new uint[5] { m_meshVector.GetIndexCount(0), (uint)m_points.Count, 0, 0, 0 });
             }
 
             m_settings.InitializeBrushData();
@@ -353,7 +359,8 @@ namespace UTJ.NormalPainter
 
         void ReleaseComputeBuffers()
         {
-            if (m_cbArg != null) { m_cbArg.Release(); m_cbArg = null; }
+            if (m_cbArgPoints != null) { m_cbArgPoints.Release(); m_cbArgPoints = null; }
+            if (m_cbArgVectors != null) { m_cbArgVectors.Release(); m_cbArgVectors = null; }
             if (m_cbPoints != null) { m_cbPoints.Release(); m_cbPoints = null; }
             if (m_cbNormals != null) { m_cbNormals.Release(); m_cbNormals = null; }
             if (m_cbTangents != null) { m_cbTangents.Release(); m_cbTangents = null; }
@@ -726,6 +733,7 @@ namespace UTJ.NormalPainter
                             }
                             m_meshLasso.vertices = vertices;
                             m_meshLasso.SetIndices(indices, MeshTopology.Lines, 0);
+                            m_meshLasso.UploadMeshData(false);
                         }
                     }
                     else if (et == EventType.MouseUp)
@@ -781,7 +789,7 @@ namespace UTJ.NormalPainter
         {
             if(!m_editing) { return; }
 
-            if (m_matVisualize == null || m_meshCube == null || m_meshLine == null)
+            if (m_matVisualize == null || m_meshPoint == null || m_meshVector == null)
             {
                 Debug.LogWarning("NormalEditor: Some resources are missing.\n");
                 return;
@@ -881,35 +889,35 @@ namespace UTJ.NormalPainter
             {
                 // visualize vertices
                 if (m_settings.showVertices && m_points != null)
-                    m_cmdDraw.DrawMeshInstancedIndirect(m_meshCube, 0, m_matVisualize, (int)VisualizeType.Vertices, m_cbArg);
+                    m_cmdDraw.DrawMeshInstancedIndirect(m_meshPoint, 0, m_matVisualize, (int)VisualizeType.Vertices, m_cbArgPoints);
 
                 // visualize binormals
                 if (m_settings.showBinormals && m_tangents != null)
-                    m_cmdDraw.DrawMeshInstancedIndirect(m_meshLine, 0, m_matVisualize, (int)VisualizeType.Binormals, m_cbArg);
+                    m_cmdDraw.DrawMeshInstancedIndirect(m_meshVector, 0, m_matVisualize, (int)VisualizeType.Binormals, m_cbArgVectors);
 
                 // visualize tangents
                 if (m_settings.showTangents && m_tangents != null)
-                    m_cmdDraw.DrawMeshInstancedIndirect(m_meshLine, 0, m_matVisualize, (int)VisualizeType.Tangents, m_cbArg);
+                    m_cmdDraw.DrawMeshInstancedIndirect(m_meshVector, 0, m_matVisualize, (int)VisualizeType.Tangents, m_cbArgVectors);
 
                 // visualize normals
                 if (m_settings.showNormals && m_normals != null)
-                    m_cmdDraw.DrawMeshInstancedIndirect(m_meshLine, 0, m_matVisualize, (int)VisualizeType.Normals, m_cbArg);
+                    m_cmdDraw.DrawMeshInstancedIndirect(m_meshVector, 0, m_matVisualize, (int)VisualizeType.Normals, m_cbArgVectors);
             }
 
             if (m_settings.showBrushRange && m_rayHit)
             {
                 // ray pos
                 if (pickMode || brushMode)
-                    m_cmdDraw.DrawMesh(m_meshCube, Matrix4x4.identity, m_matVisualize, 0, (int)VisualizeType.RayPosition);
+                    m_cmdDraw.DrawMesh(m_meshPoint, Matrix4x4.identity, m_matVisualize, 0, (int)VisualizeType.RayPosition);
 
                 // visualize direction
                 if (pickMode || brushReplace)
-                    m_cmdDraw.DrawMesh(m_meshLine, Matrix4x4.identity, m_matVisualize, 0, (int)VisualizeType.Direction);
+                    m_cmdDraw.DrawMesh(m_meshVector, Matrix4x4.identity, m_matVisualize, 0, (int)VisualizeType.Direction);
             }
             if(brushProjection && m_settings.projectionMode == 0)
             {
                 // visualize projection direction
-                m_cmdDraw.DrawMesh(m_meshLine, Matrix4x4.identity, m_matVisualize, 0, (int)VisualizeType.Direction);
+                m_cmdDraw.DrawMesh(m_meshVector, Matrix4x4.identity, m_matVisualize, 0, (int)VisualizeType.Direction);
             }
 
             // lasso lines
