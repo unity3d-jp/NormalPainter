@@ -41,6 +41,7 @@ namespace UTJ.NormalPainter
         [SerializeField] Mesh m_meshVector;
         [SerializeField] Mesh m_meshLasso;
         [SerializeField] Material m_matVisualize;
+        [SerializeField] Material m_matOverlay;
         [SerializeField] Material m_matBake;
         [SerializeField] ComputeShader m_csBakeFromMap;
 
@@ -52,7 +53,7 @@ namespace UTJ.NormalPainter
         ComputeBuffer m_cbSelection;
         ComputeBuffer m_cbBaseNormals;
         ComputeBuffer m_cbBaseTangents;
-        ComputeBuffer m_cbBrushSamples;
+        Texture2D m_texBrushSamples;
         CommandBuffer m_cmdDraw;
 
         bool m_skinned;
@@ -213,6 +214,8 @@ namespace UTJ.NormalPainter
 
             if (m_matVisualize == null)
                 m_matVisualize = new Material(AssetDatabase.LoadAssetAtPath<Shader>(AssetDatabase.GUIDToAssetPath("03871fa9be0375f4c91cb4842f15b890")));
+            if (m_matOverlay == null)
+                m_matOverlay = new Material(AssetDatabase.LoadAssetAtPath<Shader>(AssetDatabase.GUIDToAssetPath("b531c1011d0464740aa59c2809bbcbb2")));
             if (m_matBake == null)
                 m_matBake = new Material(AssetDatabase.LoadAssetAtPath<Shader>(AssetDatabase.GUIDToAssetPath("4ddd0053dc720414b8afc76bf0a93f8e")));
             if (m_csBakeFromMap == null)
@@ -367,7 +370,7 @@ namespace UTJ.NormalPainter
             if (m_cbSelection != null) { m_cbSelection.Release(); m_cbSelection = null; }
             if (m_cbBaseNormals != null) { m_cbBaseNormals.Release(); m_cbBaseNormals = null; }
             if (m_cbBaseTangents != null) { m_cbBaseTangents.Release(); m_cbBaseTangents = null; }
-            if (m_cbBrushSamples!= null) { m_cbBrushSamples.Release(); m_cbBrushSamples = null; }
+            if (m_texBrushSamples != null) { DestroyImmediate(m_texBrushSamples); m_texBrushSamples = null; }
             if (m_cmdDraw != null) { m_cmdDraw.Release(); m_cmdDraw = null; }
         }
 
@@ -824,14 +827,14 @@ namespace UTJ.NormalPainter
                 if (brushMode)
                 {
                     var bd = m_settings.activeBrush;
-                    if (m_cbBrushSamples == null)
+                    if (m_texBrushSamples == null)
                     {
-                        m_cbBrushSamples = new ComputeBuffer(bd.samples.Length, 4);
+                        m_texBrushSamples = new Texture2D(bd.samples.Length, 1, TextureFormat.RFloat, false);
                     }
-                    m_cbBrushSamples.SetData(bd.samples);
+                    m_texBrushSamples.LoadRawTextureData(bd.samples, bd.samples.Length * 4);
+                    m_texBrushSamples.Apply();
                     m_matVisualize.SetVector("_BrushPos", new Vector4(m_rayPos.x, m_rayPos.y, m_rayPos.z, bd.radius));
-                    m_matVisualize.SetInt("_NumBrushSamples", bd.samples.Length);
-                    m_matVisualize.SetBuffer("_BrushSamples", m_cbBrushSamples);
+                    m_matVisualize.SetTexture("_BrushSamples", m_texBrushSamples);
                 }
                 else
                 {
@@ -867,18 +870,16 @@ namespace UTJ.NormalPainter
             // overlay
             if(m_settings.modelOverlay != ModelOverlay.None)
             {
-                int pass = 0;
-                switch (m_settings.modelOverlay)
-                {
-                    case ModelOverlay.LocalSpaceNormals: pass = (int)VisualizeType.LocalSpaceNormalsOverlay; break;
-                    case ModelOverlay.TangentSpaceNormals: pass = (int)VisualizeType.TangentSpaceNormalsOverlay; break;
-                    case ModelOverlay.Tangents: pass = (int)VisualizeType.TangentsOverlay; break;
-                    case ModelOverlay.Binormals: pass = (int)VisualizeType.BinormalsOverlay; break;
-                    case ModelOverlay.UV: pass = (int)VisualizeType.UVOverlay; break;
-                    case ModelOverlay.VertexColor: pass = (int)VisualizeType.VertexColorOverlay; break;
-                }
+                if (m_cbPoints != null) m_matOverlay.SetBuffer("_Points", m_cbPoints);
+                if (m_cbNormals != null) m_matOverlay.SetBuffer("_Normals", m_cbNormals);
+                if (m_cbTangents != null) m_matOverlay.SetBuffer("_Tangents", m_cbTangents);
+                if (m_cbSelection != null) m_matOverlay.SetBuffer("_Selection", m_cbSelection);
+                if (m_cbBaseNormals != null) m_matOverlay.SetBuffer("_BaseNormals", m_cbBaseNormals);
+                if (m_cbBaseTangents != null) m_matOverlay.SetBuffer("_BaseTangents", m_cbBaseTangents);
+
+                int pass = (int)m_settings.modelOverlay - 1;
                 for (int si = 0; si < m_meshTarget.subMeshCount; ++si)
-                    m_cmdDraw.DrawRenderer(renderer, m_matVisualize, si, pass);
+                    m_cmdDraw.DrawRenderer(renderer, m_matOverlay, si, pass);
             }
 
             // visualize brush range

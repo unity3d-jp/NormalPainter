@@ -19,16 +19,11 @@ float4 _Direction;
 int _OnlySelected = 0;
 
 float4x4 _Transform;
-StructuredBuffer<float3> _BaseNormals;
-StructuredBuffer<float4> _BaseTangents;
 StructuredBuffer<float3> _Points;
 StructuredBuffer<float3> _Normals;
 StructuredBuffer<float4> _Tangents;
 StructuredBuffer<float> _Selection;
-
-int _NumBrushSamples;
-StructuredBuffer<float> _BrushSamples;
-
+sampler2D _BrushSamples;
 
 
 struct ia_out
@@ -62,12 +57,9 @@ vs_out vert_vertices(ia_out v)
     vs_out o;
     o.vertex = vertex;
     o.color = lerp(_VertexColor, _VertexColor2, s);
-
-
-    float d = length(pos - _BrushPos.xyz);
-    if (d < _BrushPos.w) {
-        int bsi = clamp(1.0f - d / _BrushPos.w, 0, 1) * (_NumBrushSamples - 1);
-        o.color.rgb += _VertexColor3.rgb * _BrushSamples[bsi];
+    float d = length(pos - _BrushPos.xyz) / _BrushPos.w;
+    if (d < 1) {
+        o.color.rgb += _VertexColor3.rgb * tex2Dlod(_BrushSamples, float4(1 - d, 0, 0, 0)).r;
     }
     return o;
 }
@@ -126,73 +118,6 @@ vs_out vert_binormals(ia_out v)
     o.vertex = vertex;
     o.color = _BinormalColor;
     o.color.a = 1.0 - v.uv.x;
-    return o;
-}
-
-
-vs_out vert_local_space_normals_overlay(ia_out v)
-{
-    vs_out o;
-    o.vertex = UnityObjectToClipPos(v.vertex);
-    o.color.rgb = v.normal.xyz * 0.5 + 0.5;
-    o.color.a = 1.0;
-    return o;
-}
-
-float3 ToBaseTangentSpace(uint vid, float3 n)
-{
-    float3 base_normal = _BaseNormals[vid];
-    float4 base_tangent = _BaseTangents[vid];
-    float3 base_binormal = normalize(cross(base_normal, base_tangent.xyz) * base_tangent.w);
-    float3x3 tbn = float3x3(base_tangent.xyz, base_binormal, base_normal);
-    return normalize(mul(n, transpose(tbn)));
-}
-
-vs_out vert_tangent_space_normals_overlay(ia_out v)
-{
-    vs_out o;
-    o.vertex = UnityObjectToClipPos(v.vertex);
-    o.color.rgb = ToBaseTangentSpace(v.vertexID, v.normal.xyz) * 0.5 + 0.5;
-    o.color.a = 1.0;
-    return o;
-}
-
-vs_out vert_tangents_overlay(ia_out v)
-{
-    vs_out o;
-    o.vertex = UnityObjectToClipPos(v.vertex);
-
-    float4 tangent = _Tangents[v.vertexID];
-    o.color.rgb = (tangent.xyz * tangent.w) * 0.5 + 0.5;
-    o.color.a = 1.0;
-    return o;
-}
-
-vs_out vert_binormals_overlay(ia_out v)
-{
-    vs_out o;
-    o.vertex = UnityObjectToClipPos(v.vertex);
-
-    float4 tangent = _Tangents[v.vertexID];
-    float3 binormal = normalize(cross(v.normal.xyz, tangent.xyz * tangent.w));
-    o.color.rgb = binormal * 0.5 + 0.5;
-    o.color.a = 1.0;
-    return o;
-}
-
-vs_out vert_uv_overlay(ia_out v)
-{
-    vs_out o;
-    o.vertex = UnityObjectToClipPos(v.vertex);
-    o.color = float4(v.uv.xy, 0.0, 1.0);
-    return o;
-}
-
-vs_out vert_color_overlay(ia_out v)
-{
-    vs_out o;
-    o.vertex = UnityObjectToClipPos(v.vertex);
-    o.color = v.color;
     return o;
 }
 
@@ -316,80 +241,8 @@ ENDCG
             #pragma target 4.5
             ENDCG
         }
-            
-        // pass 4: local space normals overlay
-        Pass
-        {
-            ZTest LEqual
 
-            CGPROGRAM
-            #pragma vertex vert_local_space_normals_overlay
-            #pragma fragment frag
-            #pragma target 4.5
-            ENDCG
-        }
-
-        // pass 5: tangent space normals overlay
-        Pass
-        {
-            ZTest LEqual
-
-            CGPROGRAM
-            #pragma vertex vert_tangent_space_normals_overlay
-            #pragma fragment frag
-            #pragma target 4.5
-            ENDCG
-        }
-
-        // pass 6: tangents overlay
-        Pass
-        {
-            ZTest LEqual
-
-            CGPROGRAM
-            #pragma vertex vert_tangents_overlay
-            #pragma fragment frag
-            #pragma target 4.5
-            ENDCG
-        }
-    
-        // pass 7: binormals overlay
-        Pass
-        {
-            ZTest LEqual
-
-            CGPROGRAM
-            #pragma vertex vert_binormals_overlay
-            #pragma fragment frag
-            #pragma target 4.5
-            ENDCG
-        }
-                
-        // pass 8: uv overlay
-        Pass
-        {
-            ZTest LEqual
-
-            CGPROGRAM
-            #pragma vertex vert_uv_overlay
-            #pragma fragment frag
-            #pragma target 4.5
-            ENDCG
-        }
-
-        // pass 9: vertex color overlay
-        Pass
-        {
-            ZTest LEqual
-
-            CGPROGRAM
-            #pragma vertex vert_color_overlay
-            #pragma fragment frag
-            #pragma target 4.5
-            ENDCG
-        }
-
-        // pass 10: lasso
+        // pass 4: lasso
         Pass
         {
             ZTest Always
@@ -401,7 +254,7 @@ ENDCG
             ENDCG
         }
 
-        // pass 11: brush range
+        // pass 5: brush range
         Pass
         {
             ZTest LEqual
@@ -413,7 +266,7 @@ ENDCG
             ENDCG
         }
 
-        // pass 12: ray position
+        // pass 6: ray position
         Pass
         {
             ZTest LEqual
@@ -425,7 +278,7 @@ ENDCG
             ENDCG
         }
 
-        // pass 13: direction
+        // pass 7: direction
         Pass
         {
             ZTest LEqual
