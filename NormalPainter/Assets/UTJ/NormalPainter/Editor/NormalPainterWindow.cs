@@ -842,25 +842,29 @@ namespace UTJ.NormalPainter
 
             EditorGUILayout.Space();
 
+            EditorGUILayout.BeginVertical("Box");
             settings.foldEdit = EditorGUILayout.Foldout(settings.foldEdit, "Edit");
             if (settings.foldEdit)
                 DrawEditPanel();
+            EditorGUILayout.EndVertical();
 
+            EditorGUILayout.BeginVertical("Box");
             settings.foldMisc = EditorGUILayout.Foldout(settings.foldMisc, "Misc");
             if (settings.foldMisc)
                 DrawMiscPanel();
+            EditorGUILayout.EndVertical();
 
-            EditorGUILayout.Space();
-
+            EditorGUILayout.BeginVertical("Box");
             settings.foldInExport = EditorGUILayout.Foldout(settings.foldInExport, "Import / Export");
             if (settings.foldInExport)
                 DrawInExportPanel();
+            EditorGUILayout.EndVertical();
 
-            EditorGUILayout.Space();
-
+            EditorGUILayout.BeginVertical("Box");
             settings.foldDisplay = EditorGUILayout.Foldout(settings.foldDisplay, "Display");
             if (settings.foldDisplay)
                 DrawDisplayPanel();
+            EditorGUILayout.EndVertical();
 
             if (EditorGUI.EndChangeCheck())
                 RepaintAllViews();
