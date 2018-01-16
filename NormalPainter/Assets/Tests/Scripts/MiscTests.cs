@@ -1,9 +1,6 @@
-using System;
+#if UNITY_EDITOR
 using UnityEngine;
 using UnityEditor;
-using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
-
 
 namespace UTJ.NormalPainter
 {
@@ -50,3 +47,4 @@ namespace UTJ.NormalPainter
     }
 }
 
+#endif

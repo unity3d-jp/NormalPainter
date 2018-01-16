@@ -790,7 +790,7 @@ namespace UTJ.NormalPainter
             EditorGUILayout.BeginVertical();
             if (settings.displayIndex == 0)
             {
-                settings.visualize = EditorGUILayout.Toggle("Vidualize [Tab]", settings.visualize);
+                settings.visualize = EditorGUILayout.Toggle("Visualize [Tab]", settings.visualize);
                 if (settings.visualize)
                 {
                     EditorGUI.indentLevel++;
@@ -798,13 +798,11 @@ namespace UTJ.NormalPainter
                     settings.showNormals = EditorGUILayout.Toggle("Normals", settings.showNormals);
                     settings.showTangents = EditorGUILayout.Toggle("Tangents", settings.showTangents);
                     settings.showBinormals = EditorGUILayout.Toggle("Binormals", settings.showBinormals);
-                    EditorGUI.indentLevel++;
-                    settings.showSelectedOnly = EditorGUILayout.Toggle("Selected Only", settings.showSelectedOnly);
-                    EditorGUI.indentLevel--;
+                    EditorGUILayout.Space();
+                    settings.showSelectedOnly = EditorGUILayout.Toggle("Selection Only", settings.showSelectedOnly);
                     EditorGUI.indentLevel--;
                     EditorGUILayout.Space();
                 }
-                //settings.showSelectedOnly = EditorGUILayout.Toggle("Selected Only", settings.showSelectedOnly);
 
                 settings.modelOverlay = (ModelOverlay)EditorGUILayout.EnumPopup("Overlay", settings.modelOverlay);
                 settings.showBrushRange = EditorGUILayout.Toggle("Brush Range", settings.showBrushRange);

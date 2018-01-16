@@ -1,3 +1,4 @@
+#if UNITY_EDITOR
 using System;
 using UnityEngine;
 using UnityEditor;
@@ -41,3 +42,4 @@ public static class PluginTestRunner
     [DllImport("TestDLL")] static extern void RunTest(string name);
     [DllImport("TestDLL")] static extern void RunAllTests();
 }
+#endif
