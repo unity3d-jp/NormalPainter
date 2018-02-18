@@ -1,4 +1,4 @@
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEditor;
 
@@ -202,6 +202,7 @@ namespace UTJ.NormalPainter
             "Smooth",
             "Project",
             "Reset",
+            "Flow",
         };
         static readonly string[] strCoodinate = new string[] {
             "World",
@@ -919,6 +920,7 @@ namespace UTJ.NormalPainter
                         case KeyCode.Alpha3: settings.brushMode = BrushMode.Smooth; break;
                         case KeyCode.Alpha4: settings.brushMode = BrushMode.Projection; break;
                         case KeyCode.Alpha5: settings.brushMode = BrushMode.Reset; break;
+                        case KeyCode.Alpha6: settings.brushMode = BrushMode.Flow; break;
                     }
                     if (settings.brushMode != prevBrushMode)
                         handled = true;
