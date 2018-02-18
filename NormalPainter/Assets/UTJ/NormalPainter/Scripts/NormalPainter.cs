@@ -452,10 +452,7 @@ namespace UTJ.NormalPainter
                 m_rayHit = Raycast(e, ref m_rayPos, ref m_rayHitTriangle);
                 
                 if (m_rayHit || prevRayHit)
-                {
-                    Debug.Log(m_rayHit +", "+ m_rayPos + ", "+ (m_rayPos - m_prevRayPos).ToString("F4"));
                     ret |= (int)SceneGUIState.Repaint;
-                }
             }
 
             if (m_numSelected > 0 && editMode == EditMode.Assign)
