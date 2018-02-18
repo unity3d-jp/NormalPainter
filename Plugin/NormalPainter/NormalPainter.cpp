@@ -857,6 +857,24 @@ npAPI int npWeld2(
 }
 
 
+npAPI int npBrushFlow(
+    npMeshData *model,
+    const float3 pos, const float3 previousPos, float radius, float strength, int num_bsamples, float bsamples[], float3 value, int mask)
+{
+    auto normals = model->normals;
+    auto selection = model->selection;
+    auto sign = strength < 0.0f ? -1.0f : 1.0f;
+    auto direction = normalize(pos - previousPos);
+    //auto axis = cross(value, direction);
+    return SelectInside(*model, pos, radius, [&](int vi, float d, float3 p) {
+        float s = GetBrushSample(d, radius, bsamples, num_bsamples) * abs(strength);
+        if (mask) s *= selection[vi];
+
+        normals[vi] = normalize(lerp(normals[vi], direction, s * sign));
+    }, true);
+    return 0;
+}
+
 npAPI int npBrushReplace(
     npMeshData *model,
     const float3 pos, float radius, float strength, int num_bsamples, float bsamples[], float3 value, int mask)
