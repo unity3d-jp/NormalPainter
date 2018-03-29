@@ -1,18 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
-    <ProjectConfiguration Include="Debug|Win32">
-      <Configuration>Debug</Configuration>
-      <Platform>Win32</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Debug|x64">
-      <Configuration>Debug</Configuration>
-      <Platform>x64</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Master|Win32">
-      <Configuration>Master</Configuration>
-      <Platform>Win32</Platform>
-    </ProjectConfiguration>
     <ProjectConfiguration Include="Master|x64">
       <Configuration>Master</Configuration>
       <Platform>x64</Platform>
@@ -25,6 +13,7 @@
       <Outputs>External\ispc.exe;External\mqsdk4;External\mqsdk3;%(Outputs)</Outputs>
       <Message>%(Identity)</Message>
       <LinkObjects>false</LinkObjects>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Master|x64'">External\External.7z</Outputs>
     </CustomBuild>
   </ItemGroup>
   <PropertyGroup Label="Globals">
