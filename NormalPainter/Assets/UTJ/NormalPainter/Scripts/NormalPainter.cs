@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Reflection;
@@ -75,6 +75,7 @@ namespace UTJ.NormalPainter
         bool m_rayHit;
         int m_rayHitTriangle;
         Vector3 m_rayPos;
+        Vector3 m_prevRayPos;
         Vector3 m_selectionPos;
         Vector3 m_selectionNormal;
         Quaternion m_selectionRot;
@@ -447,7 +448,9 @@ namespace UTJ.NormalPainter
             if (et == EventType.MouseMove || et == EventType.MouseDrag)
             {
                 bool prevRayHit = m_rayHit;
+                m_prevRayPos = m_rayPos;
                 m_rayHit = Raycast(e, ref m_rayPos, ref m_rayHitTriangle);
+                
                 if (m_rayHit || prevRayHit)
                     ret |= (int)SceneGUIState.Repaint;
             }
@@ -600,6 +603,11 @@ namespace UTJ.NormalPainter
                     var bd = m_settings.activeBrush;
                     switch (m_settings.brushMode)
                     {
+                    case BrushMode.Flow:
+                        if (ApplyFlowBrush(m_settings.brushMaskWithSelection, m_rayPos, m_prevRayPos, bd.radius, bd.strength, bd.samples,
+                                PickBaseNormal(m_rayPos, m_rayHitTriangle)))
+                                ++m_brushNumPainted;
+                            break;
                         case BrushMode.Paint:
                             if (ApplyPaintBrush(m_settings.brushMaskWithSelection, m_rayPos, bd.radius, bd.strength, bd.samples,
                                 PickBaseNormal(m_rayPos, m_rayHitTriangle), settings.brushBlendMode))

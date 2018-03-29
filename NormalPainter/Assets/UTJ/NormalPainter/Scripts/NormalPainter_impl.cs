@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Text.RegularExpressions;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -33,6 +33,7 @@ namespace UTJ.NormalPainter
         Smooth,
         Projection,
         Reset,
+        Flow,
     }
 
     public enum SelectMode
@@ -354,6 +355,17 @@ namespace UTJ.NormalPainter
 
             UpdateNormals();
             if (pushUndo) PushUndo();
+        }
+
+        public bool ApplyFlowBrush(bool useSelection, Vector3 pos, Vector3 previousPos, float radius, float strength, PinnedArray<float> bsamples, Vector3 baseDir)
+        {
+            useSelection = useSelection && m_numSelected > 0;
+            if (npBrushFlow(ref m_npModelData, pos, previousPos, radius, strength, bsamples.Length, bsamples, baseDir, useSelection) > 0)
+            {
+                UpdateNormals();
+                return true;
+            }
+            return false;
         }
 
         public bool ApplyPaintBrush(bool useSelection, Vector3 pos, float radius, float strength, PinnedArray<float> bsamples, Vector3 baseDir, int blendMode)
@@ -1342,6 +1354,11 @@ namespace UTJ.NormalPainter
         [DllImport("NormalPainterCore")] static extern int npBrushReplace(
             ref npMeshData model,
             Vector3 pos, float radius, float strength, int num_bsamples, IntPtr bsamples, Vector3 amount, bool mask);
+
+        [DllImport("NormalPainterCore")] static extern int npBrushFlow(
+            ref npMeshData model,
+            Vector3 pos, Vector3 prevPos, float radius, float strength, int num_bsamples, IntPtr bsamples, Vector3 baseNormal, bool mask);
+
 
         [DllImport("NormalPainterCore")] static extern int npBrushPaint(
             ref npMeshData model,
