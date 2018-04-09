@@ -124,16 +124,3 @@ export void Lerp(uniform float dst[], uniform const float src1[], uniform const 
     }
 }
 #endif
-
-#ifdef muSIMD_NearEqual
-export uniform bool NearEqual(
-    uniform const float src1[], uniform const float src2[], uniform const int num, uniform const float eps)
-{
-    float tdiff = 0.0f;
-    foreach(i=0 ... num) {
-        tdiff = max(tdiff, abs(src1[i] - src2[i]));
-    }
-    return reduce_max(tdiff) < eps;
-}
-#endif
-

@@ -3,6 +3,18 @@
 // functions that have gather/scatter operations need to be written in this compile unit.
 // (--opt=force-aligned-memory is disabled)
 
+#ifdef muSIMD_NearEqual
+export uniform bool NearEqual(
+    uniform const float src1[], uniform const float src2[], uniform const int num, uniform const float eps)
+{
+    float tdiff = 0.0f;
+    foreach(i=0 ... num) {
+        tdiff = max(tdiff, abs(src1[i] - src2[i]));
+    }
+    return reduce_max(tdiff) < eps;
+}
+#endif
+
 #ifdef muSIMD_MulVectors3
 export void MulVectors3(uniform const float4x4& m_, uniform const float3 src[], uniform float3 dst[], uniform int num_data)
 {
