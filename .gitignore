@@ -5,24 +5,37 @@
 *.user
 *.log
 *.tlog
+*.aps
+*.DS_Store
 
 *.exe
 *.dll
 *.bundle
 *.dylib
 *.so
+*.exr
+*.gif
+*.png
+*.mp4
+*.h264
+*.aac
+*.webm
+*.ogg
+*.flac
+*.wav
+*.zip
+*.mll
 *.unitypackage
 
-*.fbx
-*.obj
-
 .vs/
+.mayaSwatches/
 _out/
 _tmp/
 _build_*/
 external/
 Library/
 Temp/
+obj/
 TestLocal/
 TestLocal.meta
 
