@@ -20,10 +20,10 @@ namespace UTJ.NormalPainter
                     data.Extract(terrain);
 
                     var mesh = new Mesh();
-                    mesh.SetVertices(data.vertices);
-                    mesh.SetUVs(0, data.uv);
-                    mesh.SetNormals(data.normals);
-                    mesh.SetIndices(data.indices, MeshTopology.Triangles, 0);
+                    mesh.SetVertices(data.vertices.List);
+                    mesh.SetUVs(0, data.uv.List);
+                    mesh.SetNormals(data.normals.List);
+                    mesh.SetIndices(data.indices.Array, MeshTopology.Triangles, 0);
 
                     var dataPath = Application.dataPath;
                     var path = EditorUtility.SaveFilePanel("Export .asset file", "Assets", terrain.name, "asset");

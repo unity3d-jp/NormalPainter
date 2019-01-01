@@ -175,9 +175,9 @@ namespace UTJ.NormalPainter
             if (!mesh || !mesh.isReadable) { return false; }
 
             vertexCount = mesh.vertexCount;
-            mesh.GetVertices(vertices);
-            mesh.GetNormals(normals);
-            mesh.GetUVs(0, uv);
+            mesh.GetVertices(vertices.List);
+            mesh.GetNormals(normals.List);
+            mesh.GetUVs(0, uv.List);
             indices = new PinnedList<int>(mesh.triangles);
             return true;
         }
@@ -443,7 +443,7 @@ namespace UTJ.NormalPainter
         {
             if (!useSelection)
             {
-                Array.Copy(m_normalsBase, m_normals, m_normals.Count);
+                Array.Copy(m_normalsBase.Array, m_normals.Array, m_normals.Count);
             }
             else
             {
@@ -456,7 +456,7 @@ namespace UTJ.NormalPainter
 
         void PushUndo()
         {
-            PushUndo(m_normals, null);
+            PushUndo(m_normals.Array, null);
         }
 
         void PushUndo(Vector3[] normals, History.Record[] records)
@@ -499,7 +499,7 @@ namespace UTJ.NormalPainter
                 UpdateTransform();
                 if (m_history.normals != null && m_normals != null && m_history.normals.Length == m_normals.Count)
                 {
-                    Array.Copy(m_history.normals, m_normals, m_normals.Count);
+                    Array.Copy(m_history.normals, m_normals.Array, m_normals.Count);
                     UpdateNormals(false);
 
                     if (m_settings.tangentsMode == TangentsUpdateMode.Auto)
@@ -556,11 +556,11 @@ namespace UTJ.NormalPainter
                     IntPtr.Zero, m_normalsBasePredeformed, m_tangentsBasePredeformed,
                     IntPtr.Zero, m_normalsBase, m_tangentsBase);
 
-                if (m_cbPoints != null) m_cbPoints.SetData(m_points);
-                if (m_cbNormals != null) m_cbNormals.SetData(m_normals);
-                if (m_cbBaseNormals != null) m_cbBaseNormals.SetData(m_normalsBase);
-                if (m_cbTangents != null) m_cbTangents.SetData(m_tangents);
-                if (m_cbBaseTangents != null) m_cbBaseTangents.SetData(m_tangentsBase);
+                if (m_cbPoints != null) m_cbPoints.SetData(m_points.List);
+                if (m_cbNormals != null) m_cbNormals.SetData(m_normals.List);
+                if (m_cbBaseNormals != null) m_cbBaseNormals.SetData(m_normalsBase.List);
+                if (m_cbTangents != null) m_cbTangents.SetData(m_tangents.List);
+                if (m_cbBaseTangents != null) m_cbBaseTangents.SetData(m_tangentsBase.List);
             }
         }
 
@@ -581,13 +581,13 @@ namespace UTJ.NormalPainter
                         IntPtr.Zero, m_normalsPredeformed, IntPtr.Zero,
                         IntPtr.Zero, m_normals, IntPtr.Zero);
                 }
-                m_meshTarget.SetNormals(m_normalsPredeformed);
+                m_meshTarget.SetNormals(m_normalsPredeformed.List);
             }
             else
             {
                 if (mirror)
                     ApplyMirroringInternal();
-                m_meshTarget.SetNormals(m_normals);
+                m_meshTarget.SetNormals(m_normals.List);
             }
 
             if (m_settings.tangentsMode == TangentsUpdateMode.Realtime)
@@ -595,7 +595,7 @@ namespace UTJ.NormalPainter
 
             m_meshTarget.UploadMeshData(false);
             if (m_cbNormals != null)
-                m_cbNormals.SetData(m_normals);
+                m_cbNormals.SetData(m_normals.List);
         }
 
         public void UpdateSelection()
@@ -622,7 +622,7 @@ namespace UTJ.NormalPainter
             }
             else
             {
-                m_cbSelection.SetData(m_selection);
+                m_cbSelection.SetData(m_selection.List);
             }
         }
 
@@ -663,10 +663,10 @@ namespace UTJ.NormalPainter
             }
 
             if (updateMesh)
-                m_meshTarget.SetTangents(m_tangentsPredeformed);
+                m_meshTarget.SetTangents(m_tangentsPredeformed.List);
 
             if (m_cbTangents != null)
-                m_cbTangents.SetData(m_tangents);
+                m_cbTangents.SetData(m_tangents.List);
         }
 
 
@@ -737,7 +737,7 @@ namespace UTJ.NormalPainter
 
         public bool ClearSelection()
         {
-            System.Array.Clear(m_selection, 0, m_selection.Count);
+            System.Array.Clear(m_selection.Array, 0, m_selection.Count);
             return m_selection.Count > 0;
         }
 
@@ -1025,7 +1025,7 @@ namespace UTJ.NormalPainter
             m_csBakeFromMap.SetBuffer(0, "_Tangents", m_cbBaseTangents);
             m_csBakeFromMap.SetBuffer(0, "_Dst", m_cbNormals);
             m_csBakeFromMap.Dispatch(0, m_normals.Count, 1, 1);
-            m_cbNormals.GetData(m_normals);
+            m_cbNormals.GetData(m_normals.Array);
             cbUV.Dispose();
 
             UpdateNormals();
@@ -1179,7 +1179,7 @@ namespace UTJ.NormalPainter
 
             Vector3[] normalsPreWeld = null;
             if (pushUndo)
-                normalsPreWeld = m_normals.Clone();
+                normalsPreWeld = m_normals.Clone().Array;
 
             // do weld
             bool ret = false;
@@ -1216,7 +1216,7 @@ namespace UTJ.NormalPainter
                                 IntPtr.Zero, d.normals, IntPtr.Zero,
                                 IntPtr.Zero, d.normals, IntPtr.Zero);
                         }
-                        d.mesh.normals = d.normals;
+                        d.mesh.normals = d.normals.Array;
                         d.mesh.UploadMeshData(false);
                     }
 
@@ -1226,13 +1226,13 @@ namespace UTJ.NormalPainter
                         {
                             records[i] = new History.Record();
                             records[i].mesh = data[i].mesh;
-                            records[i].normals = data[i].normals;
+                            records[i].normals = data[i].normals.Array;
                         }
                     }
                 }
 
                 if (pushUndo)
-                    PushUndo(m_normals, records);
+                    PushUndo(m_normals.Array, records);
 
                 ret = true;
             }
