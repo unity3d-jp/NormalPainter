@@ -1,10 +1,11 @@
 using UnityEngine;
 using UnityEditor;
 using System.Collections;
+using UTJ.NormalPainter;
 
-namespace UTJ.NormalPainter
+namespace UTJ.NormalPainterEditor
 {
-    [CustomEditor(typeof(NormalPainter))]
+    [CustomEditor(typeof(UTJ.NormalPainter.NormalPainter))]
     public class NormalPainterEditor : Editor
     {
         public override void OnInspectorGUI()

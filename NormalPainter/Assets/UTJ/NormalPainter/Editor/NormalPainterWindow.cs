@@ -1,15 +1,16 @@
 ﻿using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEditor;
+using UTJ.NormalPainter;
 
-namespace UTJ.NormalPainter
+namespace UTJ.NormalPainterEditor
 {
     public class NormalPainterWindow : EditorWindow
     {
         public static bool isOpen;
 
         Vector2 m_scrollPos;
-        NormalPainter m_target;
+        UTJ.NormalPainter.NormalPainter m_target;
         GameObject m_active;
 
         bool m_shift;
@@ -131,7 +132,7 @@ namespace UTJ.NormalPainter
             {
                 if (GUILayout.Button("Add Normal Painter to " + m_active.name))
                 {
-                    m_active.AddComponent<NormalPainter>();
+                    m_active.AddComponent<UTJ.NormalPainter.NormalPainter>();
                     OnSelectionChange();
                 }
             }
@@ -149,7 +150,7 @@ namespace UTJ.NormalPainter
             m_active = null;
             if (Selection.activeGameObject != null)
             {
-                m_target = Selection.activeGameObject.GetComponent<NormalPainter>();
+                m_target = Selection.activeGameObject.GetComponent<UTJ.NormalPainter.NormalPainter>();
                 if (m_target)
                 {
                     m_target.editing = m_target.edited;
