@@ -39,5 +39,5 @@ obj/
 TestLocal/
 TestLocal.meta
 
-NormalPainter/*.csproj
-NormalPainter/*.sln
+.NormalPainter/*.csproj
+.NormalPainter/*.sln
