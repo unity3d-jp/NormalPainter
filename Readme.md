@@ -9,6 +9,9 @@ Unity 2017.1 系以上、Windows (64bit) or Mac、**D3D11 世代以降の Graphi
 
 ## 使い方
 - [NormalPainter.unitypackage](https://github.com/unity3d-jp/NormalPainter/releases/download/20180116/NormalPainter.unitypackage) をプロジェクトにインポート
+  - Unity 2018.3 以降の場合、このリポジトリを直接インポートすることもできます。プロジェクト内にある Packages/manifest.json をテキストエディタで開き、"dependencies" に以下の行を加えます。
+  > "com.utj.normalpainter": "https://github.com/unity3d-jp/NormalPainter.git",
+
 - Window -> Normal Painter でツールウィンドウを開く
 - MeshRenderer か SkinnedMeshRenderer を持つオブジェクトを選択するとツールウィンドウに "Add NormalPainter" が出てくるのでそれでコンポーネントを追加
 
@@ -26,7 +29,6 @@ Unity 2017.1 系以上、Windows (64bit) or Mac、**D3D11 世代以降の Graphi
   - 法線をテクスチャとしてエクスポート
   - 法線マップを頂点の法線としてインポート
   - .obj ファイルとしてエクスポート
-  - [FbxExporter](https://github.com/unity3d-jp/FbxExporter) を使えば fbx でエクスポートもできます
 
 
 ## License
