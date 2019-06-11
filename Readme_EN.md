@@ -10,14 +10,12 @@ You will need Unity 2017.1 and later, Windows (64 bit) or Mac (**Graphics API of
 
 ## How to Use 
 
-- Import your project to  [NormalPainter.unitypackage](https://github.com/unity3d-jp/NormalPainter/releases/download/20180116/NormalPainter.unitypackage).
-- For Unity 2018.3 and later, you can also import this repository irectly. Open Packages/manifest.json of your project in the text editor and add it after "dependencies".
+- Import  [NormalPainter.unitypackage](https://github.com/unity3d-jp/NormalPainter/releases/download/20180116/NormalPainter.unitypackage) to your project.
+- For Unity 2018.3 and later, you can also import this repository directly. Open Packages/manifest.json of your project in the text editor and add it after "dependencies".
   > "com.utj.normalpainter": "https://github.com/unity3d-jp/NormalPainter.git",
   
   -Window-> Open the tool window in Normal Painter
   -"Add NormalPainter" will pop up on the tool window when you select an object with MeshRenderer or SkinnedMeshRenderer, so you can add it as a component. 
-
-
 
 ##Functions 
   - Vertices, normal vectors, tangents etc. will become visible. 
