@@ -4,7 +4,7 @@
 
 
 You will need Unity 2017.1 and later, Windows (64 bit) or Mac (**Graphics API of D3D11 and later**). 
-(Please not that if your target platform is not standalone, D3D9 will limit functions and may not work properly.) 
+(Please note that if your target platform is not standalone, D3D9 will limit functions and may not work properly.) 
 
 
 
@@ -25,7 +25,7 @@ You will need Unity 2017.1 and later, Windows (64 bit) or Mac (**Graphics API of
     -Masking with selected range 
   -Mirror normal vectors (Misc-> Mirroring) 
   -Project normal vectors (Edit-> Projection) 
-    -Rays will be projected from each vertex and it will pick up the vectors of the selected object where the rays hit.
+    -Rays will be projected from each vertex and the vectors of the selected object will be picked up where the rays hit.
   
   -import/ export 
     -Normal vectors<-> vertices color conversion. 
