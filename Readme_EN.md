@@ -1,9 +1,9 @@
 # NormalPainter
-[English](https://translate.google.com/translate?sl=ja&tl=en&u=https://github.com/unity3d-jp/NormalPainter) (by Google Translate)  
+  
 ![](https://user-images.githubusercontent.com/1488611/27468607-b3e9e4d0-5825-11e7-954d-fca1a7a50417.gif)
 
 
-You will need Unity 2017.1 and later, Windows (64 bit) or Mac (**Graphics API of D3D11 and later**). 
+You will need Unity 2017.1 or later, Windows (64 bit) or Mac (**Graphics API of D3D11 and later**). 
 (Please note that if your target platform is not standalone, D3D9 will limit functions and may not work properly.) 
 
 
